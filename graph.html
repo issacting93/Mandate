@@ -1,0 +1,590 @@
+<!-- MANDATE — Systems Relationship Graph (entries + entry-links, Frostpunk-style) -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANDATE — Systems Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d13; --panel:rgba(16,20,28,.9); --line:rgba(255,255,255,.10);
+    --ink:#e9edf3; --mut:#8b94a6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 12px 18px}
+  .head{display:flex;align-items:baseline;gap:10px;margin:2px 4px 10px;flex-wrap:wrap}
+  .head .kick{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--mut)}
+  .head h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.3px}
+  .head .sub{font-size:12px;color:var(--mut);font-family:"Space Mono",monospace}
+
+  .stage{position:relative;width:100%;height:min(78vh,760px);border-radius:16px;overflow:hidden;
+    border:1px solid var(--line);background:#070a0f;box-shadow:0 30px 80px -40px #000}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+
+  .panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    backdrop-filter:blur(8px);box-shadow:0 16px 40px -24px #000}
+
+  /* node-type legend */
+  .types{top:12px;left:12px;padding:11px 13px;width:186px}
+  .types .h{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);font-weight:600;margin-bottom:8px}
+  .types .t{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#c7cdd9;margin:3px 0}
+  .types .t .d{width:10px;height:10px;border-radius:3px}
+
+  /* edge filters */
+  .filters{top:12px;right:12px;padding:11px 13px;width:178px}
+  .filters .h{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);font-weight:600;margin-bottom:8px}
+  .chip{display:flex;align-items:center;gap:7px;width:100%;border:1px solid var(--line);background:rgba(255,255,255,.04);
+    color:#c7cdd9;font-family:inherit;font-size:11.5px;padding:6px 9px;border-radius:8px;margin:4px 0;cursor:pointer;transition:.12s}
+  .chip:hover{background:rgba(255,255,255,.09)}
+  .chip.off{opacity:.32}
+  .chip .ln{width:16px;height:3px;border-radius:2px;flex:0 0 auto}
+
+  /* detail */
+  .detail{right:12px;bottom:12px;width:248px;padding:14px;opacity:0;transform:translateY(6px);transition:.18s;pointer-events:none;max-height:60%;overflow:auto}
+  .detail.show{opacity:1;transform:none;pointer-events:auto}
+  .detail .dn{font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .detail .dt{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-top:3px}
+  .detail .dt .d{width:9px;height:9px;border-radius:3px}
+  .detail .rel{margin-top:11px}
+  .detail .rel .rl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:3px}
+  .detail .rel .rv{font-size:12.5px;color:#dfe4ec;line-height:1.45}
+
+  .tools{left:12px;bottom:12px;display:flex;gap:8px}
+  .tools button{pointer-events:auto;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#c7cdd9;
+    font-family:inherit;font-size:11.5px;padding:7px 11px;border-radius:9px;cursor:pointer;transition:.12s}
+  .tools button:hover{background:rgba(255,255,255,.11)}
+
+  .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;font-size:10.5px;color:var(--mut);
+    font-family:"Space Mono",monospace;pointer-events:none}
+  .tip{position:absolute;z-index:9;pointer-events:none;background:rgba(8,11,16,.96);border:1px solid var(--line);
+    border-radius:8px;padding:6px 9px;font-size:11.5px;opacity:0;transition:opacity .1s;white-space:nowrap}
+  .tip.show{opacity:1}
+  @media(max-width:680px){ .types,.filters{width:150px} .detail{width:180px} .hint{display:none} }
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <span class="kick">Content Graph</span>
+    <h1>MANDATE — Systems &amp; Relationships</h1>
+    <span class="sub" id="counts"></span>
+  </div>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="panel types">
+      <div class="h">Entries (nodes)</div>
+      <div id="typeLegend"></div>
+    </div>
+    <div class="panel filters">
+      <div class="h">Links (edges)</div>
+      <div id="edgeFilters"></div>
+    </div>
+    <div class="panel detail" id="detail"></div>
+    <div class="tools">
+      <button id="reset">Re-settle layout</button>
+      <button id="unpin">Unpin all</button>
+    </div>
+    <div class="hint">click a node to trace its links · drag to arrange · scroll to zoom</div>
+    <div class="tip" id="tip"></div>
+  </div>
+</div>
+
+<script>
+// ---- node types ----
+const TYPES = {
+  season:    {label:"Season",            c:"#8ea2c0"},
+  hazard:    {label:"Hazard / Disaster", c:"#ff6b63"},
+  district:  {label:"District at risk",  c:"#2fc3e8"},
+  prevention:{label:"Prevention / Infra",c:"#34d399"},
+  resource:  {label:"Resource / Meter",  c:"#ffc24d"},
+  bloc:      {label:"Coalition bloc",    c:"#ff5fa0"},
+  comms:     {label:"Policy / Framing",  c:"#7c8cf8"},
+  outcome:   {label:"Consequence",       c:"#c084fc"},
+};
+
+// ---- edge types: bucket, color, forward / reverse phrasing ----
+const ET = {
+  occurs_in:{bk:"time",   c:"#5a6b86", f:"occurs in",      r:"hazard season for"},
+  threatens:{bk:"threat", c:"#ff6b63", f:"threatens",      r:"threatened by"},
+  cascades: {bk:"threat", c:"#ff8a5c", f:"cascades to",    r:"triggered by",  dash:true},
+  causes:   {bk:"threat", c:"#ff6b63", f:"causes",         r:"caused by"},
+  exposes:  {bk:"threat", c:"#e06b6b", f:"exposed to",     r:"exposes"},
+  mitigates:{bk:"defense",c:"#34d399", f:"mitigates",      r:"mitigated by"},
+  protects: {bk:"defense",c:"#34d399", f:"protects",       r:"protected by"},
+  reduces:  {bk:"defense",c:"#46c08a", f:"reduces",        r:"reduced by"},
+  requires: {bk:"defense",c:"#cfd6e4", f:"requires",       r:"required by"},
+  costs:    {bk:"money",  c:"#ffc24d", f:"draws funds from",r:"funds drawn by"},
+  funds:    {bk:"money",  c:"#ffc24d", f:"funds",          r:"funded by"},
+  frames:   {bk:"politics",c:"#7c8cf8",f:"frames",         r:"framed by"},
+  pleases:  {bk:"politics",c:"#6ad0a0",f:"pleases",        r:"pleased by"},
+  angers:   {bk:"politics",c:"#ff6f8c",f:"angers",         r:"angered by"},
+  affects:  {bk:"politics",c:"#c084fc",f:"swings",         r:"swung by"},
+};
+const BUCKETS = {
+  time:    {label:"Time",     c:"#5a6b86"},
+  threat:  {label:"Threat",   c:"#ff6b63"},
+  defense: {label:"Defense",  c:"#34d399"},
+  money:   {label:"Money",    c:"#ffc24d"},
+  politics:{label:"Politics", c:"#7c8cf8"},
+};
+
+// ---- nodes ----
+const N = [
+  // seasons
+  ["s_winter","Winter","season"],["s_spring","Spring","season"],["s_summer","Summer","season"],["s_fall","Fall","season"],
+  // hazards
+  ["h_blizzard","Blizzard / Nor'easter","hazard"],["h_coldsnap","Cold Snap","hazard"],
+  ["h_surge","Coastal Surge","hazard"],["h_rainflood","Cloudburst Flooding","hazard"],
+  ["h_heatwave","Heat Dome","hazard"],["h_blackout","Grid Failure","hazard"],
+  // districts at risk
+  ["d_coastal","Coastal Edge (Rockaways, Red Hook)","district"],["d_lowman","Lower Manhattan","district"],
+  ["d_basement","Basement Apartments (Queens)","district"],["d_nycha","Public Housing (NYCHA)","district"],
+  ["d_outer","Outer-Borough, Transit-Dependent","district"],["d_lowbronx","Low-Lying South Bronx","district"],
+  // prevention / infra
+  ["p_seawall","Surge Barriers / Seawalls","prevention"],["p_drains","Storm-Drain & Sewer Upgrades","prevention"],
+  ["p_retrofit","Flood-Proofing Retrofits","prevention"],["p_cooling","Cooling Centers","prevention"],
+  ["p_grid","Grid Hardening / Backup Power","prevention"],["p_plows","Snow-Removal Fleet","prevention"],
+  ["p_warning","Early-Warning System","prevention"],["p_evac","Evacuation Plan","prevention"],
+  ["p_shelter","Emergency Shelters","prevention"],["p_green","Green Infra / Tree Canopy","prevention"],
+  ["p_outreach","Vulnerable-Resident Outreach","prevention"],
+  // resources / meters
+  ["r_reserve","City Reserve","resource"],["r_approval","Citywide Approval","resource"],
+  ["r_prep","Preparedness","resource"],["r_capital","Political Capital","resource"],
+  // blocs
+  ["b_work","Working Families","bloc"],["b_biz","Business & Finance","bloc"],["b_re","Real Estate","bloc"],
+  ["b_prog","Progressives","bloc"],["b_lab","Labor Unions","bloc"],
+  // policy / framing
+  ["c_invest","Preparedness Budget","comms"],["c_mandate","Resilience Mandates","comms"],
+  ["c_fiscal","Frame: Fiscal Responsibility","comms"],["c_justice","Frame: Justice & Equity","comms"],
+  ["c_safety","Frame: Safety & Order","comms"],["c_climate","Frame: Climate Action","comms"],
+  // outcomes
+  ["o_cas","Casualties","outcome"],["o_disp","Displacement","outcome"],["o_dmg","Property Damage","outcome"],
+  ["o_transit","Transit Shutdown","outcome"],["o_invisible","Invisible Success","outcome"],
+];
+
+// ---- edges ----
+const E = [
+  // when hazards happen
+  ["h_blizzard","s_winter","occurs_in"],["h_coldsnap","s_winter","occurs_in"],
+  ["h_rainflood","s_spring","occurs_in"],["h_rainflood","s_summer","occurs_in"],
+  ["h_heatwave","s_summer","occurs_in"],["h_surge","s_fall","occurs_in"],
+  // cascades & outcomes
+  ["h_heatwave","h_blackout","cascades"],["h_blizzard","o_transit","cascades"],
+  ["h_rainflood","o_cas","causes"],["h_blackout","o_cas","causes"],["h_heatwave","o_cas","causes"],
+  ["h_surge","o_disp","causes"],["h_surge","o_dmg","causes"],["h_rainflood","o_dmg","causes"],["h_coldsnap","o_cas","causes"],
+  // who hazards threaten
+  ["h_surge","d_coastal","threatens"],["h_surge","d_lowman","threatens"],
+  ["h_rainflood","d_basement","threatens"],["h_rainflood","d_lowbronx","threatens"],
+  ["h_heatwave","d_nycha","threatens"],["h_heatwave","d_outer","threatens"],
+  ["h_blizzard","d_outer","threatens"],["h_coldsnap","d_nycha","threatens"],
+  // bloc exposure
+  ["b_work","h_heatwave","exposes"],["b_work","h_rainflood","exposes"],
+  ["b_re","h_surge","exposes"],["b_biz","h_blackout","exposes"],
+  // prevention mitigates hazards
+  ["p_seawall","h_surge","mitigates"],["p_retrofit","h_surge","mitigates"],["p_retrofit","h_rainflood","mitigates"],
+  ["p_drains","h_rainflood","mitigates"],["p_green","h_rainflood","mitigates"],["p_green","h_heatwave","mitigates"],
+  ["p_cooling","h_heatwave","mitigates"],["p_grid","h_blackout","mitigates"],["p_grid","h_heatwave","mitigates"],
+  ["p_plows","h_blizzard","mitigates"],
+  // prevention protects districts
+  ["p_seawall","d_coastal","protects"],["p_seawall","d_lowman","protects"],["p_retrofit","d_coastal","protects"],
+  ["p_drains","d_basement","protects"],["p_cooling","d_nycha","protects"],["p_cooling","d_outer","protects"],
+  ["p_outreach","d_nycha","protects"],["p_outreach","d_basement","protects"],["p_shelter","d_coastal","protects"],
+  // prevention prerequisites
+  ["p_evac","p_warning","requires"],["p_shelter","p_evac","requires"],["p_outreach","p_warning","requires"],
+  // preparedness reduces outcomes
+  ["p_warning","r_prep","funds"],["p_seawall","r_prep","funds"],["p_cooling","r_prep","funds"],
+  ["p_grid","r_prep","funds"],["p_drains","r_prep","funds"],["p_plows","r_prep","funds"],
+  ["r_prep","o_cas","reduces"],["r_prep","o_dmg","reduces"],["r_prep","o_disp","reduces"],
+  // money
+  ["p_seawall","r_reserve","costs"],["p_drains","r_reserve","costs"],["p_grid","r_reserve","costs"],
+  ["p_retrofit","r_reserve","costs"],["p_plows","r_reserve","costs"],["c_invest","r_reserve","costs"],
+  ["c_invest","p_seawall","funds"],["c_invest","p_drains","funds"],["c_invest","p_cooling","funds"],
+  ["c_invest","p_grid","funds"],["c_mandate","p_retrofit","funds"],["c_mandate","p_green","funds"],
+  // framing
+  ["c_fiscal","c_invest","frames"],["c_justice","c_invest","frames"],["c_safety","c_invest","frames"],
+  ["c_climate","c_mandate","frames"],["c_justice","c_mandate","frames"],
+  ["c_fiscal","b_biz","pleases"],["c_fiscal","b_re","pleases"],["c_fiscal","b_prog","angers"],
+  ["c_justice","b_prog","pleases"],["c_justice","b_work","pleases"],["c_justice","b_biz","angers"],
+  ["c_climate","b_prog","pleases"],["c_climate","b_re","angers"],["c_safety","b_work","pleases"],
+  ["c_mandate","b_re","angers"],
+  // consequences swing politics
+  ["o_cas","r_approval","affects"],["o_disp","r_approval","affects"],["o_transit","b_lab","affects"],
+  ["o_transit","b_work","affects"],["o_dmg","r_reserve","affects"],["o_invisible","r_approval","affects"],
+  ["r_prep","o_invisible","reduces"],["c_climate","r_capital","costs"],
+];
+
+// ---- build graph model ----
+const node = {}; const nodes = N.map(([id,label,type])=>{ const o={id,label,type,x:0,y:0,vx:0,vy:0,deg:0,pinned:false}; node[id]=o; return o; });
+const edges = E.map(([s,t,type])=>({s:node[s],t:node[t],type})).filter(e=>e.s&&e.t);
+edges.forEach(e=>{ e.s.deg++; e.t.deg++; });
+const adj = {}; nodes.forEach(n=>adj[n.id]=new Set());
+edges.forEach(e=>{ adj[e.s.id].add(e.t.id); adj[e.t.id].add(e.s.id); });
+
+document.getElementById("counts").textContent = nodes.length+" entries · "+edges.length+" links";
+
+// ---- seeded layout ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rng=mulberry32(7);
+const W=1000,H=720;
+nodes.forEach(n=>{ n.x=W/2+(rng()-.5)*W*0.7; n.y=H/2+(rng()-.5)*H*0.7; });
+
+// ---- canvas + transform ----
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+let DPR=1, VW=0, VH=0;
+function resize(){ const r=cv.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1);
+  cv.width=r.width*DPR; cv.height=r.height*DPR; VW=r.width; VH=r.height; }
+const T={x:0,y:0,k:1};
+function fitView(){ resize(); const k=Math.min(VW/W,VH/H)*0.92; T.k=k; T.x=(VW-W*k)/2; T.y=(VH-H*k)/2; }
+window.addEventListener("resize",()=>{ resize(); });
+
+// ---- physics ----
+const filterOn={time:true,threat:true,defense:true,money:true,politics:true};
+let selected=null, hover=null;
+function visibleEdge(e){ return filterOn[ET[e.type].bk]; }
+function tick(){
+  const REP=8200, L=96, KS=0.018, G=0.0016;
+  for(let i=0;i<nodes.length;i++){ const a=nodes[i];
+    for(let j=i+1;j<nodes.length;j++){ const b=nodes[j];
+      let dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy+0.01, d=Math.sqrt(d2);
+      let f=REP/d2; if(f>6)f=6; const fx=f*dx/d, fy=f*dy/d;
+      if(!a.pinned){a.vx+=fx;a.vy+=fy;} if(!b.pinned){b.vx-=fx;b.vy-=fy;}
+    }
+  }
+  edges.forEach(e=>{ const a=e.s,b=e.t; let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)+0.01;
+    const f=KS*(d-L), fx=f*dx/d, fy=f*dy/d;
+    if(!a.pinned){a.vx+=fx;a.vy+=fy;} if(!b.pinned){b.vx-=fx;b.vy-=fy;}
+  });
+  nodes.forEach(n=>{ if(n.pinned)return;
+    n.vx+=(W/2-n.x)*G; n.vy+=(H/2-n.y)*G;
+    n.vx*=0.86; n.vy*=0.86;
+    n.vx=Math.max(-8,Math.min(8,n.vx)); n.vy=Math.max(-8,Math.min(8,n.vy));
+    n.x+=n.vx; n.y+=n.vy;
+  });
+}
+let settle=320;
+
+// ---- hexagon menu properties & definition ----
+let menuAnim = 0;
+let hoverOption = null;
+
+const MENU_OPTIONS = [
+  { id: "pin",    label: "PIN",   angle: -90,  color: "#34d399", desc: "Pin or unpin this node's position" },
+  { id: "trace",  label: "TRACE", angle: -30,  color: "#7c8cf8", desc: "Highlight neighborhood connections" },
+  { id: "info",   label: "INFO",  angle: 30,   color: "#ffc24d", desc: "View advanced system specifications" },
+  { id: "settle", label: "RESET", angle: 90,   color: "#ff6b63", desc: "Reset and re-settle gravity layout" },
+  { id: "unpin",  label: "FREE",  angle: 150,  color: "#c084fc", desc: "Unpin all nodes in the network" },
+  { id: "close",  label: "CLOSE", angle: -150, color: "#aeb6c4", desc: "Close options and deselect node" }
+];
+
+function drawHexagon(ctx, x, y, size, fillStyle, strokeStyle, strokeWidth) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * 60 - 30) * Math.PI / 180; // pointy-topped hexagons
+    ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+  }
+  ctx.closePath();
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+  }
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke();
+  }
+}
+
+function drawOptionHexagons() {
+  const R = 75; // Radial distance from clicked node
+  const size = 19; // Radius of menu option hexagon
+  
+  MENU_OPTIONS.forEach(opt => {
+    let label = opt.label;
+    if (opt.id === "pin") {
+      label = selected.pinned ? "UNPIN" : "PIN";
+    }
+    
+    const rad = opt.angle * Math.PI / 180;
+    const hx = selected.x + R * Math.cos(rad) * menuAnim;
+    const hy = selected.y + R * Math.sin(rad) * menuAnim;
+    
+    // Line connector to center
+    ctx.strokeStyle = opt.color;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 3]);
+    ctx.globalAlpha = menuAnim * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(selected.x, selected.y);
+    ctx.lineTo(hx, hy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw hexagon menu item
+    const isHovered = hoverOption && hoverOption.id === opt.id;
+    ctx.globalAlpha = menuAnim * 0.95;
+    
+    const fillStyle = isHovered ? opt.color : "rgba(7, 10, 15, 0.94)";
+    const strokeStyle = isHovered ? "#fff" : opt.color;
+    const strokeWidth = isHovered ? 2.2 : 1.2;
+    
+    drawHexagon(ctx, hx, hy, size, fillStyle, strokeStyle, strokeWidth);
+    
+    // Text label
+    ctx.fillStyle = isHovered ? "#070a0f" : "#e9edf3";
+    ctx.font = 'bold 8.5px "Space Mono", monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, hx, hy);
+  });
+}
+
+function pickMenuOption(px, py) {
+  if (!selected) return null;
+  const w = toWorld(px, py);
+  const R = 75;
+  for (const opt of MENU_OPTIONS) {
+    const rad = opt.angle * Math.PI / 180;
+    const hx = selected.x + R * Math.cos(rad) * menuAnim;
+    const hy = selected.y + R * Math.sin(rad) * menuAnim;
+    const d = Math.hypot(w.x - hx, w.y - hy);
+    if (d < 19) {
+      return opt;
+    }
+  }
+  return null;
+}
+
+function handleMenuAction(id) {
+  if (!selected) return;
+  if (id === "pin") {
+    selected.pinned = !selected.pinned;
+    if (selected.pinned) {
+      selected.vx = selected.vy = 0;
+    }
+    select(selected);
+  } else if (id === "trace") {
+    // Focus connections
+    select(selected);
+    settle = Math.max(settle, 60);
+  } else if (id === "info") {
+    const d = document.getElementById("detail");
+    let html = `
+      <div class="dn">${selected.label}</div>
+      <div class="dt"><span class="d" style="background:${TYPES[selected.type].c}"></span>${TYPES[selected.type].label}</div>
+      <div class="rel" style="margin-top:12px;border-top:1px dashed var(--line);padding-top:8px;">
+        <div class="rl" style="color:#ffc24d">SYSTEM LOGS</div>
+        <div class="rv" style="font-family:'Space Mono',monospace;font-size:11px;color:#c7cdd9;margin-top:4px;">
+          ID: ${selected.id}<br>
+          DEGREE: ${selected.deg}<br>
+          STATE: ${selected.pinned ? "PINNED" : "DYNAMIC"}<br>
+          COORD: [${Math.round(selected.x)}, ${Math.round(selected.y)}]
+        </div>
+      </div>
+    `;
+    
+    const rels = [];
+    edges.forEach(e => {
+      if (e.s === selected) {
+        rels.push(`→ ${ET[e.type].f} ${e.t.label}`);
+      } else if (e.t === selected) {
+        rels.push(`← ${ET[e.type].r} ${e.s.label}`);
+      }
+    });
+    
+    if (rels.length > 0) {
+      html += `
+        <div class="rel" style="margin-top:8px;">
+          <div class="rl" style="color:#7c8cf8">INTERFACES</div>
+          <div class="rv" style="font-family:'Space Mono',monospace;font-size:10px;color:#8b94a6;line-height:1.3;max-height:100px;overflow-y:auto;margin-top:4px;">
+            ${rels.join("<br>")}
+          </div>
+        </div>
+      `;
+    }
+    d.innerHTML = html;
+  } else if (id === "settle") {
+    const rng2=mulberry32(7);
+    nodes.forEach(n=>{
+      if(!n.pinned) {
+        n.x=W/2+(rng2()-.5)*W*0.7; n.y=H/2+(rng2()-.5)*H*0.7; n.vx=n.vy=0;
+      }
+    });
+    settle = 320;
+  } else if (id === "unpin") {
+    nodes.forEach(n=>n.pinned=false);
+    settle = 200;
+  } else if (id === "close") {
+    select(null);
+  }
+}
+
+// ---- render ----
+function radiusOf(n){ return 5.5+Math.min(9,n.deg*0.9); }
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,VW,VH);
+  ctx.save(); ctx.translate(T.x,T.y); ctx.scale(T.k,T.k);
+
+  const focusSet = selected ? adj[selected.id] : null;
+  // edges
+  edges.forEach(e=>{
+    if(!visibleEdge(e))return;
+    const meta=ET[e.type];
+    const inFocus = selected ? (e.s===selected||e.t===selected) : true;
+    let alpha = selected ? (inFocus?0.95:0.05) : 0.34;
+    ctx.globalAlpha=alpha; ctx.strokeStyle=meta.c; ctx.lineWidth=(inFocus&&selected?2:1.1)/1;
+    if(meta.dash)ctx.setLineDash([5,4]); else ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(e.s.x,e.s.y);
+    const mx=(e.s.x+e.t.x)/2, my=(e.s.y+e.t.y)/2;
+    ctx.lineTo(e.t.x,e.t.y); ctx.stroke();
+    // arrowhead for focused edges
+    if(selected&&inFocus){ const ang=Math.atan2(e.t.y-e.s.y,e.t.x-e.s.x); const r=radiusOf(e.t)+3;
+      const ax=e.t.x-Math.cos(ang)*r, ay=e.t.y-Math.sin(ang)*r;
+      ctx.setLineDash([]); ctx.beginPath();
+      ctx.moveTo(ax,ay); ctx.lineTo(ax-Math.cos(ang-0.4)*7,ay-Math.sin(ang-0.4)*7);
+      ctx.moveTo(ax,ay); ctx.lineTo(ax-Math.cos(ang+0.4)*7,ay-Math.sin(ang+0.4)*7); ctx.stroke();
+    }
+  });
+  ctx.setLineDash([]); ctx.globalAlpha=1;
+
+  // nodes
+  nodes.forEach(n=>{
+    const col=TYPES[n.type].c, r=radiusOf(n);
+    const isSel=selected===n, isNbr=focusSet&&focusSet.has(n.id);
+    const dim = selected && !isSel && !isNbr;
+    ctx.globalAlpha = dim?0.18:1;
+    // glow
+    const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*2.6);
+    g.addColorStop(0,col+ "88"); g.addColorStop(1,col+"00");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(n.x,n.y,r*2.6,0,7); ctx.fill();
+    // core
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(n.x,n.y,r,0,7); ctx.fill();
+    if(isSel||n===hover){ ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); }
+    // label
+    const showLabel = !dim;
+    if(showLabel){
+      ctx.globalAlpha = dim?0.18:(selected&&!isSel&&!isNbr?0.3:1);
+      ctx.font=(isSel?"600 12px":"500 11px")+' "Space Grotesk",sans-serif';
+      ctx.fillStyle = isSel? "#fff" : "#aeb6c4";
+      ctx.textAlign="left"; ctx.textBaseline="middle";
+      ctx.fillText(n.label, n.x+r+5, n.y);
+    }
+  });
+  
+  // Option hexagons overlays
+  if (selected && menuAnim > 0) {
+    drawOptionHexagons();
+  }
+  
+  ctx.globalAlpha=1; ctx.restore();
+}
+function frame(){ 
+  if(settle>0){ for(let s=0;s<3;s++)tick(); settle--; } 
+  if (selected) {
+    menuAnim = Math.min(1, menuAnim + 0.15);
+  } else {
+    menuAnim = Math.max(0, menuAnim - 0.15);
+  }
+  draw(); 
+  requestAnimationFrame(frame); 
+}
+
+// ---- interaction ----
+function toWorld(px,py){ return {x:(px-T.x)/T.k, y:(py-T.y)/T.k}; }
+function pick(px,py){ const w=toWorld(px,py); let best=null,bd=1e9;
+  nodes.forEach(n=>{ const d=Math.hypot(n.x-w.x,n.y-w.y); const r=radiusOf(n)+6; if(d<r&&d<bd){bd=d;best=n;} });
+  return best;
+}
+let drag=null, pan=null, moved=false, downPt=null;
+cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId);
+  const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  downPt={px,py}; moved=false; 
+  
+  // Check if we are dragging a node, but ignore if clicking menu
+  const opt = selected && menuAnim > 0.8 ? pickMenuOption(px, py) : null;
+  const n=pick(px,py);
+  
+  if(n && !opt){ drag={n, ...toWorld(px,py)}; } else { pan={px,py,tx:T.x,ty:T.y}; }
+});
+cv.addEventListener("pointermove",e=>{
+  const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  if(downPt&&Math.hypot(px-downPt.px,py-downPt.py)>4)moved=true;
+  if(drag){ const w=toWorld(px,py); drag.n.x=w.x; drag.n.y=w.y; drag.n.vx=drag.n.vy=0; drag.n.pinned=true; settle=Math.max(settle,60); }
+  else if(pan){ T.x=pan.tx+(px-pan.px); T.y=pan.ty+(py-pan.py); }
+  else { 
+    // Check option hover
+    hoverOption = null;
+    if (selected && menuAnim > 0.8) {
+      hoverOption = pickMenuOption(px, py);
+    }
+    
+    const n=pick(px,py); hover=n; const tip=document.getElementById("tip");
+    if (hoverOption) {
+      tip.textContent = hoverOption.desc; tip.classList.add("show");
+      let tx=px+14, ty=py+12; if(tx>VW-160)tx=px-150; tip.style.left=tx+"px"; tip.style.top=ty+"px"; cv.style.cursor="pointer";
+    }
+    else if(n){ tip.textContent=n.label+"  ·  "+TYPES[n.type].label; tip.classList.add("show");
+      let tx=px+14, ty=py+12; if(tx>VW-160)tx=px-150; tip.style.left=tx+"px"; tip.style.top=ty+"px"; cv.style.cursor="pointer"; }
+    else { tip.classList.remove("show"); cv.style.cursor=pan?"grabbing":"default"; }
+  }
+});
+cv.addEventListener("pointerup",e=>{
+  const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  if(!moved){ 
+    if (selected && menuAnim > 0.8) {
+      const opt = pickMenuOption(px, py);
+      if (opt) {
+        handleMenuAction(opt.id);
+        drag=null; pan=null; downPt=null;
+        return;
+      }
+    }
+    const n=pick(px,py); select(n); 
+  }
+  drag=null; pan=null; downPt=null;
+});
+cv.addEventListener("wheel",e=>{ e.preventDefault();
+  const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  const old=T.k, k=Math.max(0.35,Math.min(2.6, old*(e.deltaY<0?1.1:0.9)));
+  T.x=px-(px-T.x)*(k/old); T.y=py-(py-T.y)*(k/old); T.k=k;
+},{passive:false});
+
+// ---- detail panel ----
+function select(n){
+  if (n !== selected) {
+    menuAnim = 0;
+  }
+  selected=n; const d=document.getElementById("detail");
+  if(!n){ d.classList.remove("show"); return; }
+  // group incident edges by phrasing
+  const groups={};
+  edges.forEach(e=>{ if(!visibleEdge(e))return;
+    let phrase,other;
+    if(e.s===n){ phrase=ET[e.type].f; other=e.t; }
+    else if(e.t===n){ phrase=ET[e.type].r; other=e.s; }
+    else return;
+    (groups[phrase]=groups[phrase]||[]).push(other.label);
+  });
+  let html=`<div class="dn">${n.label}</div>
+    <div class="dt"><span class="d" style="background:${TYPES[n.type].c}"></span>${TYPES[n.type].label}</div>`;
+  const keys=Object.keys(groups);
+  if(!keys.length) html+=`<div class="rel"><div class="rv" style="color:var(--mut)">No visible links — check edge filters.</div></div>`;
+  keys.forEach(k=>{ html+=`<div class="rel"><div class="rl">${k}</div><div class="rv">${groups[k].join(" · ")}</div></div>`; });
+  d.innerHTML=html; d.classList.add("show");
+}
+
+// ---- legends / filters ----
+document.getElementById("typeLegend").innerHTML = Object.values(TYPES).map(t=>
+  `<div class="t"><span class="d" style="background:${t.c}"></span>${t.label}</div>`).join("");
+document.getElementById("edgeFilters").innerHTML = Object.entries(BUCKETS).map(([k,b])=>
+  `<button class="chip" data-bk="${k}"><span class="ln" style="background:${b.c}"></span>${b.label}</button>`).join("");
+document.querySelector("#edgeFilters").addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(!b)return;
+  const k=b.dataset.bk; filterOn[k]=!filterOn[k]; b.classList.toggle("off",!filterOn[k]); if(selected)select(selected); });
+
+document.getElementById("reset").onclick=()=>{ const rng2=mulberry32(7);
+  nodes.forEach(n=>{ n.x=W/2+(rng2()-.5)*W*0.7; n.y=H/2+(rng2()-.5)*H*0.7; n.vx=n.vy=0; n.pinned=false; });
+  settle=320; fitView(); };
+document.getElementById("unpin").onclick=()=>{ nodes.forEach(n=>n.pinned=false); settle=200; };
+
+// ---- boot ----
+fitView(); frame();
+</script>

@@ -1,0 +1,725 @@
+<!-- The City Floor — interactive NYC district map (Phaser) -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The City Floor — NYC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+<style>
+    :root {
+        --bg: #0a0d13;
+        --panel: rgba(16, 20, 28, .86);
+        --line: rgba(255, 255, 255, .10);
+        --ink: #e9edf3;
+        --mut: #8b94a6;
+        --working: #2fc3e8;
+        --finance: #7c8cf8;
+        --realestate: #ff6f67;
+        --progressives: #ff5fa0;
+        --labor: #ffc24d;
+        --good: #34d399;
+        --bad: #ff6b63;
+    }
+
+    * {
+        box-sizing: border-box
+    }
+
+    html,
+    body {
+        margin: 0;
+        height: 100%
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased
+    }
+
+    .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 14px 12px 20px
+    }
+
+    .topline {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin: 2px 4px 10px
+    }
+
+    .topline .kicker {
+        font-size: 10px;
+        letter-spacing: .34em;
+        text-transform: uppercase;
+        color: var(--mut)
+    }
+
+    .topline h1 {
+        font-size: 19px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: -.3px
+    }
+
+    .topline h1 b {
+        color: var(--progressives)
+    }
+
+    .stage {
+        position: relative;
+        width: 100%;
+        height: min(76vh, 720px);
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #070a0f;
+        box-shadow: 0 30px 80px -40px #000
+    }
+
+    #game {
+        position: absolute;
+        inset: 0
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 5
+    }
+
+    .panel {
+        pointer-events: auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        backdrop-filter: blur(9px);
+        box-shadow: 0 16px 40px -24px #000
+    }
+
+    /* legend / view tabs */
+    .legend {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 210px;
+        padding: 13px 14px
+    }
+
+    .legend .lt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 9px;
+        letter-spacing: .22em;
+        text-transform: uppercase;
+        color: var(--mut);
+        font-weight: 600
+    }
+
+    .legend .lt .m {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--progressives);
+        display: grid;
+        place-items: center;
+        color: #0a0d13;
+        font-size: 10px;
+        font-weight: 700
+    }
+
+    .tabs {
+        display: flex;
+        gap: 4px;
+        margin: 11px 0 12px;
+        background: rgba(255, 255, 255, .05);
+        padding: 3px;
+        border-radius: 9px
+    }
+
+    .tabs button {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--mut);
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 4px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: .15s
+    }
+
+    .tabs button.on {
+        background: rgba(255, 255, 255, .12);
+        color: var(--ink)
+    }
+
+    .blocs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px 9px
+    }
+
+    .blocs .b {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #c7cdd9
+    }
+
+    .blocs .b .d {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%
+    }
+
+    /* citywide stats */
+    .stats {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 194px;
+        padding: 12px 14px
+    }
+
+    .stats .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline
+    }
+
+    .stats .k {
+        font-size: 9px;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--mut);
+        font-weight: 600
+    }
+
+    .stats .v {
+        font-family: "Space Mono", monospace;
+        font-weight: 700;
+        font-size: 22px
+    }
+
+    .stats .v.pink {
+        color: var(--progressives)
+    }
+
+    .bar {
+        height: 6px;
+        background: rgba(255, 255, 255, .08);
+        border-radius: 5px;
+        margin: 6px 0 12px;
+        overflow: hidden
+    }
+
+    .bar>i {
+        display: block;
+        height: 100%;
+        border-radius: 5px;
+        transition: width .6s cubic-bezier(.2, .7, .2, 1)
+    }
+
+    /* district detail */
+    .detail {
+        position: absolute;
+        right: 12px;
+        bottom: 84px;
+        width: 236px;
+        padding: 14px;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: .2s
+    }
+
+    .detail.show {
+        opacity: 1;
+        transform: none
+    }
+
+    .detail .dn {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -.2px
+    }
+
+    .detail .db {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #c7cdd9;
+        margin-top: 3px
+    }
+
+    .detail .db .d {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%
+    }
+
+    .detail .da {
+        font-family: "Space Mono", monospace;
+        font-size: 13px;
+        margin-top: 10px;
+        color: var(--mut)
+    }
+
+    .detail .da b {
+        font-size: 18px
+    }
+
+    .detail .dc {
+        font-size: 12.5px;
+        color: #aeb6c4;
+        line-height: 1.45;
+        margin-top: 9px;
+        font-style: italic
+    }
+
+    /* policy bar */
+    .policies {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 12px;
+        display: flex;
+        gap: 8px;
+        padding: 9px;
+        max-width: calc(100% - 24px);
+        overflow-x: auto
+    }
+
+    .pol {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, .04);
+        color: var(--ink);
+        font-family: inherit;
+        border-radius: 11px;
+        padding: 9px 12px;
+        cursor: pointer;
+        transition: .15s;
+        text-align: left;
+        min-width: 128px
+    }
+
+    .pol:hover {
+        background: rgba(255, 255, 255, .10);
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, .28)
+    }
+
+    .pol .pt {
+        font-size: 12.5px;
+        font-weight: 600;
+        line-height: 1.15
+    }
+
+    .pol .pc {
+        font-family: "Space Mono", monospace;
+        font-size: 10.5px;
+        margin-top: 4px
+    }
+
+    .pol .pc.pos {
+        color: var(--good)
+    }
+
+    .pol .pc.neg {
+        color: var(--bad)
+    }
+
+    .hint {
+        position: absolute;
+        left: 12px;
+        bottom: 14px;
+        font-size: 11px;
+        color: var(--mut);
+        pointer-events: none;
+        font-family: "Space Mono", monospace
+    }
+
+    @media(max-width:680px) {
+        .legend {
+            width: 178px
+        }
+
+        .stats {
+            width: 160px
+        }
+
+        .detail {
+            width: 190px;
+            bottom: 92px
+        }
+
+        .hint {
+            display: none
+        }
+    }
+
+    /* tooltip */
+    .tip {
+        position: absolute;
+        z-index: 9;
+        pointer-events: none;
+        background: rgba(8, 11, 16, .95);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px 10px;
+        font-size: 12px;
+        max-width: 200px;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity .12s, transform .12s;
+        box-shadow: 0 12px 30px -14px #000
+    }
+
+    .tip.show {
+        opacity: 1;
+        transform: none
+    }
+
+    .tip .tn {
+        font-weight: 700;
+        font-size: 12.5px
+    }
+
+    .tip .tb {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #c7cdd9;
+        font-size: 11px;
+        margin-top: 2px
+    }
+
+    .tip .tb .d {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%
+    }
+
+    .tip .ta {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        color: var(--mut);
+        margin-top: 5px
+    }
+
+    .err {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--mut);
+        padding: 30px;
+        font-size: 14px;
+        line-height: 1.6
+    }
+</style>
+
+<div class="wrap">
+    <div class="topline">
+        <span class="kicker">Spatial Layer</span>
+        <h1>The City Floor · <b>New York</b></h1>
+    </div>
+
+    <div class="stage">
+        <div id="game"></div>
+        <div class="overlay">
+            <div class="panel legend">
+                <div class="lt"><span class="m">◑</span> Live City Map</div>
+                <div class="tabs">
+                    <button data-mode="coalition" class="on">Coalition</button>
+                    <button data-mode="approval">Approval</button>
+                    <button data-mode="turnout">Turnout</button>
+                </div>
+                <div class="blocs">
+                    <div class="b"><span class="d" style="background:var(--working)"></span>Working</div>
+                    <div class="b"><span class="d" style="background:var(--finance)"></span>Business</div>
+                    <div class="b"><span class="d" style="background:var(--realestate)"></span>Real Estate</div>
+                    <div class="b"><span class="d" style="background:var(--progressives)"></span>Progressive</div>
+                    <div class="b"><span class="d" style="background:var(--labor)"></span>Labor</div>
+                </div>
+            </div>
+
+            <div class="panel stats">
+                <div class="row"><span class="k">Citywide approval</span></div>
+                <div class="v pink"><span id="ovVal">53</span>%</div>
+                <div class="bar"><i id="ovBar" style="width:53%;background:var(--progressives)"></i></div>
+                <div class="row"><span class="k">City reserve</span><span class="v" style="font-size:16px">$<span
+                            id="resVal">5.0</span>B</span></div>
+            </div>
+
+            <div class="panel detail" id="detail">
+                <div class="dn" id="dName">—</div>
+                <div class="db" id="dBloc"></div>
+                <div class="da">Local approval · <b id="dApp">—</b><span id="dTrend"></span></div>
+                <div class="dc" id="dConcern"></div>
+            </div>
+
+            <div class="panel policies" id="policies"></div>
+            <div class="hint">drag to pan · scroll to zoom · click a district</div>
+            <div class="tip" id="tip"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.88.0/phaser.min.js"
+    onerror="window.__phaserFailed=true"></script>
+<script>
+    const BLOC = {
+        working: { name: "Working Families", css: "var(--working)", hex: 0x2fc3e8 },
+        finance: { name: "Business & Finance", css: "var(--finance)", hex: 0x7c8cf8 },
+        realestate: { name: "Real Estate", css: "var(--realestate)", hex: 0xff6f67 },
+        progressives: { name: "Progressives", css: "var(--progressives)", hex: 0xff5fa0 },
+        labor: { name: "Labor Unions", css: "var(--labor)", hex: 0xffc24d },
+    };
+
+    // Stylized district layout in a 1024x700 world (roughly geographic, not to scale)
+    const D = [
+        { n: "South Bronx", x: 560, y: 95, bloc: "working", pop: 3, app: 48, reg: "bronx", c: "Wants jobs, services, and safer blocks." },
+        { n: "Riverdale", x: 455, y: 78, bloc: "realestate", pop: 2, app: 52, reg: "bronx", c: "Quiet, leafy, and tax-sensitive." },
+        { n: "Washington Heights", x: 472, y: 150, bloc: "working", pop: 2, app: 55, reg: "mupper", c: "Overcrowded schools, deep transit reliance." },
+        { n: "Harlem", x: 526, y: 200, bloc: "progressives", pop: 3, app: 57, reg: "mupper", c: "Fighting displacement and rising rents." },
+        { n: "Upper West Side", x: 496, y: 266, bloc: "progressives", pop: 2, app: 54, reg: "mcore", c: "Liberal in theory, NIMBY about towers." },
+        { n: "Upper East Side", x: 566, y: 255, bloc: "finance", pop: 2, app: 50, reg: "mcore", c: "Wealthy, low-drama, wants order kept." },
+        { n: "Midtown", x: 546, y: 330, bloc: "realestate", pop: 2, app: 49, reg: "mcore", c: "Offices, tourists, perpetual gridlock." },
+        { n: "Lower East Side", x: 600, y: 405, bloc: "progressives", pop: 2, app: 58, reg: "mcore", c: "Young, rent-burdened, quick to march." },
+        { n: "Financial District", x: 566, y: 470, bloc: "finance", pop: 2, app: 50, reg: "mcore", c: "Wall Street money; allergic to new taxes." },
+        { n: "Astoria", x: 656, y: 250, bloc: "labor", pop: 2, app: 55, reg: "queens", c: "Union households who live on the train." },
+        { n: "Jackson Heights", x: 735, y: 305, bloc: "working", pop: 3, app: 56, reg: "queens", c: "Immigrant, working-class, packed tight." },
+        { n: "Flushing", x: 862, y: 262, bloc: "working", pop: 3, app: 52, reg: "queens", c: "Car-dependent small-business corridor." },
+        { n: "Jamaica", x: 842, y: 400, bloc: "labor", pop: 3, app: 53, reg: "queens", c: "Transit hub; city workers commute through." },
+        { n: "Williamsburg", x: 664, y: 440, bloc: "progressives", pop: 2, app: 57, reg: "brooklyn", c: "Gentrified, bike-lane, climate-minded." },
+        { n: "Bed-Stuy", x: 726, y: 500, bloc: "working", pop: 3, app: 54, reg: "brooklyn", c: "Mixed and anxious about being priced out." },
+        { n: "Park Slope", x: 640, y: 546, bloc: "progressives", pop: 2, app: 59, reg: "brooklyn", c: "Affluent progressives, stroller brigades." },
+        { n: "Brownsville/E.NY", x: 792, y: 560, bloc: "working", pop: 3, app: 47, reg: "brooklyn", c: "Underserved, highest need in the city." },
+        { n: "Bay Ridge", x: 560, y: 606, bloc: "working", pop: 2, app: 49, reg: "brooklyn", c: "Car commuters; moderate, skeptical." },
+        { n: "St. George (SI)", x: 255, y: 600, bloc: "labor", pop: 2, app: 46, reg: "si", c: "Cops, firefighters, and drivers galore." },
+    ];
+    const EDGES = [
+        [1, 2], [0, 2], [0, 3], [2, 3], [3, 4], [3, 5], [4, 5], [4, 6], [5, 6], [6, 7], [7, 8],
+        [5, 9], [9, 10], [10, 11], [10, 12], [11, 12], [9, 13], [7, 13], [8, 13], [13, 14],
+        [14, 15], [14, 16], [12, 16], [15, 17], [8, 17], [8, 18], [17, 18]
+    ];
+
+    // Policies: differential effects by bloc, plus blunt geographic modifiers by region.
+    const POLICIES = [
+        {
+            id: "cp", t: "Congestion Pricing", budget: +1.2,
+            eff: { progressives: +7, working: -4, realestate: -2, finance: -1, labor: +2 },
+            geo: { mcore: +3, mupper: +1, queens: -3, brooklyn: -2, bronx: -2, si: -6 }
+        },
+        {
+            id: "pd", t: "Boost NYPD", budget: -0.8,
+            eff: { working: +6, finance: +5, realestate: +4, progressives: -11, labor: +1 },
+            geo: { si: +3, mcore: -1 }
+        },
+        {
+            id: "ah", t: "Affordable Housing Mandate", budget: -0.2,
+            eff: { working: +6, progressives: +7, realestate: -9, finance: -2, labor: +4 },
+            geo: { mcore: +1, brooklyn: +1 }
+        },
+        {
+            id: "fa", t: "Fare Freeze + More Service", budget: -1.1,
+            eff: { working: +8, progressives: +6, labor: +6, finance: -4, realestate: -1 },
+            geo: { queens: +2, bronx: +2, brooklyn: +1, si: +1 }
+        },
+        {
+            id: "sv", t: "Cut Police, Fund Services", budget: +0.3,
+            eff: { working: -7, finance: -6, realestate: -3, progressives: +12, labor: 0 },
+            geo: { mcore: +1, si: -3 }
+        },
+    ];
+
+    let RESERVE = 5.0;
+    const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+    const $ = id => document.getElementById(id);
+
+    function citywide() { let t = 0, w = 0; D.forEach(d => { t += d.app * d.pop; w += d.pop; }); return Math.round(t / w); }
+    function heatHex(a) {
+        const c1 = [0xff, 0x5a, 0x52], c2 = [0xff, 0xc2, 0x4d], c3 = [0x34, 0xd3, 0x99];
+        let A, B, t; if (a < 50) { A = c1; B = c2; t = a / 50; } else { A = c2; B = c3; t = (a - 50) / 50; }
+        const r = Math.round(A[0] + (B[0] - A[0]) * t), g = Math.round(A[1] + (B[1] - A[1]) * t), b = Math.round(A[2] + (B[2] - A[2]) * t);
+        return (r << 16) | (g << 8) | b;
+    }
+    function popHex(p) { return p >= 3 ? 0x9fb4ff : p >= 2 ? 0x5d6fae : 0x3f4d78; }
+
+    let MODE = "coalition", SCENE = null, SELECTED = -1;
+    function modeHex(d) { return MODE === "coalition" ? BLOC[d.bloc].hex : MODE === "approval" ? heatHex(d.app) : popHex(d.pop); }
+
+    function updateStats() {
+        const ov = citywide();
+        $("ovVal").textContent = ov;
+        const bar = $("ovBar"); bar.style.width = ov + "%";
+        bar.style.background = ov < 35 ? "var(--bad)" : ov < 50 ? "var(--labor)" : "var(--progressives)";
+        $("resVal").textContent = RESERVE.toFixed(1);
+    }
+
+    // ---------- Phaser scene ----------
+    class City extends Phaser.Scene {
+        preload() {
+            // soft radial glow
+            const g = document.createElement("canvas"); g.width = g.height = 160; const gx = g.getContext("2d");
+            const grd = gx.createRadialGradient(80, 80, 0, 80, 80, 80);
+            grd.addColorStop(0, "rgba(255,255,255,1)"); grd.addColorStop(.42, "rgba(255,255,255,.5)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+            gx.fillStyle = grd; gx.fillRect(0, 0, 160, 160); this.textures.addCanvas("glow", g);
+            // solid disc
+            const c = document.createElement("canvas"); c.width = c.height = 64; const cx = c.getContext("2d");
+            cx.beginPath(); cx.arc(32, 32, 26, 0, Math.PI * 2); cx.fillStyle = "#fff"; cx.fill(); this.textures.addCanvas("disc", c);
+            // selection ring
+            const r = document.createElement("canvas"); r.width = r.height = 72; const rx = r.getContext("2d");
+            rx.beginPath(); rx.arc(36, 36, 31, 0, Math.PI * 2); rx.lineWidth = 3.5; rx.strokeStyle = "#fff"; rx.stroke(); this.textures.addCanvas("ring", r);
+        }
+        create() {
+            SCENE = this;
+            const cam = this.cameras.main; cam.setBackgroundColor("#070a0f");
+            cam.setBounds(-120, -120, 1264, 940);
+
+            // edges (two-pass glow)
+            const gfx = this.add.graphics();
+            const drawEdges = (w, col, al) => { gfx.lineStyle(w, col, al); EDGES.forEach(([a, b]) => { gfx.beginPath(); gfx.moveTo(D[a].x, D[a].y); gfx.lineTo(D[b].x, D[b].y); gfx.strokePath(); }); };
+            drawEdges(6, 0x223150, 0.9); drawEdges(2, 0x55749e, 0.75);
+
+            this._hover = 0;
+            D.forEach((d, i) => {
+                const col = modeHex(d);
+                const dr = 9 + d.pop * 3;
+                const cont = this.add.container(d.x, d.y);
+                const glow = this.add.image(0, 0, "glow").setTint(col).setAlpha(.42).setScale((dr * 2.7) / 160).setBlendMode(Phaser.BlendModes.ADD);
+                const ring = this.add.image(0, 0, "ring").setTint(0xffffff).setScale((dr * 1.32) / 31).setAlpha(0);
+                const disc = this.add.image(0, 0, "disc").setTint(col).setScale(dr / 26);
+                const lab = this.add.text(0, dr + 5, d.n, { fontFamily: '"Space Grotesk",sans-serif', fontSize: "12px", color: "#aeb6c4", fontStyle: "600" }).setOrigin(.5, 0);
+                cont.add([glow, ring, disc, lab]);
+                d._c = cont; d._g = glow; d._r = ring; d._d = disc; d._l = lab;
+
+                disc.setInteractive(new Phaser.Geom.Circle(32, 32, 30), Phaser.Geom.Circle.Contains);
+                disc.on("pointerover", () => {
+                    this._hover++; glow.setAlpha(.85); lab.setColor("#fff");
+                    this.tweens.add({ targets: cont, scale: 1.16, duration: 130, ease: "quad.out" }); showTip(d);
+                });
+                disc.on("pointerout", () => {
+                    this._hover = Math.max(0, this._hover - 1); glow.setAlpha(.42); lab.setColor("#aeb6c4");
+                    this.tweens.add({ targets: cont, scale: 1, duration: 160, ease: "quad.out" }); hideTip();
+                });
+                disc.on("pointerdown", () => selectDistrict(i));
+            });
+
+            // pan
+            let drag = null;
+            this.input.on("pointerdown", p => { if (this._hover > 0) return; drag = { x: p.x, y: p.y, sx: cam.scrollX, sy: cam.scrollY }; });
+            this.input.on("pointermove", p => { if (!drag) return; cam.scrollX = drag.sx - (p.x - drag.x) / cam.zoom; cam.scrollY = drag.sy - (p.y - drag.y) / cam.zoom; });
+            this.input.on("pointerup", () => drag = null);
+            this.input.on("pointerupoutside", () => drag = null);
+            // zoom toward cursor
+            this.input.on("wheel", (p, o, dx, dy) => {
+                const old = cam.zoom; const z = Phaser.Math.Clamp(old - dy * 0.0013, 0.6, 2.4);
+                const before = cam.getWorldPoint(p.x, p.y); cam.zoom = z; const after = cam.getWorldPoint(p.x, p.y);
+                cam.scrollX += before.x - after.x; cam.scrollY += before.y - after.y;
+            });
+
+            cam.centerOn(560, 350); cam.setZoom(0.92);
+            // gentle intro
+            cam.fadeIn(500, 7, 10, 15);
+            D.forEach((d, i) => { d._c.setScale(0); this.tweens.add({ targets: d._c, scale: 1, delay: 140 + i * 22, duration: 340, ease: "back.out" }); });
+
+            updateStats();
+        }
+        paint(d) { const col = modeHex(d); d._d.setTint(col); d._g.setTint(col); }
+        repaintAll() { D.forEach(d => this.paint(d)); }
+        flash(i, delta) {
+            const d = D[i], up = delta >= 0, fc = up ? 0x34d399 : 0xff5a52;
+            d._d.setTint(fc); d._g.setTint(fc).setAlpha(.85);
+            this.tweens.add({ targets: d._c, scale: 1.28, duration: 150, yoyo: true, ease: "quad.out" });
+            this.time.delayedCall(430, () => { d._g.setAlpha(.42); this.paint(d); });
+            const ft = this.add.text(d.x, d.y - dr2(d), (up ? "+" : "") + Math.round(delta),
+                { fontFamily: '"Space Mono",monospace', fontSize: "15px", fontStyle: "bold", color: up ? "#4ade80" : "#ff7b73" }).setOrigin(.5);
+            this.tweens.add({ targets: ft, y: ft.y - 30, alpha: 0, duration: 950, ease: "quad.out", onComplete: () => ft.destroy() });
+        }
+    }
+    function dr2(d) { return 14 + d.pop * 3; }
+
+    // ---------- interactions ----------
+    function selectDistrict(i) {
+        SELECTED = i; const d = D[i];
+        D.forEach(x => x._r && x._r.setAlpha(0));
+        d._r.setAlpha(.9);
+        if (SCENE) SCENE.tweens.add({ targets: d._r, alpha: .45, duration: 700, yoyo: true, repeat: -1 });
+        $("detail").classList.add("show");
+        $("dName").textContent = d.n;
+        $("dBloc").innerHTML = `<span class="d" style="background:${BLOC[d.bloc].css}"></span>${BLOC[d.bloc].name} lean`;
+        $("dApp").textContent = Math.round(d.app);
+        $("dTrend").textContent = "";
+        $("dConcern").textContent = d.c;
+    }
+    function applyPolicy(id) {
+        const p = POLICIES.find(x => x.id === id); if (!p || !SCENE) return;
+        RESERVE = +(RESERVE + p.budget).toFixed(2);
+        D.forEach((d, i) => {
+            let delta = (p.eff[d.bloc] || 0) + (p.geo && p.geo[d.reg] || 0) + (Math.random() * 3 - 1.5);
+            const before = d.app; d.app = clamp(d.app + delta); const real = d.app - before;
+            SCENE.flash(i, real);
+        });
+        setTimeout(() => { updateStats(); if (SELECTED >= 0) { $("dApp").textContent = Math.round(D[SELECTED].app); } if (MODE === "approval") SCENE.repaintAll(); }, 470);
+    }
+    function setMode(m) {
+        MODE = m;
+        document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+        if (SCENE) SCENE.repaintAll();
+    }
+
+    // tooltip tracking
+    const stageEl = document.querySelector(".stage"), tipEl = $("tip");
+    let tipData = null;
+    stageEl.addEventListener("pointermove", e => {
+        if (!tipData) return; const r = stageEl.getBoundingClientRect();
+        let x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+        if (x > r.width - 210) x = e.clientX - r.left - 200; if (y > r.height - 90) y = e.clientY - r.top - 80;
+        tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
+    });
+    function showTip(d) {
+        tipData = d;
+        tipEl.innerHTML = `<div class="tn">${d.n}</div>
+    <div class="tb"><span class="d" style="background:${BLOC[d.bloc].css}"></span>${BLOC[d.bloc].name}</div>
+    <div class="ta">approval ${Math.round(d.app)}% · turnout weight ${d.pop}</div>`;
+        tipEl.classList.add("show");
+    }
+    function hideTip() { tipData = null; tipEl.classList.remove("show"); }
+
+    // build policy bar
+    $("policies").innerHTML = POLICIES.map(p => {
+        const pos = p.budget >= 0; const t = (pos ? "+$" : "−$") + Math.abs(p.budget).toFixed(1) + "B";
+        return `<button class="pol" data-id="${p.id}"><div class="pt">${p.t}</div><div class="pc ${pos ? "pos" : "neg"}">${t} reserve</div></button>`;
+    }).join("");
+    $("policies").addEventListener("click", e => { const b = e.target.closest(".pol"); if (b) applyPolicy(b.dataset.id); });
+    document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setMode(b.dataset.mode); });
+
+    // boot
+    function boot() {
+        if (window.__phaserFailed || typeof Phaser === "undefined") {
+            document.getElementById("game").innerHTML = '<div class="err">Could not load the game engine (Phaser) from the CDN.<br>Open this file in a browser with network access and it will render.</div>';
+            return;
+        }
+        new Phaser.Game({
+            type: Phaser.AUTO, parent: "game", backgroundColor: "#070a0f",
+            scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH, width: "100%", height: "100%" },
+            render: { antialias: true }, scene: City
+        });
+    }
+    if (document.readyState === "complete" || document.readyState === "interactive") setTimeout(boot, 60);
+    else window.addEventListener("DOMContentLoaded", () => setTimeout(boot, 60));
+</script>
