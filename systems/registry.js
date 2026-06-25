@@ -75,20 +75,6 @@ export class EntryRegistry {
     return this.#links.filter(l => l.type === linkType);
   }
 
-  // Compute total mitigation for a hazard by walking mitigates links
-  // and checking which infrastructure is built (via state)
-  totalMitigation(hazardId, state) {
-    const mitigators = this.incoming(hazardId, "mitigates");
-    let total = 0;
-    for (const { entry, link } of mitigators) {
-      const infraState = state.get(`infrastructure.${entry.id}`);
-      if (infraState?.built) {
-        total += link.value ?? entry.mitigationValue ?? 0;
-      }
-    }
-    return total;
-  }
-
   // All entries as an array
   all() {
     return [...this.#entries.values()];

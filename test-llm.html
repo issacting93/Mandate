@@ -1,0 +1,852 @@
+<!-- MANDATE — LLM Post Scoring Test Harness -->
+<!-- Sends 20 scenario posts to Ollama and validates per-district scoring -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANDATE — LLM Scoring Test Harness</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --panel:rgba(16,20,28,.92); --line:rgba(255,255,255,.10);
+  --ink:#e9edf3; --mut:#8b94a6; --green:#34d399; --red:#ff6b63; --yellow:#ffc24d; --orange:#ff9f43;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{min-height:100vh}
+body{background:var(--bg);color:var(--ink);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:20px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.sub{font-size:12px;color:var(--mut);font-family:"Space Mono",monospace;margin-bottom:20px;display:block}
+
+.toolbar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.toolbar button{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);
+  font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;transition:.12s}
+.toolbar button:hover{background:rgba(255,255,255,.12)}
+.toolbar button:disabled{opacity:.4;cursor:not-allowed}
+.toolbar .status{font-size:12px;color:var(--mut);font-family:"Space Mono",monospace}
+.toolbar input{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--ink);
+  font-family:"Space Mono",monospace;font-size:12px;padding:6px 10px;border-radius:6px;width:260px}
+
+.config{display:flex;gap:16px;margin-bottom:20px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.config label{font-size:11px;color:var(--mut);font-weight:600;letter-spacing:.06em}
+.config select,.config input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--ink);
+  font-family:"Space Mono",monospace;font-size:11px;padding:4px 8px;border-radius:5px;margin-top:3px;display:block}
+
+.summary{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.summary .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;flex:1;min-width:120px}
+.summary .stat .n{font-family:"Space Mono",monospace;font-weight:700;font-size:22px}
+.summary .stat .l{font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;transition:.15s}
+.card.pass{border-left:3px solid var(--green)}
+.card.fail{border-left:3px solid var(--red)}
+.card.warn{border-left:3px solid var(--yellow)}
+.card.pending{border-left:3px solid var(--mut)}
+
+.card-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer}
+.card-head:hover{background:rgba(255,255,255,.03)}
+.card-head .num{font-family:"Space Mono",monospace;font-weight:700;font-size:13px;color:var(--mut);width:30px}
+.card-head .title{flex:1;font-size:13px;font-weight:600}
+.card-head .tone{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.04em;
+  background:rgba(255,255,255,.08);color:var(--mut)}
+.card-head .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.06em;margin-left:8px}
+.badge.pass{background:rgba(52,211,153,.15);color:var(--green)}
+.badge.fail{background:rgba(255,107,99,.15);color:var(--red)}
+.badge.warn{background:rgba(255,194,77,.15);color:var(--yellow)}
+.badge.pending{background:rgba(139,148,166,.1);color:var(--mut)}
+.badge.running{background:rgba(124,140,248,.15);color:#7c8cf8}
+
+.card-body{display:none;padding:0 16px 14px;border-top:1px solid var(--line)}
+.card.open .card-body{display:block;padding-top:12px}
+
+.post-text{font-size:13px;color:#c7cdd9;line-height:1.5;margin-bottom:12px;padding:10px;
+  background:rgba(255,255,255,.03);border-radius:8px;border-left:2px solid var(--orange)}
+
+.expect{margin-bottom:12px}
+.expect .label{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--mut);text-transform:uppercase;margin-bottom:6px}
+.expect .chips{display:flex;gap:6px;flex-wrap:wrap}
+.expect .chip{font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.06);color:#c7cdd9;
+  font-family:"Space Mono",monospace}
+.expect .chip.hit{background:rgba(52,211,153,.12);color:var(--green)}
+.expect .chip.miss{background:rgba(255,107,99,.12);color:var(--red)}
+
+.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:10px}
+.score-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 8px;
+  border-radius:5px;background:rgba(255,255,255,.03)}
+.score-row .district{color:#c7cdd9}
+.score-row .val{font-family:"Space Mono",monospace;font-weight:700}
+.score-row .val.high{color:var(--green)}
+.score-row .val.mid{color:var(--yellow)}
+.score-row .val.low{color:var(--red)}
+
+.reaction{font-size:11px;color:#8b94a6;line-height:1.4;margin-top:4px;padding:6px 8px;
+  background:rgba(255,255,255,.02);border-radius:6px;font-style:italic}
+
+.llm-raw{margin-top:10px;font-size:10px;color:#6b7280;font-family:"Space Mono",monospace;
+  background:rgba(0,0,0,.3);padding:8px;border-radius:6px;max-height:120px;overflow-y:auto;white-space:pre-wrap;display:none}
+.card.open .llm-raw.show{display:block}
+.toggle-raw{font-size:10px;color:var(--mut);cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block}
+
+.err{color:var(--red);font-size:11px;font-family:"Space Mono",monospace;padding:8px;
+  background:rgba(255,107,99,.08);border-radius:6px;margin-top:8px}
+</style>
+
+<div class="wrap">
+  <h1>MANDATE — LLM Scoring Test Harness</h1>
+  <span class="sub">20 scenario posts × Ollama scoring · validates concern-axis activation</span>
+
+  <div class="config">
+    <div>
+      <label>Ollama URL</label>
+      <input type="text" id="cfgUrl" value="http://localhost:11434/api/generate">
+    </div>
+    <div>
+      <label>Model</label>
+      <input type="text" id="cfgModel" value="llama3.1:8b">
+    </div>
+    <div>
+      <label>Insight Context</label>
+      <select id="cfgInsights">
+        <option value="none">None (cold start)</option>
+        <option value="basic" selected>Basic (3 districts visited)</option>
+        <option value="full">Full (all insights)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button id="runAll" onclick="runAll()">Run All 20</button>
+    <button id="runFailing" onclick="runFailing()">Re-run Failing</button>
+    <span class="status" id="globalStatus"></span>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><div class="n" id="sPassed">—</div><div class="l">Passed</div></div>
+    <div class="stat"><div class="n" id="sWarned">—</div><div class="l">Warned</div></div>
+    <div class="stat"><div class="n" id="sFailed">—</div><div class="l">Failed</div></div>
+    <div class="stat"><div class="n" id="sPending">20</div><div class="l">Pending</div></div>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<script>
+// ── District concern scores (matches index.html CONCERN_SCORES) ──
+const CONCERN_SCORES = {
+  southbronx:   { health: 9, housing: 6, transit: 4, safety: 3, infra: 7, services: 5 },
+  riverdale:    { health: 6, housing: 3, transit: 2, safety: 7, infra: 4, services: 5 },
+  fordham:      { health: 4, housing: 5, transit: 7, safety: 4, infra: 5, services: 6 },
+  harlem:       { health: 6, housing: 8, transit: 3, safety: 4, infra: 7, services: 8 },
+  ues:          { health: 4, housing: 2, transit: 2, safety: 6, infra: 3, services: 3 },
+  midtown:      { health: 2, housing: 2, transit: 9, safety: 4, infra: 8, services: 3 },
+  lowerman:     { health: 3, housing: 2, transit: 7, safety: 5, infra: 8, services: 2 },
+  astoria:      { health: 4, housing: 6, transit: 5, safety: 3, infra: 8, services: 4 },
+  lic:          { health: 2, housing: 5, transit: 4, safety: 3, infra: 4, services: 3 },
+  jackson:      { health: 5, housing: 7, transit: 4, safety: 3, infra: 5, services: 8 },
+  flushing:     { health: 5, housing: 4, transit: 3, safety: 6, infra: 4, services: 7 },
+  jamaica:      { health: 6, housing: 3, transit: 9, safety: 4, infra: 6, services: 5 },
+  williamsburg: { health: 3, housing: 6, transit: 3, safety: 7, infra: 4, services: 4 },
+  dtbk:         { health: 3, housing: 4, transit: 7, safety: 4, infra: 5, services: 4 },
+  bushwick:     { health: 4, housing: 6, transit: 3, safety: 4, infra: 5, services: 7 },
+  crown:        { health: 4, housing: 5, transit: 3, safety: 8, infra: 5, services: 5 },
+  bayridge:     { health: 5, housing: 3, transit: 4, safety: 6, infra: 5, services: 6 },
+  northshore:   { health: 4, housing: 3, transit: 8, safety: 5, infra: 6, services: 5 },
+  midisland:    { health: 3, housing: 3, transit: 6, safety: 4, infra: 5, services: 4 },
+};
+
+const DISTRICT_NAMES = {
+  southbronx:'South Bronx', riverdale:'Riverdale', fordham:'Fordham', harlem:'Harlem',
+  ues:'Upper East Side', midtown:'Midtown', lowerman:'Lower Manhattan', astoria:'Astoria',
+  lic:'Long Island City', jackson:'Jackson Heights', flushing:'Flushing', jamaica:'Jamaica',
+  williamsburg:'Williamsburg', dtbk:'Downtown Brooklyn', bushwick:'Bushwick',
+  crown:'Crown Heights', bayridge:'Bay Ridge', northshore:'North Shore', midisland:'Mid-Island',
+};
+
+// ── Insight context presets ──
+const INSIGHT_PRESETS = {
+  none: '',
+  basic: `- South Bronx (Maria Delgado): [HEALTH] Asthma rates near Bruckner Expressway — 3x city average (freshness: 85%)
+- South Bronx (Maria Delgado): [HOUSING] Basement apartments flood every heavy rain, landlords won't fix drainage (freshness: 80%)
+- Harlem (James Washington): [HOUSING] NYCHA boilers fail every winter, residents burn stoves for heat (freshness: 75%)
+- Harlem (James Washington): [SERVICES] Corner stores and pharmacies close first in storms — food desert within hours (freshness: 70%)
+- Midtown (Diane Kowalski): [TRANSIT] 700K commuters stranded when transit stops — underground flooding cascades (freshness: 90%)
+- Midtown (Diane Kowalski): [INFRA] Below-grade substations vulnerable — one flood takes out 6 blocks (freshness: 85%)`,
+  full: `- South Bronx (Maria Delgado): [HEALTH] Asthma rates near Bruckner Expressway — 3x city average (freshness: 85%)
+- South Bronx (Maria Delgado): [HOUSING] Basement apartments flood every heavy rain, landlords won't fix drainage (freshness: 80%)
+- Harlem (James Washington): [HOUSING] NYCHA boilers fail every winter, residents burn stoves for heat (freshness: 75%)
+- Harlem (James Washington): [SERVICES] Corner stores and pharmacies close first in storms — food desert within hours (freshness: 70%)
+- Midtown (Diane Kowalski): [TRANSIT] 700K commuters stranded when transit stops — underground flooding cascades (freshness: 90%)
+- Midtown (Diane Kowalski): [INFRA] Below-grade substations vulnerable — one flood takes out 6 blocks (freshness: 85%)
+- Astoria (Ramon Vega): [INFRA] Power plant adjacency means outage cascades — whole neighborhood goes dark (freshness: 65%)
+- Jackson Heights (Fatima Al-Rashid): [SERVICES] Language barriers mean alerts don't reach half the neighborhood (freshness: 60%)
+- Jackson Heights (Fatima Al-Rashid): [HOUSING] Overcrowded apartments, families doubled up, no escape routes (freshness: 55%)
+- Flushing (Wei Chen): [SERVICES] Seniors can't get to pharmacies on icy sidewalks — medication gaps kill (freshness: 50%)
+- Jamaica (Yuki Tanaka): [TRANSIT] Jamaica hub failure cascades citywide — it's the bottleneck (freshness: 45%)
+- Bed-Stuy (Pastor David Williams): [INFRA] Aging brownstone wiring + ice storms = fire hazard + outages (freshness: 40%)
+- Williamsburg (Sasha Okonkwo): [SAFETY] Waterfront construction debris in high wind — Hasidic community has limited city contact (freshness: 35%)
+- Staten Island (Tommy Ferraro): [TRANSIT] Single bridge/ferry — if that goes, we're an island within an island (freshness: 30%)`,
+};
+
+const DISTRICT_CONTEXT_BASIC = `- South Bronx (The Bronx): trust 48%, top concerns: [health:9/10, infra:7/10, housing:6/10], contact: Maria Delgado (Tenant Organizer)
+- Harlem (Manhattan): trust 57%, top concerns: [housing:8/10, services:8/10, infra:7/10], contact: James Washington (Block Association President)
+- Midtown (Manhattan): trust 49%, top concerns: [transit:9/10, infra:8/10, safety:4/10], contact: Diane Kowalski (Building Manager)`;
+
+const DISTRICT_CONTEXT_FULL = Object.entries(DISTRICT_NAMES).map(([id, name]) => {
+  const c = CONCERN_SCORES[id];
+  const top = Object.entries(c).sort((a,b) => b[1]-a[1]).slice(0,3).map(([k,v]) => `${k}:${v}/10`).join(', ');
+  return `- ${name}: top concerns: [${top}]`;
+}).join('\n');
+
+// ── 20 Scenario Posts with expected behavior ──
+const POSTS = [
+  {
+    id: 1,
+    text: "We're pre-positioning plows in every outer borough tonight. Nobody gets snowed in.",
+    tone: "URGENT",
+    phase: "Before (wk 28)",
+    expectHigh: ["fordham","bayridge","northshore"], // outer-borough safety/transit
+    expectLow: ["ues"],
+    expectConcerns: ["transit","safety"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 2,
+    text: "Asthma rates in the South Bronx are 3x the city average. We can't let a blizzard turn a health crisis into a death toll.",
+    tone: "CONCERNED",
+    phase: "Before (wk 10)",
+    expectHigh: ["southbronx","harlem"],
+    expectLow: ["midtown","ues"],
+    expectConcerns: ["health"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 3,
+    text: "Every pharmacy, bodega, and laundromat deserves a backup power plan. Small businesses keep neighborhoods alive.",
+    tone: "OPTIMISTIC",
+    phase: "Before (wk 15)",
+    expectHigh: ["southbronx","harlem"],
+    expectLow: ["ues"],
+    expectConcerns: ["services","infra"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 4,
+    text: "If the power goes out in NYCHA towers, people on oxygen have hours, not days. We're installing backup generators now.",
+    tone: "URGENT",
+    phase: "Before (wk 25)",
+    expectHigh: ["southbronx","harlem","astoria"],
+    expectLow: ["ues"],
+    expectConcerns: ["infra","health"],
+    expectRating: "RESONATING",
+    expectMinOverall: 6,
+  },
+  {
+    id: 5,
+    text: "Midtown will be cleared first. Hospitals and transit hubs are the priority.",
+    tone: "MATTER-OF-FACT",
+    phase: "During (wk 36)",
+    expectHigh: ["midtown"],
+    expectLow: ["southbronx"],
+    expectConcerns: ["transit"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 6,
+    text: "I spoke with Maria Delgado from the South Bronx. Her building hasn't had consistent heat in three winters. We need to fix this before the storm hits.",
+    tone: "CONCERNED",
+    phase: "Before (wk 8)",
+    expectHigh: ["southbronx","harlem"],
+    expectLow: ["ues"],
+    expectConcerns: ["housing","health"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 7,
+    text: "We're stockpiling road salt in every borough depot. Simple, visible, effective.",
+    tone: "MATTER-OF-FACT",
+    phase: "Before (wk 20)",
+    expectHigh: ["crown","riverdale","williamsburg"],
+    expectLow: ["midtown","lic"],
+    expectConcerns: ["safety"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 8,
+    text: "Every community center will become a resilience hub — backup power, medical supplies, communication equipment.",
+    tone: "OPTIMISTIC",
+    phase: "Before (wk 22)",
+    expectHigh: ["southbronx","harlem","jackson","bushwick"],
+    expectLow: ["ues","lic"],
+    expectConcerns: ["infra","services"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 9,
+    text: "Transit workers are heroes. We're authorizing overtime and hazard pay for every essential worker through the storm.",
+    tone: "URGENT",
+    phase: "During (wk 37)",
+    expectHigh: ["jamaica","midtown","northshore","fordham"],
+    expectLow: ["ues","riverdale"],
+    expectConcerns: ["transit","safety"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 10,
+    text: "We failed. Brownsville lost power for 72 hours and we didn't have enough generators. I'm sorry.",
+    tone: "CONCERNED",
+    phase: "After (wk 43)",
+    expectHigh: [],
+    expectLow: [],
+    expectConcerns: ["infra"],
+    expectRating: "HOLLOW",
+    expectMinOverall: 1,
+  },
+  {
+    id: 11,
+    text: "Door-to-door check-ins start tomorrow. If your neighbor is elderly or disabled, let us know.",
+    tone: "URGENT",
+    phase: "Warning (wk 30)",
+    expectHigh: ["harlem"],
+    expectLow: [],
+    expectConcerns: ["health","services"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 12,
+    text: "Property values don't matter if the building collapses. We're mandating flood-proofing retrofits for every vulnerable structure.",
+    tone: "MATTER-OF-FACT",
+    phase: "Before (wk 18)",
+    expectHigh: ["harlem","jackson","southbronx"],
+    expectLow: ["ues"],
+    expectConcerns: ["housing","infra"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 13,
+    text: "Schools will double as emergency shelters. Every parent should know their nearest safe point.",
+    tone: "MATTER-OF-FACT",
+    phase: "Before (wk 28)",
+    expectHigh: ["jackson","harlem","flushing","bushwick"],
+    expectLow: ["midtown","lic"],
+    expectConcerns: ["safety","services"],
+    expectRating: "NOTICED",
+    expectMinOverall: 3,
+  },
+  {
+    id: 14,
+    text: "The models just converged. A major nor'easter will hit in 5 days. This is not a drill.",
+    tone: "URGENT",
+    phase: "Warning (wk 33)",
+    expectHigh: [],
+    expectLow: [],
+    expectConcerns: ["safety"],
+    expectRating: "HOLLOW",
+    expectMinOverall: 1,
+  },
+  {
+    id: 15,
+    text: "We're clearing residential streets first. Outer boroughs go before Midtown. The people who can't leave are the people who need us most.",
+    tone: "URGENT",
+    phase: "During (wk 37)",
+    expectHigh: ["southbronx","harlem"],
+    expectLow: ["ues"],
+    expectConcerns: ["transit","safety"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 16,
+    text: "Staten Island: I know you feel forgotten. The ferry will run extra shifts and we have generators staged at all three fire houses.",
+    tone: "OPTIMISTIC",
+    phase: "Warning (wk 31)",
+    expectHigh: ["northshore"],
+    expectLow: [],
+    expectConcerns: ["transit","infra"],
+    expectRating: "NOTICED",
+    expectMinOverall: 2,
+  },
+  {
+    id: 17,
+    text: "The budget is tight. We can't do everything. But we can do the most important things first.",
+    tone: "MATTER-OF-FACT",
+    phase: "Before (wk 20)",
+    expectHigh: [],
+    expectLow: [],
+    expectConcerns: [],
+    expectRating: "HOLLOW",
+    expectMinOverall: 0,
+  },
+  {
+    id: 18,
+    text: "Bed-Stuy: your brownstone wiring is a fire hazard in ice storms. We're sending inspectors and electricians this week.",
+    tone: "CONCERNED",
+    phase: "Before (wk 14)",
+    expectHigh: ["harlem","williamsburg"],
+    expectLow: [],
+    expectConcerns: ["infra","safety"],
+    expectRating: "HOLLOW",
+    expectMinOverall: 1,
+  },
+  {
+    id: 19,
+    text: "We've identified a pattern: NYCHA towers in Harlem, Lower East Side, and South Bronx all share the same heating failure mode. One fix reaches three neighborhoods.",
+    tone: "OPTIMISTIC",
+    phase: "Before (wk 26)",
+    expectHigh: ["southbronx","harlem","lowerman"],
+    expectLow: ["ues"],
+    expectConcerns: ["infra","housing"],
+    expectRating: "NOTICED",
+    expectMinOverall: 4,
+  },
+  {
+    id: 20,
+    text: "Nothing happened last night. The storm hit, and nothing happened. That's not luck — that's every visit, every conversation, every dollar we spent on preparation.",
+    tone: "OPTIMISTIC",
+    phase: "After (wk 42)",
+    expectHigh: [],
+    expectLow: [],
+    expectConcerns: [],
+    expectRating: "NOTICED",
+    expectMinOverall: 2,
+  },
+];
+
+// ── State ──
+const results = new Map(); // postId → {scores, overall, summary, raw, error, status}
+
+function buildSystemPrompt() {
+  const insightLevel = document.getElementById('cfgInsights').value;
+  const insightCtx = INSIGHT_PRESETS[insightLevel] || '';
+
+  // Always provide ALL 19 districts with concern profiles
+  const districtList = Object.entries(CONCERN_SCORES).map(([id, c]) => {
+    const top = Object.entries(c).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}:${v}`).join(', ');
+    return `  "${id}" (${DISTRICT_NAMES[id]}): ${top}`;
+  }).join('\n');
+
+  return `You are a scoring engine for a city governance game. The player is the Mayor of NYC and just published a social media post.
+
+ALL 19 DISTRICTS AND THEIR CONCERN SCORES (0-10):
+${districtList}
+
+IMPORTANT: You MUST use the exact district ID strings shown in quotes above (e.g. "southbronx", "harlem", "midtown"). Do NOT use borough names like "The Bronx" or "Manhattan".
+
+PLAYER INSIGHTS GATHERED SO FAR:
+${insightCtx || '(none yet)'}
+
+SCORING RULES:
+- Score ALL 19 districts 0-10 based on how well the post addresses each district's specific concerns
+- Match the post's topic against each district's concern scores. A post about transit should score highest for districts with high transit concern scores.
+- A post that names a specific neighborhood or specific issue scores 7-10 for matching districts
+- A post about a general topic (e.g. "infrastructure") scores 3-6 based on each district's concern weight for that topic
+- A vague post that says nothing specific scores 0-2 for all districts
+- If the player has insights about a district AND the post references that insight, add +2 bonus (cap at 10)
+- Generate a 1-sentence reaction quote from a resident of each district that scores 4+
+- "overall" = the average of all 19 district scores, rounded to 1 decimal
+
+Respond ONLY with valid JSON, no markdown fences:
+{
+  "scores": [
+    {"district": "southbronx", "score": 7, "resident": "Maria D.", "reaction": "Finally someone sees us."}
+  ],
+  "overall": 4.2,
+  "summary": "one sentence assessment"
+}`;
+}
+
+async function scorePost(post) {
+  const url = document.getElementById('cfgUrl').value;
+  const model = document.getElementById('cfgModel').value;
+  const systemPrompt = buildSystemPrompt();
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt: `MAYOR'S POST:\n"${post.text}"\n\nScore this post.`,
+      system: systemPrompt,
+      stream: false,
+      options: { temperature: 0.3, num_predict: 2048 },
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+  const data = await res.json();
+  const raw = data.response || '';
+
+  console.log(`%c[POST #${post.id}] Raw LLM Response`, 'color:#7c8cf8;font-weight:bold', raw);
+
+  const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (parseErr) {
+    console.error(`%c[POST #${post.id}] JSON Parse Failed`, 'color:#ff6b63;font-weight:bold', { raw, cleaned: jsonStr, error: parseErr.message });
+    throw new Error(`JSON parse failed: ${parseErr.message}\nRaw: ${raw.slice(0, 200)}`);
+  }
+
+  const scores = Array.isArray(parsed.scores) ? parsed.scores : [];
+  // Normalize scores: extract numeric values, fill missing districts with 0
+  const allIds = Object.keys(CONCERN_SCORES);
+  const scoreById = {};
+  scores.forEach(s => {
+    const val = typeof s.score === 'number' ? s.score : Array.isArray(s.score) ? s.score[0] : parseInt(s.score) || 0;
+    scoreById[s.district] = Math.max(scoreById[s.district] || 0, val);
+  });
+  // Fill missing districts as 0
+  allIds.forEach(id => { if (!(id in scoreById)) scoreById[id] = 0; });
+
+  const allScores = Object.values(scoreById).sort((a, b) => b - a);
+  const top5 = allScores.slice(0, 5);
+  const avgAll = +(allScores.reduce((a,b) => a+b, 0) / allScores.length).toFixed(1);
+  const avgTop5 = top5.length > 0 ? +(top5.reduce((a,b) => a+b, 0) / top5.length).toFixed(1) : 0;
+  const llmOverall = typeof parsed.overall === 'number' ? parsed.overall : 0;
+
+  const result = {
+    scores,
+    overall: avgTop5,     // top-5 average: rewards depth without requiring breadth
+    avgAll,               // flat average of all 19 for comparison
+    llmOverall,           // LLM's self-reported number
+    summary: parsed.summary || '',
+    raw,
+  };
+
+  console.log(`%c[POST #${post.id}] Parsed Result`, 'color:#34d399;font-weight:bold', JSON.parse(JSON.stringify(result)));
+  return result;
+}
+
+function evaluateResult(post, result) {
+  const checks = [];
+  let pass = 0, fail = 0, warn = 0;
+
+  // Check overall minimum
+  if (result.overall >= post.expectMinOverall) {
+    checks.push({ ok: true, msg: `Overall ${result.overall} >= expected min ${post.expectMinOverall}` });
+    pass++;
+  } else {
+    checks.push({ ok: false, msg: `Overall ${result.overall} < expected min ${post.expectMinOverall}` });
+    fail++;
+  }
+
+  // Check expected rating
+  const rating = result.overall >= 7 ? 'RESONATING' : result.overall >= 4 ? 'NOTICED' : 'HOLLOW';
+  if (rating === post.expectRating) {
+    checks.push({ ok: true, msg: `Rating: ${rating} matches expected` });
+    pass++;
+  } else {
+    checks.push({ ok: false, msg: `Rating: ${rating}, expected ${post.expectRating}` });
+    // Rating mismatch is a warn if within 1 band, fail if 2+
+    const bands = ['HOLLOW','NOTICED','RESONATING'];
+    const diff = Math.abs(bands.indexOf(rating) - bands.indexOf(post.expectRating));
+    if (diff > 1) fail++; else warn++;
+  }
+
+  // Build score map with normalization (LLM might return names instead of IDs)
+  const nameToId = {};
+  Object.entries(DISTRICT_NAMES).forEach(([id, name]) => {
+    nameToId[name.toLowerCase()] = id;
+    nameToId[id.toLowerCase()] = id;
+  });
+  // Extra aliases for common LLM responses
+  nameToId['the bronx'] = 'southbronx';
+  nameToId['upper east side'] = 'ues';
+  nameToId['lower manhattan'] = 'lowerman';
+  nameToId['long island city'] = 'lic';
+  nameToId['downtown brooklyn'] = 'dtbk';
+  nameToId['north shore'] = 'northshore';
+  nameToId['mid-island'] = 'midisland';
+  nameToId['south bronx'] = 'southbronx';
+  nameToId['jackson heights'] = 'jackson';
+  nameToId['crown heights'] = 'crown';
+  nameToId['bay ridge'] = 'bayridge';
+  nameToId['bed-stuy'] = 'crown'; // closest match in the index.html set
+  nameToId['staten island'] = 'northshore';
+
+  const scoreMap = {};
+  result.scores.forEach(s => {
+    const raw = (s.district || '').toLowerCase().trim();
+    const id = nameToId[raw] || raw;
+    const score = typeof s.score === 'number' ? s.score : Array.isArray(s.score) ? s.score[0] : 0;
+    // Keep highest score if duplicate district
+    if (scoreMap[id] === undefined || score > scoreMap[id]) {
+      scoreMap[id] = score;
+    }
+  });
+
+  // Check expected high-scoring districts
+
+  for (const d of post.expectHigh) {
+    const s = scoreMap[d];
+    if (s !== undefined && s >= 5) {
+      checks.push({ ok: true, msg: `${DISTRICT_NAMES[d] || d}: ${s} (expected high)` });
+      pass++;
+    } else if (s !== undefined) {
+      checks.push({ ok: false, msg: `${DISTRICT_NAMES[d] || d}: ${s} (expected ≥5)` });
+      warn++;
+    } else {
+      checks.push({ ok: false, msg: `${DISTRICT_NAMES[d] || d}: not scored (expected high)` });
+      warn++;
+    }
+  }
+
+  // Check expected low-scoring districts
+  for (const d of post.expectLow) {
+    const s = scoreMap[d];
+    if (s === undefined || s <= 3) {
+      checks.push({ ok: true, msg: `${DISTRICT_NAMES[d] || d}: ${s ?? '—'} (expected low)` });
+      pass++;
+    } else {
+      checks.push({ ok: false, msg: `${DISTRICT_NAMES[d] || d}: ${s} (expected ≤3)` });
+      warn++;
+    }
+  }
+
+  const status = fail > 0 ? 'fail' : warn > 0 ? 'warn' : 'pass';
+  const evaluation = { checks, status, pass, fail, warn };
+
+  const statusColor = status === 'pass' ? '#34d399' : status === 'warn' ? '#ffc24d' : '#ff6b63';
+  console.log(
+    `%c[POST #${post.id}] Evaluation: ${status.toUpperCase()}`,
+    `color:${statusColor};font-weight:bold`,
+    JSON.parse(JSON.stringify(evaluation))
+  );
+
+  return evaluation;
+}
+
+// ── Rendering ──
+function renderCards() {
+  const container = document.getElementById('cards');
+  container.innerHTML = POSTS.map(post => {
+    const r = results.get(post.id);
+    const statusClass = r ? r.status : 'pending';
+    const badgeText = r ? (r.error ? 'ERROR' : r.status.toUpperCase()) : 'PENDING';
+    const badgeClass = r ? (r.error ? 'fail' : r.status) : 'pending';
+
+    let bodyHtml = `<div class="post-text">"${post.text}"</div>`;
+
+    // Expected behavior
+    bodyHtml += `<div class="expect">
+      <div class="label">Expected Concerns</div>
+      <div class="chips">${post.expectConcerns.length ? post.expectConcerns.map(c => `<span class="chip">${c}</span>`).join('') : '<span class="chip">none (vague)</span>'}</div>
+    </div>`;
+    bodyHtml += `<div class="expect">
+      <div class="label">Expected Rating: ${post.expectRating} · Min Overall: ${post.expectMinOverall}</div>
+      <div class="chips">
+        ${post.expectHigh.map(d => `<span class="chip${r && r.eval ? (r.eval.checks.some(c => c.msg.includes(DISTRICT_NAMES[d]||d) && c.ok) ? ' hit' : ' miss') : ''}">${DISTRICT_NAMES[d]||d} ↑</span>`).join('')}
+        ${post.expectLow.map(d => `<span class="chip${r && r.eval ? (r.eval.checks.some(c => c.msg.includes(DISTRICT_NAMES[d]||d) && c.ok) ? ' hit' : ' miss') : ''}">${DISTRICT_NAMES[d]||d} ↓</span>`).join('')}
+      </div>
+    </div>`;
+
+    if (r && !r.error) {
+      const rating = r.overall >= 7 ? 'RESONATING' : r.overall >= 4 ? 'NOTICED' : 'HOLLOW';
+      const ratingColor = r.overall >= 7 ? 'var(--green)' : r.overall >= 4 ? 'var(--yellow)' : 'var(--red)';
+      bodyHtml += `<div style="margin-bottom:10px;font-size:12px"><strong style="color:${ratingColor}">${rating}</strong> · Overall: <strong>${r.overall}</strong>/10 · ${r.summary}</div>`;
+
+      // Score grid
+      if (r.scores.length) {
+        bodyHtml += `<div class="scores-grid">`;
+        r.scores.sort((a,b) => b.score - a.score).forEach(s => {
+          const cls = s.score >= 7 ? 'high' : s.score >= 4 ? 'mid' : 'low';
+          bodyHtml += `<div class="score-row"><span class="district">${DISTRICT_NAMES[s.district]||s.district}</span><span class="val ${cls}">${s.score}</span></div>`;
+        });
+        bodyHtml += `</div>`;
+
+        // Reactions
+        r.scores.filter(s => s.reaction).slice(0, 3).forEach(s => {
+          bodyHtml += `<div class="reaction">${s.resident || 'Resident'} (${DISTRICT_NAMES[s.district]||s.district}): "${s.reaction}"</div>`;
+        });
+      }
+
+      // Evaluation checks
+      if (r.eval) {
+        bodyHtml += `<div style="margin-top:10px;font-size:11px">`;
+        r.eval.checks.forEach(c => {
+          const icon = c.ok ? '✓' : '✗';
+          const color = c.ok ? 'var(--green)' : 'var(--red)';
+          bodyHtml += `<div style="color:${color};margin:2px 0">${icon} ${c.msg}</div>`;
+        });
+        bodyHtml += `</div>`;
+      }
+
+      bodyHtml += `<span class="toggle-raw" onclick="this.nextElementSibling.classList.toggle('show')">raw response</span>`;
+      bodyHtml += `<div class="llm-raw">${escHtml(r.raw || '')}</div>`;
+    } else if (r && r.error) {
+      bodyHtml += `<div class="err">${escHtml(r.error)}</div>`;
+    } else {
+      bodyHtml += `<div style="color:var(--mut);font-size:12px">Not yet tested. Click "Run All" or the individual test button.</div>`;
+    }
+
+    bodyHtml += `<div style="margin-top:10px"><button onclick="runOne(${post.id})" style="font-size:11px;padding:5px 12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:6px;cursor:pointer;font-family:inherit">Test This Post</button></div>`;
+
+    return `<div class="card ${statusClass}" id="card-${post.id}">
+      <div class="card-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="num">#${post.id}</span>
+        <span class="title">${escHtml(post.text.slice(0, 80))}${post.text.length > 80 ? '…' : ''}</span>
+        <span class="tone">${post.tone}</span>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="card-body">${bodyHtml}</div>
+    </div>`;
+  }).join('');
+
+  updateSummary();
+}
+
+function updateSummary() {
+  let passed = 0, warned = 0, failed = 0, pending = 0;
+  POSTS.forEach(p => {
+    const r = results.get(p.id);
+    if (!r) pending++;
+    else if (r.error) failed++;
+    else if (r.status === 'pass') passed++;
+    else if (r.status === 'warn') warned++;
+    else if (r.status === 'fail') failed++;
+  });
+  document.getElementById('sPassed').textContent = passed;
+  document.getElementById('sWarned').textContent = warned;
+  document.getElementById('sFailed').textContent = failed;
+  document.getElementById('sPending').textContent = pending;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Runners ──
+async function runOne(postId) {
+  const post = POSTS.find(p => p.id === postId);
+  if (!post) return;
+
+  // Mark running
+  results.set(post.id, { status: 'running' });
+  const card = document.getElementById(`card-${post.id}`);
+  if (card) {
+    card.className = 'card pending open';
+    const badge = card.querySelector('.badge');
+    if (badge) { badge.className = 'badge running'; badge.textContent = 'RUNNING'; }
+  }
+
+  try {
+    console.group(`%c[POST #${post.id}] "${post.text.slice(0, 60)}…"`, 'color:#7c8cf8;font-weight:bold');
+    console.log('%cRequest', 'color:#8b94a6', { id: post.id, tone: post.tone, phase: post.phase, text: post.text });
+
+    const result = await scorePost(post);
+    const evaluation = evaluateResult(post, result);
+    const entry = {
+      scores: result.scores,
+      overall: result.overall,
+      summary: result.summary,
+      raw: result.raw,
+      eval: evaluation,
+      status: evaluation.status,
+      error: null,
+    };
+    results.set(post.id, entry);
+
+    // Full structured JSON dump
+    console.log(`%c[POST #${post.id}] Full Result JSON`, 'color:#e8c547;font-weight:bold');
+    console.log(JSON.stringify({
+      postId: post.id,
+      text: post.text,
+      tone: post.tone,
+      phase: post.phase,
+      result: { scores: result.scores, overall: result.overall, summary: result.summary },
+      evaluation: { status: evaluation.status, pass: evaluation.pass, fail: evaluation.fail, warn: evaluation.warn, checks: evaluation.checks },
+    }, null, 2));
+    console.groupEnd();
+  } catch (err) {
+    console.error(`%c[POST #${post.id}] ERROR`, 'color:#ff6b63;font-weight:bold', err.message);
+    console.groupEnd();
+    results.set(post.id, { error: err.message, status: 'fail' });
+  }
+
+  renderCards();
+  // Re-open the card we just tested
+  const updated = document.getElementById(`card-${post.id}`);
+  if (updated) updated.classList.add('open');
+}
+
+async function runAll() {
+  const btn = document.getElementById('runAll');
+  btn.disabled = true;
+  const status = document.getElementById('globalStatus');
+
+  for (let i = 0; i < POSTS.length; i++) {
+    status.textContent = `Testing ${i + 1}/${POSTS.length}...`;
+    await runOne(POSTS[i].id);
+    // Small delay between requests to avoid overwhelming Ollama
+    if (i < POSTS.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+
+  // Full summary JSON to console
+  const summary = POSTS.map(p => {
+    const r = results.get(p.id);
+    return {
+      id: p.id,
+      text: p.text.slice(0, 80),
+      tone: p.tone,
+      status: r?.status || 'pending',
+      top5: r?.overall ?? null,
+      avgAll: r?.avgAll ?? null,
+      rating: r?.overall >= 7 ? 'RESONATING' : r?.overall >= 4 ? 'NOTICED' : r?.overall != null ? 'HOLLOW' : null,
+      expectedRating: p.expectRating,
+      scores: r?.scores?.map(s => ({ district: s.district, score: s.score })) || [],
+      checks: { pass: r?.eval?.pass || 0, warn: r?.eval?.warn || 0, fail: r?.eval?.fail || 0 },
+      error: r?.error || null,
+    };
+  });
+
+  console.log('%c══════ TEST RUN COMPLETE ══════', 'color:#ff9f43;font-weight:bold;font-size:14px');
+  console.log(JSON.stringify(summary, null, 2));
+  console.table(summary.map(s => ({
+    '#': s.id,
+    Status: s.status,
+    Top5: s.top5,
+    AvgAll: s.avgAll,
+    Rating: s.rating,
+    Expected: s.expectedRating,
+    Pass: s.checks.pass,
+    Warn: s.checks.warn,
+    Fail: s.checks.fail,
+  })));
+
+  status.textContent = 'All tests complete.';
+  btn.disabled = false;
+}
+
+async function runFailing() {
+  const failing = POSTS.filter(p => {
+    const r = results.get(p.id);
+    return r && (r.status === 'fail' || r.status === 'warn' || r.error);
+  });
+
+  if (!failing.length) {
+    document.getElementById('globalStatus').textContent = 'No failing tests to re-run.';
+    return;
+  }
+
+  const btn = document.getElementById('runFailing');
+  btn.disabled = true;
+  const status = document.getElementById('globalStatus');
+
+  for (let i = 0; i < failing.length; i++) {
+    status.textContent = `Re-testing ${i + 1}/${failing.length}...`;
+    await runOne(failing[i].id);
+    if (i < failing.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+
+  status.textContent = `Re-tested ${failing.length} posts.`;
+  btn.disabled = false;
+}
+
+// ── Boot ──
+renderCards();
+</script>

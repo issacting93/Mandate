@@ -1,10 +1,9 @@
-// systems/clock.js — ClockSystem: quarter/phase advancement
-// Drives the turn structure: PREP -> DECISION -> RESOLVE -> REACT -> next quarter
+// systems/clock.js — ClockSystem: weekly cadence, player-driven
+// The week is the unit of play. Player acts freely, then advances.
+// ~30 weeks of data-gathering → ~18 weeks of escalating disaster arc.
 
-import { SEASONS, QUARTER_NARRATIVES } from "../data/blizzard.js";
-
-const PHASES = ["prep", "decision", "resolve", "react"];
-const GOODWILL_DECAY = 1.5;
+const WEEKLY_DEFICIT = 0.375; // ~$1.5B/month ÷ 4 weeks
+const TRUST_EROSION = 1;     // per unvisited district per week
 
 export class ClockSystem {
   #bus;
@@ -14,107 +13,84 @@ export class ClockSystem {
     this.#bus = bus;
     this.#state = state;
 
-    bus.on("game.start", () => this.#startGame());
-    bus.on("policy.resolved", () => this.#advanceToResolve());
-    bus.on("react.complete", () => this.#advanceQuarter());
+    bus.on("game.start", () => this.#startWeek());
+    bus.on("ui.weekAdvanced", () => this.#advanceWeek());
   }
 
-  #startGame() {
-    const quarter = this.#state.get("quarter");
-    this.#bus.emit("clock.quarterStart", {
-      quarter,
-      season: SEASONS[quarter],
-      narrative: QUARTER_NARRATIVES[quarter],
-    });
-    // Prep runs immediately (decay, deficit, maintenance, warnings)
-    this.#runPhase("prep");
-    // Decision phase waits for player to dismiss the quarter intro
-    this.#bus.once("ui.quarterIntroDismissed", () => {
-      this.#runPhase("decision");
-    });
+  #startWeek() {
+    const week = this.#state.get("week") || 0;
+    this.#bus.emit("clock.weekStart", { week });
   }
 
-  #runPhase(phase) {
-    this.#state.set("phase", phase);
-    this.#bus.emit("clock.phaseStart", { phase, quarter: this.#state.get("quarter") });
-  }
-
-  // After policy + framing are both resolved, advance to the resolve phase
-  // which triggers map animations, then to react phase
-  #advanceToResolve() {
-    if (this.#state.get("phase") === "decision") {
-      this.#runPhase("resolve");
-      // After a brief pause for animations, advance to react
-      setTimeout(() => this.#runPhase("react"), 1200);
-    }
-  }
-
-  #advanceQuarter() {
+  #advanceWeek() {
     if (this.#state.get("gameOver")) return;
 
-    const quarter = this.#state.get("quarter");
+    const week = this.#state.get("week") || 0;
+    const next = week + 1;
+
+    // Apply operating deficit
+    this.#state.update("reserve", v => +(v - WEEKLY_DEFICIT).toFixed(2));
+
+    // Apply trust erosion for unvisited districts
+    const districts = this.#state.get("districts");
+    if (districts) {
+      for (const [id, d] of Object.entries(districts)) {
+        if (d.lastVisited !== next - 1) {
+          const path = `districts.${id}.trust`;
+          const old = this.#state.get(path) || 40;
+          this.#state.set(path, Math.max(0, old - TRUST_EROSION));
+        }
+      }
+    }
+
+    // Advance
+    this.#state.set("week", next);
 
     // Check win/lose
+    this.#recomputeCitywide();
     const citywide = this.#state.get("citywide");
     const reserve = this.#state.get("reserve");
 
-    if (citywide < 25) {
+    if (citywide < 20) {
       this.#state.set("gameOver", true);
-      this.#state.set("gameResult", "recalled");
-      this.#bus.emit("game.lose", { type: "recalled", quarter, citywide, reserve });
+      this.#state.set("gameResult", "evacuation_failure");
+      this.#bus.emit("game.lose", { type: "evacuation_failure", week: next, citywide, reserve });
       return;
     }
-
     if (reserve < -3.0) {
       this.#state.set("gameOver", true);
-      this.#state.set("gameResult", "bankrupt");
-      this.#bus.emit("game.lose", { type: "bankrupt", quarter, citywide, reserve });
+      this.#state.set("gameResult", "fiscal_crisis");
+      this.#bus.emit("game.lose", { type: "fiscal_crisis", week: next, citywide, reserve });
       return;
     }
-
-    if (quarter >= 4) {
-      // End of the blizzard scenario
+    if (next >= 48) {
       this.#state.set("gameOver", true);
-      if (citywide >= 50) {
-        this.#state.set("gameResult", "reelected");
-        this.#bus.emit("game.win", { type: "reelected", citywide, reserve });
+      if (citywide >= 75) {
+        this.#state.set("gameResult", "resilient_city");
+        this.#bus.emit("game.win", { type: "resilient_city", citywide, reserve });
+      } else if (citywide >= 50) {
+        this.#state.set("gameResult", "held_together");
+        this.#bus.emit("game.win", { type: "held_together", citywide, reserve });
       } else {
-        this.#state.set("gameResult", "primaried");
-        this.#bus.emit("game.lose", { type: "primaried", citywide, reserve });
+        this.#state.set("gameResult", "blind_response");
+        this.#bus.emit("game.lose", { type: "blind_response", citywide, reserve });
       }
       return;
     }
 
-    // Advance to next quarter
-    const next = quarter + 1;
-    this.#state.set("quarter", next);
-    this.#state.set("season", SEASONS[next]);
-
-    this.#bus.emit("clock.quarterStart", {
-      quarter: next,
-      season: SEASONS[next],
-      narrative: QUARTER_NARRATIVES[next],
-    });
-
-    this.#runPhase("prep");
-    this.#bus.once("ui.quarterIntroDismissed", () => {
-      if (!this.#state.get("gameOver")) {
-        this.#runPhase("decision");
-      }
-    });
+    this.#bus.emit("clock.weekStart", { week: next });
   }
 
-  // Called by UI to advance from decision -> resolve after player acts
-  advanceFromDecision() {
-    if (this.#state.get("phase") === "decision") {
-      this.#runPhase("resolve");
+  #recomputeCitywide() {
+    const districts = this.#state.get("districts");
+    if (!districts) return;
+    let totalWeighted = 0, totalPop = 0;
+    for (const d of Object.values(districts)) {
+      const trust = d.trust ?? 40;
+      const pop = d.pop ?? 1;
+      totalWeighted += trust * pop;
+      totalPop += pop;
     }
-  }
-
-  // Called by UI to advance from resolve -> react after animations
-  advanceFromResolve() {
-    if (this.#state.get("phase") === "resolve") {
-      this.#runPhase("react");
-    }
+    this.#state.set("citywide", totalPop > 0 ? Math.round(totalWeighted / totalPop) : 40);
   }
 }

@@ -1,7 +1,7 @@
-// systems/scenario.js — ScenarioSystem: trigger/condition/effect engine
-// Evaluates scenario events during the REACT phase based on game state.
-
-import { SCENARIO_EVENTS } from "../data/blizzard.js";
+// systems/scenario.js — ScenarioSystem: weekly event + disaster evaluation
+// Triggers events from the registry based on conditions against game state.
+// Disasters are the primary antagonist — the final exam for HCD preparation.
+// Before (~wk 1-30): data-gathering events. During (~wk 30-42): escalating crisis. After (~wk 42-48): recovery.
 
 export class ScenarioSystem {
   #bus;
@@ -14,110 +14,71 @@ export class ScenarioSystem {
     this.#state = state;
     this.#registry = registry;
 
-    bus.on("clock.phaseStart", (e) => {
-      if (e.phase === "react") this.#evaluate(e.quarter);
-    });
-
-    bus.on("ui.eventDismissed", () => {
-      const quarter = this.#state.get("quarter");
-      this.#bus.emit("react.complete", { quarter });
-    });
+    bus.on("clock.weekStart", (e) => this.#evaluate(e.week));
   }
 
-  #evaluate(quarter) {
-    const events = SCENARIO_EVENTS.filter(evt =>
-      evt.quarter === quarter && !this.#firedEvents.has(evt.id)
-    );
+  #evaluate(week) {
+    const events = this.#registry.ofType("event");
+    const triggered = [];
 
     for (const evt of events) {
-      // Check base conditions
-      if (!this.#checkConditions(evt.conditions)) continue;
+      if (this.#firedEvents.has(evt.id)) continue;
+      if (!this.#checkConditions(evt.conditions, week)) continue;
 
       this.#firedEvents.add(evt.id);
 
-      // Check for conditional (branching) effects
-      let narrative = evt.narrative;
-      let effects = evt.effects;
-
-      if (evt.conditionalEffects) {
-        const cond = evt.conditionalEffects;
-        if (this.#checkBranch(cond.if)) {
-          narrative = cond.then.narrative;
-          effects = cond.then.effects;
+      // Apply effects
+      if (evt.effects) {
+        for (const effect of evt.effects) {
+          this.#applyEffect(effect);
         }
       }
 
-      // Apply effects
-      for (const effect of effects) {
-        this.#applyEffect(effect);
-      }
+      triggered.push(evt);
 
-      // Emit for UI
       this.#bus.emit("scenario.triggered", {
         eventId: evt.id,
-        headline: evt.headline,
-        narrative,
-        effects,
+        headline: evt.headline || evt.label,
+        narrative: evt.narrative || evt.desc,
+        effects: evt.effects,
       });
-
-      // Record
-      const history = this.#state.get("history") || [];
-      history.push({
-        quarter,
-        type: "event",
-        id: evt.id,
-        headline: evt.headline,
-      });
-      this.#state.set("history", history);
     }
 
-    // Signal that scenario processing is done; hazard system can now check for strike
-    this.#bus.emit("scenario.reactDone", { quarter, eventsFired: events.length });
-
-    // If no events fired and hazard hasn't struck, react is complete
-    const hazardStruck = this.#state.get("hazard.struck");
-    if (events.length === 0 && !hazardStruck) {
-      this.#bus.emit("react.complete", { quarter });
-    }
-    // Otherwise, overlay/hazard dismissal will trigger react.complete via ui.eventDismissed
+    this.#bus.emit("scenario.evaluated", { week, count: triggered.length });
   }
 
-  #checkConditions(conditions) {
+  #checkConditions(conditions, week) {
     if (!conditions || conditions.length === 0) return true;
 
     for (const cond of conditions) {
-      if (cond.type === "flag") {
-        const flags = this.#state.get("flags") || [];
-        if (!flags.includes(cond.value)) return false;
-      }
-      if (cond.type === "infraBuilt") {
-        if (!this.#state.get(`infrastructure.${cond.value}.built`)) return false;
-      }
-      if (cond.type === "quarter") {
-        if (this.#state.get("quarter") !== cond.value) return false;
+      switch (cond.type) {
+        case "weekRange":
+          if (week < (cond.min || 0) || week > (cond.max || 48)) return false;
+          break;
+        case "week":
+          if (week !== cond.value) return false;
+          break;
+        case "trustBelow":
+          if ((this.#state.get(`districts.${cond.district}.trust`) ?? 100) >= cond.value) return false;
+          break;
+        case "insightCount":
+          if ((this.#state.get("insights") || []).length < cond.value) return false;
+          break;
+        case "patternDiscovered":
+          if (!(this.#state.get("patterns") || []).some(p => p.id === cond.value)) return false;
+          break;
+        case "flag":
+          if (!(this.#state.get("flags") || []).includes(cond.value)) return false;
+          break;
       }
     }
     return true;
   }
 
-  #checkBranch(condition) {
-    if (condition.infraBuilt) {
-      return this.#state.get(`infrastructure.${condition.infraBuilt}.built`) === true;
-    }
-    if (condition.flag) {
-      const flags = this.#state.get("flags") || [];
-      return flags.includes(condition.flag);
-    }
-    if (condition.minApproval) {
-      return (this.#state.get("citywide") || 0) >= condition.minApproval;
-    }
-    return false;
-  }
-
   #applyEffect(effect) {
     switch (effect.type) {
-      case "bloc_approval": {
-        const path = `blocs.${effect.bloc}.approval`;
+      case "trust": {
+        const path = `districts.${effect.district}.trust`;
         const old = this.#state.get(path);
         if (old !== undefined) {
           this.#state.set(path, Math.max(0, Math.min(100, old + effect.delta)));
@@ -133,6 +94,10 @@ export class ScenarioSystem {
         if (!flags.includes(effect.value)) {
           this.#state.set("flags", [...flags, effect.value]);
         }
+        break;
+      }
+      case "feed_item": {
+        this.#bus.emit("feed.item", { text: effect.text, type: effect.feedType || "news" });
         break;
       }
     }

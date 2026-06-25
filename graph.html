@@ -65,8 +65,8 @@
 
 <div class="wrap">
   <div class="head">
-    <span class="kick">Content Graph</span>
-    <h1>MANDATE — Systems &amp; Relationships</h1>
+    <span class="kick">Resilience Graph</span>
+    <h1>MANDATE — Systems &amp; Vulnerabilities</h1>
     <span class="sub" id="counts"></span>
   </div>
   <div class="stage">
@@ -92,125 +92,233 @@
 <script>
 // ---- node types ----
 const TYPES = {
-  season:    {label:"Season",            c:"#8ea2c0"},
-  hazard:    {label:"Hazard / Disaster", c:"#ff6b63"},
-  district:  {label:"District at risk",  c:"#2fc3e8"},
-  prevention:{label:"Prevention / Infra",c:"#34d399"},
-  resource:  {label:"Resource / Meter",  c:"#ffc24d"},
-  bloc:      {label:"Coalition bloc",    c:"#ff5fa0"},
-  comms:     {label:"Policy / Framing",  c:"#7c8cf8"},
-  outcome:   {label:"Consequence",       c:"#c084fc"},
+  season:  {label:"Season",               c:"#8ea2c0"},
+  hazard:  {label:"Hazard / Disaster",    c:"#ff6b63"},
+  concern: {label:"Concern Axis",         c:"#e8c547"},
+  district:{label:"District",             c:"#2fc3e8"},
+  infra:   {label:"Infrastructure",       c:"#34d399"},
+  bloc:    {label:"Community Bloc",       c:"#ff5fa0"},
+  resource:{label:"Resource / Meter",     c:"#ffc24d"},
+  policy:  {label:"Policy / Intervention",c:"#ff9f43"},
+  outcome: {label:"Disaster Outcome",     c:"#c084fc"},
 };
 
 // ---- edge types: bucket, color, forward / reverse phrasing ----
 const ET = {
-  occurs_in:{bk:"time",   c:"#5a6b86", f:"occurs in",      r:"hazard season for"},
-  threatens:{bk:"threat", c:"#ff6b63", f:"threatens",      r:"threatened by"},
-  cascades: {bk:"threat", c:"#ff8a5c", f:"cascades to",    r:"triggered by",  dash:true},
-  causes:   {bk:"threat", c:"#ff6b63", f:"causes",         r:"caused by"},
-  exposes:  {bk:"threat", c:"#e06b6b", f:"exposed to",     r:"exposes"},
-  mitigates:{bk:"defense",c:"#34d399", f:"mitigates",      r:"mitigated by"},
-  protects: {bk:"defense",c:"#34d399", f:"protects",       r:"protected by"},
-  reduces:  {bk:"defense",c:"#46c08a", f:"reduces",        r:"reduced by"},
-  requires: {bk:"defense",c:"#cfd6e4", f:"requires",       r:"required by"},
-  costs:    {bk:"money",  c:"#ffc24d", f:"draws funds from",r:"funds drawn by"},
-  funds:    {bk:"money",  c:"#ffc24d", f:"funds",          r:"funded by"},
-  frames:   {bk:"politics",c:"#7c8cf8",f:"frames",         r:"framed by"},
-  pleases:  {bk:"politics",c:"#6ad0a0",f:"pleases",        r:"pleased by"},
-  angers:   {bk:"politics",c:"#ff6f8c",f:"angers",         r:"angered by"},
-  affects:  {bk:"politics",c:"#c084fc",f:"swings",         r:"swung by"},
+  occurs_in:  {bk:"time",      c:"#5a6b86", f:"occurs in",        r:"hazard season for"},
+  threatens:  {bk:"threat",    c:"#ff6b63", f:"threatens",        r:"threatened by"},
+  cascades:   {bk:"threat",    c:"#ff8a5c", f:"cascades to",      r:"triggered by",  dash:true},
+  causes:     {bk:"threat",    c:"#ff6b63", f:"causes",           r:"caused by"},
+  exposed_to: {bk:"threat",    c:"#e06b6b", f:"exposed to",       r:"exposes"},
+  mitigates:  {bk:"defense",   c:"#34d399", f:"mitigates",        r:"mitigated by"},
+  protects:   {bk:"defense",   c:"#34d399", f:"protects",         r:"protected by"},
+  requires:   {bk:"defense",   c:"#cfd6e4", f:"requires",         r:"required by"},
+  costs:      {bk:"money",     c:"#ffc24d", f:"draws funds from", r:"funds drawn by"},
+  builds:     {bk:"build",     c:"#ff9f43", f:"builds",           r:"built by"},
+  targets:    {bk:"build",     c:"#ff9f43", f:"targets",          r:"targeted by", dash:true},
+  affects:    {bk:"community", c:"#c084fc", f:"impacts",          r:"impacted by"},
+  cares_about:{bk:"concern",   c:"#e8c547", f:"cares about",      r:"concern of", dash:true},
 };
 const BUCKETS = {
-  time:    {label:"Time",     c:"#5a6b86"},
-  threat:  {label:"Threat",   c:"#ff6b63"},
-  defense: {label:"Defense",  c:"#34d399"},
-  money:   {label:"Money",    c:"#ffc24d"},
-  politics:{label:"Politics", c:"#7c8cf8"},
+  time:      {label:"Time",      c:"#5a6b86"},
+  threat:    {label:"Threat",    c:"#ff6b63"},
+  defense:   {label:"Defense",   c:"#34d399"},
+  money:     {label:"Money",     c:"#ffc24d"},
+  build:     {label:"Build",     c:"#ff9f43"},
+  community: {label:"Community", c:"#c084fc"},
+  concern:   {label:"Concerns",  c:"#e8c547"},
 };
 
-// ---- nodes ----
+// ---- nodes (synced with data/entries.js + data/links.js) ----
 const N = [
   // seasons
-  ["s_winter","Winter","season"],["s_spring","Spring","season"],["s_summer","Summer","season"],["s_fall","Fall","season"],
+  ["s_spring","Spring","season"],["s_summer","Summer","season"],["s_fall","Fall","season"],["s_winter","Winter","season"],
   // hazards
-  ["h_blizzard","Blizzard / Nor'easter","hazard"],["h_coldsnap","Cold Snap","hazard"],
-  ["h_surge","Coastal Surge","hazard"],["h_rainflood","Cloudburst Flooding","hazard"],
-  ["h_heatwave","Heat Dome","hazard"],["h_blackout","Grid Failure","hazard"],
-  // districts at risk
-  ["d_coastal","Coastal Edge (Rockaways, Red Hook)","district"],["d_lowman","Lower Manhattan","district"],
-  ["d_basement","Basement Apartments (Queens)","district"],["d_nycha","Public Housing (NYCHA)","district"],
-  ["d_outer","Outer-Borough, Transit-Dependent","district"],["d_lowbronx","Low-Lying South Bronx","district"],
-  // prevention / infra
-  ["p_seawall","Surge Barriers / Seawalls","prevention"],["p_drains","Storm-Drain & Sewer Upgrades","prevention"],
-  ["p_retrofit","Flood-Proofing Retrofits","prevention"],["p_cooling","Cooling Centers","prevention"],
-  ["p_grid","Grid Hardening / Backup Power","prevention"],["p_plows","Snow-Removal Fleet","prevention"],
-  ["p_warning","Early-Warning System","prevention"],["p_evac","Evacuation Plan","prevention"],
-  ["p_shelter","Emergency Shelters","prevention"],["p_green","Green Infra / Tree Canopy","prevention"],
-  ["p_outreach","Vulnerable-Resident Outreach","prevention"],
-  // resources / meters
-  ["r_reserve","City Reserve","resource"],["r_approval","Citywide Approval","resource"],
-  ["r_prep","Preparedness","resource"],["r_capital","Political Capital","resource"],
+  ["h_blizzard","Blizzard / Nor'easter","hazard"],
+  // concern axes (what districts care about — the LLM scores posts against these)
+  ["c_health","Health","concern"],["c_housing","Housing","concern"],["c_transit","Transit","concern"],
+  ["c_safety","Safety","concern"],["c_infra","Infrastructure","concern"],["c_services","Services","concern"],
+  // districts (19 — the actual game map)
+  ["d_south_bronx","South Bronx","district"],["d_riverdale","Riverdale","district"],
+  ["d_washington_hts","Washington Heights","district"],["d_harlem","Harlem","district"],
+  ["d_upper_west","Upper West Side","district"],["d_upper_east","Upper East Side","district"],
+  ["d_midtown","Midtown","district"],["d_les","Lower East Side","district"],
+  ["d_fidi","Financial District","district"],["d_astoria","Astoria","district"],
+  ["d_jackson_hts","Jackson Heights","district"],["d_flushing","Flushing","district"],
+  ["d_jamaica","Jamaica","district"],["d_williamsburg","Williamsburg","district"],
+  ["d_bed_stuy","Bed-Stuy","district"],["d_park_slope","Park Slope","district"],
+  ["d_brownsville","Brownsville / East NY","district"],["d_bay_ridge","Bay Ridge","district"],
+  ["d_staten_island","Staten Island","district"],
+  // infrastructure
+  ["p_plows","Snow-Removal Fleet","infra"],["p_salt","Salt Reserves","infra"],
+  ["p_grid","Grid Hardening","infra"],["p_shelter","Emergency Shelters","infra"],
+  ["p_warning","Early Warning System","infra"],["p_outreach","Vulnerable-Resident Outreach","infra"],
   // blocs
-  ["b_work","Working Families","bloc"],["b_biz","Business & Finance","bloc"],["b_re","Real Estate","bloc"],
-  ["b_prog","Progressives","bloc"],["b_lab","Labor Unions","bloc"],
-  // policy / framing
-  ["c_invest","Preparedness Budget","comms"],["c_mandate","Resilience Mandates","comms"],
-  ["c_fiscal","Frame: Fiscal Responsibility","comms"],["c_justice","Frame: Justice & Equity","comms"],
-  ["c_safety","Frame: Safety & Order","comms"],["c_climate","Frame: Climate Action","comms"],
+  ["b_working","Working Families","bloc"],["b_finance","Business & Finance","bloc"],
+  ["b_realestate","Real Estate","bloc"],["b_progressives","Progressives","bloc"],
+  ["b_labor","Labor Unions","bloc"],
+  // resources / meters
+  ["r_reserve","City Reserve","resource"],["r_resilience","Community Resilience","resource"],
+  // policies (player intervention cards)
+  ["pol_plow_fleet","Expand Plow Fleet","policy"],["pol_grid_harden","Harden Power Grid","policy"],
+  ["pol_business_cont","Business Continuity Grants","policy"],["pol_salt_reserve","Stockpile Road Salt","policy"],
+  ["pol_shelters","Open Emergency Shelters","policy"],["pol_resilience_hubs","Resilience Hubs","policy"],
+  ["pol_warning_sys","Deploy Early Warning","policy"],["pol_outreach","Door-to-Door Outreach","policy"],
+  ["pol_overtime","Essential-Worker Overtime","policy"],["pol_deploy_manhattan","Prioritize Manhattan","policy"],
+  ["pol_deploy_outer","Prioritize Outer Boroughs","policy"],["pol_deploy_equal","Equal Coverage","policy"],
   // outcomes
-  ["o_cas","Casualties","outcome"],["o_disp","Displacement","outcome"],["o_dmg","Property Damage","outcome"],
-  ["o_transit","Transit Shutdown","outcome"],["o_invisible","Invisible Success","outcome"],
+  ["o_casualties","Preventable Deaths","outcome"],["o_displacement","Displacement","outcome"],
+  ["o_transit_shutdown","Transit Shutdown","outcome"],["o_property_damage","Property Damage","outcome"],
+  ["o_invisible_success","Invisible Success","outcome"],["o_blackout","Power Outage","outcome"],
 ];
 
-// ---- edges ----
+// ---- edges (synced with data/links.js) ----
 const E = [
-  // when hazards happen
-  ["h_blizzard","s_winter","occurs_in"],["h_coldsnap","s_winter","occurs_in"],
-  ["h_rainflood","s_spring","occurs_in"],["h_rainflood","s_summer","occurs_in"],
-  ["h_heatwave","s_summer","occurs_in"],["h_surge","s_fall","occurs_in"],
-  // cascades & outcomes
-  ["h_heatwave","h_blackout","cascades"],["h_blizzard","o_transit","cascades"],
-  ["h_rainflood","o_cas","causes"],["h_blackout","o_cas","causes"],["h_heatwave","o_cas","causes"],
-  ["h_surge","o_disp","causes"],["h_surge","o_dmg","causes"],["h_rainflood","o_dmg","causes"],["h_coldsnap","o_cas","causes"],
-  // who hazards threaten
-  ["h_surge","d_coastal","threatens"],["h_surge","d_lowman","threatens"],
-  ["h_rainflood","d_basement","threatens"],["h_rainflood","d_lowbronx","threatens"],
-  ["h_heatwave","d_nycha","threatens"],["h_heatwave","d_outer","threatens"],
-  ["h_blizzard","d_outer","threatens"],["h_coldsnap","d_nycha","threatens"],
-  // bloc exposure
-  ["b_work","h_heatwave","exposes"],["b_work","h_rainflood","exposes"],
-  ["b_re","h_surge","exposes"],["b_biz","h_blackout","exposes"],
-  // prevention mitigates hazards
-  ["p_seawall","h_surge","mitigates"],["p_retrofit","h_surge","mitigates"],["p_retrofit","h_rainflood","mitigates"],
-  ["p_drains","h_rainflood","mitigates"],["p_green","h_rainflood","mitigates"],["p_green","h_heatwave","mitigates"],
-  ["p_cooling","h_heatwave","mitigates"],["p_grid","h_blackout","mitigates"],["p_grid","h_heatwave","mitigates"],
-  ["p_plows","h_blizzard","mitigates"],
-  // prevention protects districts
-  ["p_seawall","d_coastal","protects"],["p_seawall","d_lowman","protects"],["p_retrofit","d_coastal","protects"],
-  ["p_drains","d_basement","protects"],["p_cooling","d_nycha","protects"],["p_cooling","d_outer","protects"],
-  ["p_outreach","d_nycha","protects"],["p_outreach","d_basement","protects"],["p_shelter","d_coastal","protects"],
-  // prevention prerequisites
-  ["p_evac","p_warning","requires"],["p_shelter","p_evac","requires"],["p_outreach","p_warning","requires"],
-  // preparedness reduces outcomes
-  ["p_warning","r_prep","funds"],["p_seawall","r_prep","funds"],["p_cooling","r_prep","funds"],
-  ["p_grid","r_prep","funds"],["p_drains","r_prep","funds"],["p_plows","r_prep","funds"],
-  ["r_prep","o_cas","reduces"],["r_prep","o_dmg","reduces"],["r_prep","o_disp","reduces"],
-  // money
-  ["p_seawall","r_reserve","costs"],["p_drains","r_reserve","costs"],["p_grid","r_reserve","costs"],
-  ["p_retrofit","r_reserve","costs"],["p_plows","r_reserve","costs"],["c_invest","r_reserve","costs"],
-  ["c_invest","p_seawall","funds"],["c_invest","p_drains","funds"],["c_invest","p_cooling","funds"],
-  ["c_invest","p_grid","funds"],["c_mandate","p_retrofit","funds"],["c_mandate","p_green","funds"],
-  // framing
-  ["c_fiscal","c_invest","frames"],["c_justice","c_invest","frames"],["c_safety","c_invest","frames"],
-  ["c_climate","c_mandate","frames"],["c_justice","c_mandate","frames"],
-  ["c_fiscal","b_biz","pleases"],["c_fiscal","b_re","pleases"],["c_fiscal","b_prog","angers"],
-  ["c_justice","b_prog","pleases"],["c_justice","b_work","pleases"],["c_justice","b_biz","angers"],
-  ["c_climate","b_prog","pleases"],["c_climate","b_re","angers"],["c_safety","b_work","pleases"],
-  ["c_mandate","b_re","angers"],
-  // consequences swing politics
-  ["o_cas","r_approval","affects"],["o_disp","r_approval","affects"],["o_transit","b_lab","affects"],
-  ["o_transit","b_work","affects"],["o_dmg","r_reserve","affects"],["o_invisible","r_approval","affects"],
-  ["r_prep","o_invisible","reduces"],["c_climate","r_capital","costs"],
+  // ── hazard → season ──
+  ["h_blizzard","s_winter","occurs_in"],
+  // ── hazard → district (threatens) — all 19 ──
+  ["h_blizzard","d_south_bronx","threatens"],["h_blizzard","d_riverdale","threatens"],
+  ["h_blizzard","d_washington_hts","threatens"],["h_blizzard","d_harlem","threatens"],
+  ["h_blizzard","d_upper_west","threatens"],["h_blizzard","d_upper_east","threatens"],
+  ["h_blizzard","d_midtown","threatens"],["h_blizzard","d_les","threatens"],
+  ["h_blizzard","d_fidi","threatens"],["h_blizzard","d_astoria","threatens"],
+  ["h_blizzard","d_jackson_hts","threatens"],["h_blizzard","d_flushing","threatens"],
+  ["h_blizzard","d_jamaica","threatens"],["h_blizzard","d_williamsburg","threatens"],
+  ["h_blizzard","d_bed_stuy","threatens"],["h_blizzard","d_park_slope","threatens"],
+  ["h_blizzard","d_brownsville","threatens"],["h_blizzard","d_bay_ridge","threatens"],
+  ["h_blizzard","d_staten_island","threatens"],
+  // ── hazard → outcome (cascades / causes) ──
+  ["h_blizzard","o_transit_shutdown","cascades"],["h_blizzard","o_blackout","cascades"],
+  ["h_blizzard","o_casualties","causes"],["h_blizzard","o_displacement","causes"],
+  ["h_blizzard","o_property_damage","causes"],
+  // ── bloc → hazard (exposed_to) ──
+  ["b_working","h_blizzard","exposed_to"],["b_labor","h_blizzard","exposed_to"],
+  ["b_progressives","h_blizzard","exposed_to"],["b_finance","h_blizzard","exposed_to"],
+  ["b_realestate","h_blizzard","exposed_to"],
+  // ── infra → hazard (mitigates) ──
+  ["p_plows","h_blizzard","mitigates"],["p_salt","h_blizzard","mitigates"],
+  ["p_grid","h_blizzard","mitigates"],["p_shelter","h_blizzard","mitigates"],
+  ["p_warning","h_blizzard","mitigates"],["p_outreach","h_blizzard","mitigates"],
+  // ── infra → district (protects) ──
+  ["p_plows","d_south_bronx","protects"],["p_plows","d_washington_hts","protects"],
+  ["p_plows","d_jackson_hts","protects"],["p_plows","d_flushing","protects"],
+  ["p_plows","d_brownsville","protects"],["p_plows","d_bay_ridge","protects"],
+  ["p_plows","d_staten_island","protects"],
+  ["p_salt","d_riverdale","protects"],["p_salt","d_flushing","protects"],
+  ["p_salt","d_bay_ridge","protects"],["p_salt","d_staten_island","protects"],
+  ["p_salt","d_brownsville","protects"],
+  ["p_grid","d_harlem","protects"],["p_grid","d_les","protects"],
+  ["p_grid","d_south_bronx","protects"],["p_grid","d_jackson_hts","protects"],
+  ["p_grid","d_bed_stuy","protects"],["p_grid","d_brownsville","protects"],
+  ["p_shelter","d_south_bronx","protects"],["p_shelter","d_brownsville","protects"],
+  ["p_shelter","d_harlem","protects"],["p_shelter","d_bed_stuy","protects"],
+  ["p_warning","d_south_bronx","protects"],["p_warning","d_washington_hts","protects"],
+  ["p_warning","d_jackson_hts","protects"],["p_warning","d_brownsville","protects"],
+  ["p_warning","d_staten_island","protects"],
+  ["p_outreach","d_south_bronx","protects"],["p_outreach","d_harlem","protects"],
+  ["p_outreach","d_brownsville","protects"],["p_outreach","d_bed_stuy","protects"],
+  // ── infra prerequisites ──
+  ["p_outreach","p_warning","requires"],
+  // ── infra → reserve (costs) ──
+  ["p_plows","r_reserve","costs"],["p_salt","r_reserve","costs"],
+  ["p_grid","r_reserve","costs"],["p_shelter","r_reserve","costs"],
+  ["p_warning","r_reserve","costs"],["p_outreach","r_reserve","costs"],
+  // ── policy → infra (builds) ──
+  ["pol_plow_fleet","p_plows","builds"],["pol_grid_harden","p_grid","builds"],
+  ["pol_salt_reserve","p_salt","builds"],["pol_shelters","p_shelter","builds"],
+  ["pol_warning_sys","p_warning","builds"],["pol_outreach","p_outreach","builds"],
+  // ── policy → reserve (costs) ──
+  ["pol_plow_fleet","r_reserve","costs"],["pol_grid_harden","r_reserve","costs"],
+  ["pol_business_cont","r_reserve","costs"],["pol_salt_reserve","r_reserve","costs"],
+  ["pol_shelters","r_reserve","costs"],["pol_resilience_hubs","r_reserve","costs"],
+  ["pol_warning_sys","r_reserve","costs"],["pol_outreach","r_reserve","costs"],
+  ["pol_overtime","r_reserve","costs"],["pol_deploy_manhattan","r_reserve","costs"],
+  ["pol_deploy_outer","r_reserve","costs"],["pol_deploy_equal","r_reserve","costs"],
+  // ── policy → district (targets — non-infra policies) ──
+  ["pol_business_cont","d_midtown","targets"],["pol_business_cont","d_flushing","targets"],
+  ["pol_business_cont","d_jackson_hts","targets"],
+  ["pol_resilience_hubs","d_south_bronx","targets"],["pol_resilience_hubs","d_brownsville","targets"],
+  ["pol_resilience_hubs","d_harlem","targets"],["pol_resilience_hubs","d_jackson_hts","targets"],
+  ["pol_resilience_hubs","d_bed_stuy","targets"],
+  ["pol_deploy_manhattan","d_midtown","targets"],["pol_deploy_manhattan","d_fidi","targets"],
+  ["pol_deploy_outer","d_south_bronx","targets"],["pol_deploy_outer","d_washington_hts","targets"],
+  ["pol_deploy_outer","d_jackson_hts","targets"],["pol_deploy_outer","d_flushing","targets"],
+  ["pol_deploy_outer","d_brownsville","targets"],["pol_deploy_outer","d_bay_ridge","targets"],
+  ["pol_deploy_outer","d_staten_island","targets"],
+  // ── outcome → resource (affects) ──
+  ["o_casualties","r_resilience","affects"],["o_displacement","r_resilience","affects"],
+  ["o_transit_shutdown","r_resilience","affects"],["o_property_damage","r_resilience","affects"],
+  ["o_property_damage","r_reserve","affects"],["o_blackout","r_resilience","affects"],
+  ["o_invisible_success","r_resilience","affects"],
+  // ── district → concern (cares_about, weight ≥ 4) — toggle "Concerns" filter to show ──
+  // South Bronx
+  ["d_south_bronx","c_health","cares_about"],["d_south_bronx","c_housing","cares_about"],
+  ["d_south_bronx","c_transit","cares_about"],["d_south_bronx","c_infra","cares_about"],
+  ["d_south_bronx","c_services","cares_about"],
+  // Riverdale
+  ["d_riverdale","c_health","cares_about"],["d_riverdale","c_safety","cares_about"],
+  ["d_riverdale","c_infra","cares_about"],["d_riverdale","c_services","cares_about"],
+  // Washington Heights
+  ["d_washington_hts","c_health","cares_about"],["d_washington_hts","c_housing","cares_about"],
+  ["d_washington_hts","c_transit","cares_about"],["d_washington_hts","c_infra","cares_about"],
+  ["d_washington_hts","c_services","cares_about"],
+  // Harlem
+  ["d_harlem","c_health","cares_about"],["d_harlem","c_housing","cares_about"],
+  ["d_harlem","c_safety","cares_about"],["d_harlem","c_infra","cares_about"],
+  ["d_harlem","c_services","cares_about"],
+  // Upper West Side
+  ["d_upper_west","c_health","cares_about"],["d_upper_west","c_safety","cares_about"],
+  ["d_upper_west","c_infra","cares_about"],
+  // Upper East Side
+  ["d_upper_east","c_health","cares_about"],["d_upper_east","c_safety","cares_about"],
+  // Midtown
+  ["d_midtown","c_transit","cares_about"],["d_midtown","c_safety","cares_about"],
+  ["d_midtown","c_infra","cares_about"],
+  // Lower East Side
+  ["d_les","c_health","cares_about"],["d_les","c_housing","cares_about"],
+  ["d_les","c_safety","cares_about"],["d_les","c_infra","cares_about"],
+  ["d_les","c_services","cares_about"],
+  // Financial District
+  ["d_fidi","c_transit","cares_about"],["d_fidi","c_safety","cares_about"],
+  ["d_fidi","c_infra","cares_about"],
+  // Astoria
+  ["d_astoria","c_health","cares_about"],["d_astoria","c_housing","cares_about"],
+  ["d_astoria","c_transit","cares_about"],["d_astoria","c_infra","cares_about"],
+  ["d_astoria","c_services","cares_about"],
+  // Jackson Heights
+  ["d_jackson_hts","c_health","cares_about"],["d_jackson_hts","c_housing","cares_about"],
+  ["d_jackson_hts","c_transit","cares_about"],["d_jackson_hts","c_infra","cares_about"],
+  ["d_jackson_hts","c_services","cares_about"],
+  // Flushing
+  ["d_flushing","c_health","cares_about"],["d_flushing","c_housing","cares_about"],
+  ["d_flushing","c_safety","cares_about"],["d_flushing","c_infra","cares_about"],
+  ["d_flushing","c_services","cares_about"],
+  // Jamaica
+  ["d_jamaica","c_health","cares_about"],["d_jamaica","c_transit","cares_about"],
+  ["d_jamaica","c_safety","cares_about"],["d_jamaica","c_infra","cares_about"],
+  ["d_jamaica","c_services","cares_about"],
+  // Williamsburg
+  ["d_williamsburg","c_housing","cares_about"],["d_williamsburg","c_safety","cares_about"],
+  ["d_williamsburg","c_infra","cares_about"],["d_williamsburg","c_services","cares_about"],
+  // Bed-Stuy
+  ["d_bed_stuy","c_health","cares_about"],["d_bed_stuy","c_housing","cares_about"],
+  ["d_bed_stuy","c_safety","cares_about"],["d_bed_stuy","c_infra","cares_about"],
+  ["d_bed_stuy","c_services","cares_about"],
+  // Park Slope
+  ["d_park_slope","c_safety","cares_about"],["d_park_slope","c_infra","cares_about"],
+  ["d_park_slope","c_services","cares_about"],
+  // Brownsville
+  ["d_brownsville","c_health","cares_about"],["d_brownsville","c_housing","cares_about"],
+  ["d_brownsville","c_transit","cares_about"],["d_brownsville","c_safety","cares_about"],
+  ["d_brownsville","c_infra","cares_about"],["d_brownsville","c_services","cares_about"],
+  // Bay Ridge
+  ["d_bay_ridge","c_health","cares_about"],["d_bay_ridge","c_transit","cares_about"],
+  ["d_bay_ridge","c_safety","cares_about"],["d_bay_ridge","c_infra","cares_about"],
+  ["d_bay_ridge","c_services","cares_about"],
+  // Staten Island
+  ["d_staten_island","c_health","cares_about"],["d_staten_island","c_transit","cares_about"],
+  ["d_staten_island","c_safety","cares_about"],["d_staten_island","c_infra","cares_about"],
+  ["d_staten_island","c_services","cares_about"],
 ];
 
 // ---- build graph model ----
@@ -225,7 +333,7 @@ document.getElementById("counts").textContent = nodes.length+" entries · "+edge
 // ---- seeded layout ----
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const rng=mulberry32(7);
-const W=1000,H=720;
+const W=1200,H=860;
 nodes.forEach(n=>{ n.x=W/2+(rng()-.5)*W*0.7; n.y=H/2+(rng()-.5)*H*0.7; });
 
 // ---- canvas + transform ----
@@ -238,7 +346,7 @@ function fitView(){ resize(); const k=Math.min(VW/W,VH/H)*0.92; T.k=k; T.x=(VW-W
 window.addEventListener("resize",()=>{ resize(); });
 
 // ---- physics ----
-const filterOn={time:true,threat:true,defense:true,money:true,politics:true};
+const filterOn={time:true,threat:true,defense:true,money:true,build:true,community:true,concern:false};
 let selected=null, hover=null;
 function visibleEdge(e){ return filterOn[ET[e.type].bk]; }
 function tick(){
