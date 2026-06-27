@@ -1,3 +1,7 @@
+# MANDATE — Scenario Posts & System Traces
+
+Updated 2026-06-27.
+
 Post → LLM scores per-district (0-10) based on concern weights → trust deltas → bloc averages →
   citywide resilience → outcome prevention
 
@@ -5,8 +9,15 @@ Post → LLM scores per-district (0-10) based on concern weights → trust delta
   cares_about edges (weight ≥ 4 shown in graph). Districts connect to blocs, blocs to hazard exposure,
   and trust levels determine which outcomes materialize during the disaster phase.
 
+  **Note:** The 20 scenario posts below are written for the **blizzard arc** specifically — the first
+  and default disaster type. The concern graph, district vulnerabilities, and scoring mechanics apply
+  equally to other disaster types (hurricane, heat wave, pandemic, infrastructure collapse), but the
+  specific post content, infrastructure references, and seasonal framing are blizzard-specific. See
+  the "Multi-Disaster Roguelike" section at the end of this document for how the same graph structure
+  serves different disasters.
+
   ---
-  The 20 Scenario Posts — Full System Traces
+  The 20 Scenario Posts — Full System Traces (Blizzard Arc)
 
   POST 1: "We're pre-positioning plows in every outer borough tonight."
 
@@ -501,4 +512,120 @@ Post → LLM scores per-district (0-10) based on concern weights → trust delta
   4. Post 17 (vague) vs Post 18 (specific) demonstrates the grounding mechanic — same concern axis     
   (infra), radically different LLM scores                                                              
   5. Post 20 is the exam — o_invisible_success is the only outcome node with a positive path, and it   
-  requires the credit-claim post to activate   
+  requires the credit-claim post to activate
+
+  ---
+  Multi-Disaster Roguelike — How the Concern Graph Serves Different Disasters
+
+  The 20 posts above are blizzard-specific, but the underlying concern graph (c_health, c_transit,
+  c_infra, c_housing, c_safety, c_services) is disaster-agnostic. Each disaster type shifts which
+  concern axes are most activated and which districts are most exposed.
+
+  **Hurricane:**
+  - Primary axes: c_infra (flooding, power), c_transit (evacuation routes), c_safety (storm surge)
+  - Most exposed districts: d_staten_island (coastal, isolated), d_les (low-lying), d_bed_stuy
+    (aging infrastructure), d_bay_ridge (waterfront), d_brownsville (flood-prone basements)
+  - Concern weight shifts: d_south_bronx c_health stays high (respiratory + flooding mold),
+    d_midtown c_transit drops (Manhattan has more evacuation options), d_staten_island c_safety
+    spikes to 9 (storm surge is existential for the island)
+  - Infrastructure: p_shelter and p_evac become more important than p_plows and p_salt
+  - Timeline: shorter warning window (~2 weeks vs. blizzard's ~20 weeks), but more abrupt onset
+
+  **Heat wave:**
+  - Primary axes: c_health (heat stroke, dehydration), c_services (cooling centers, water),
+    c_infra (grid strain, AC demand)
+  - Most exposed: d_south_bronx (asthma + heat island), d_brownsville (no AC in NYCHA),
+    d_harlem (aging buildings, poor ventilation), d_jackson_hts (overcrowded housing)
+  - Community assets matter most: mosques with AC, pharmacies with backup power, retired nurses
+    who check on seniors. The listening-session mechanic is critical here.
+  - Infrastructure: p_grid (power demand) and p_outreach (door-to-door wellness checks) dominate
+  - Timeline: full 48 weeks, but the crisis is diffuse — no single strike moment, just cumulative
+    heat stress. The "exam" is whether cooling centers were pre-positioned.
+
+  **Pandemic:**
+  - Primary axes: c_health (infection, hospitals), c_services (testing, vaccination access),
+    c_transit (spread vector)
+  - Every district is affected — the question is which ones have community trust to coordinate
+  - Trust and knowledge matter more than infrastructure. A district with trust > 60 reports
+    symptoms and follows guidance. A district with trust < 30 ignores mandates.
+  - Timeline: starts at week 1 with no warning phase. The entire term is the crisis.
+
+  **Infrastructure collapse:**
+  - Primary axes: c_infra (cascading failure), c_transit (system shutdown), c_services (utility loss)
+  - Most exposed: districts with high c_infra concern weights (d_astoria:8, d_midtown:8, d_les:8,
+    d_bed_stuy:8, d_fidi:8)
+  - Timeline: compressed to ~30 weeks with abrupt onset
+
+  ---
+  Hurricane Scenario Posts — Examples
+
+  These posts show how the same graph structure and scoring mechanics serve a different disaster type.
+  The concern axes, district scores, and infrastructure references shift, but the grounding mechanic
+  works identically.
+
+  HURRICANE POST 1: "Storm surge maps are in. Red Hook, the Rockaways, and South Shore Staten Island
+  are in the highest-risk zone. We're pre-staging sandbags and pumps tonight."
+
+  Tone: URGENT | Phase: Warning (week ~30)
+
+  Graph path:
+  Post → c_safety (primary), c_infra (secondary)
+    → HIGH resonance: d_staten_island (safety spike to 9 in hurricane mode),
+  d_bay_ridge (waterfront exposure), d_les (low-lying)
+    → Infrastructure: p_flood_barriers → mitigates h_hurricane (value:18)
+    → Bloc shift: b_working ↑ (outer-borough communities named), b_labor ↑ (sanitation crews)
+    → Outcome prevention: h_hurricane → o_flooding REDUCED in named districts
+  Net: Hyper-targeted and grounded if the player has visited these coastal districts. The hurricane
+  reweights d_staten_island from transit-isolation (blizzard) to storm-surge exposure (hurricane) —
+  same district, different vulnerability. Posts that worked for blizzards (plows, salt) are irrelevant.
+
+  HURRICANE POST 2: "Every basement apartment in a flood zone needs an escape plan. If you live below
+  grade, your landlord is required to post evacuation routes. We're enforcing starting today."
+
+  Tone: CONCERNED | Phase: Before (week ~18)
+
+  Graph path:
+  Post → c_housing (primary), c_safety (secondary)
+    → HIGH resonance: d_jackson_hts (housing:7, many basement apartments), d_les (housing:7,
+  flood-prone), d_harlem (housing:8), d_washington_hts (housing:7)
+    → Grounding: references specific vulnerability (basement apartments) from district insights
+    → Bloc shift: b_working ↑↑ (basement renters), b_realestate ↓ (enforcement mandate)
+    → Outcome prevention: h_hurricane → o_casualties path reduced for below-grade residents
+  Net: The housing axis activates differently for hurricanes vs. blizzards. In a blizzard, housing
+  concerns are about heat failure. In a hurricane, they're about flooding and escape routes. The same
+  concern weight (d_jackson_hts housing:7) maps to different vulnerabilities depending on disaster type.
+
+  HURRICANE POST 3: "The MTA will suspend all subway service 12 hours before landfall. If you need to
+  evacuate and don't have a car, call 311 now."
+
+  Tone: URGENT | Phase: Warning (week ~32)
+
+  Graph path:
+  Post → c_transit (primary)
+    → HIGH resonance: d_jamaica (transit:9), d_midtown (transit:9), d_washington_hts (transit:8)
+    → But DIFFERENT meaning: in blizzard, transit concern = snow clearance. In hurricane, transit
+  concern = evacuation capacity. Same axis, different operational content.
+    → Infrastructure: p_evac → mitigates h_hurricane (value:15)
+    → Bloc shift: b_working ↑ (car-free commuters), b_labor ↑↑ (MTA workers named)
+    → Outcome prevention: o_transit_shutdown becomes o_evacuation_failure if transit stops too late
+  Net: Transit is critical in both disasters but for opposite reasons. Blizzard: keep routes clear.
+  Hurricane: shut routes down safely and provide alternatives. The LLM scoring works identically —
+  it matches post text against district concern weights — but the semantic content that scores high
+  is completely different.
+
+  HURRICANE POST 4: "Mrs. Chen's building on 138th survived Sandy because the block association had
+  a mutual-aid plan. We're funding every block association that submits an evacuation plan by Friday."
+
+  Tone: OPTIMISTIC | Phase: Before (week ~22)
+
+  Graph path:
+  Post → c_services (primary), c_safety (secondary)
+    → References community asset (block association mutual-aid plan) — maximum grounding
+    → HIGH resonance: d_harlem (services:8), d_brownsville (services:9), d_jackson_hts (services:8)
+    → Grounding bonus: specific character + specific asset + specific action = highest LLM score
+    → Bloc shift: b_working ↑↑, b_progressives ↑↑ (community empowerment)
+    → Outcome prevention: community self-organization during hurricane = fewer casualties
+  Net: This is the community-asset payoff post adapted for hurricane. The asset (block association plan)
+  was discovered through a listening session. Referencing it in the post activates the full
+  insight→post→trust loop. The same mechanic works for any disaster — the assets just map to different
+  protective functions.   

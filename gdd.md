@@ -1,10 +1,10 @@
 # MANDATE — Game Design Document & Dev Roadmap
 
-*A web-based civic resilience simulation about governing New York City through Human-Centered Design.*
+*A civic resilience simulation about governing New York City through Human-Centered Design.*
 
-**Status:** Playable prototype · full 48-week loop with 3-view shell, blizzard disaster arc, LLM-scored posts, 3 conversation scripts, cinematic endings
-**Platform:** Web (desktop-first, touch-aware)
-**Doc version:** 0.5 — reality sync: reflects built systems, reconciles terminology, documents blizzard arc & community assets
+**Status:** Playable prototype (web) + native macOS port (Swift/SwiftUI, ~80% feature parity) · full 48-week loop, blizzard disaster arc, LLM-scored posts, 10 conversation scripts, cinematic endings
+**Platforms:** Web (desktop-first, touch-aware) · macOS (SwiftUI, App Store target)
+**Doc version:** 0.6 — adds Swift port, roguelike direction, candidates, bento box policy builder
 
 ---
 
@@ -18,6 +18,8 @@ This is a pedagogical simulation of Human-Centered Design (HCD) applied to emerg
 
 ### The pitch in one sentence
 > A civic resilience game where you prepare NYC for disaster by going to the ground, learning who's vulnerable and why, and building the community trust that saves lives when the crisis hits.
+
+**Future direction: roguelike replayability.** Each playthrough currently follows a single blizzard arc, but the design supports reshuffling the disaster type, political landscape, and available characters between runs. See SS5.12--5.13 for the candidates and roguelike structure that would make each term feel like a new city. Inspired by *Blue Prince* (Dogubomb) -- a roguelike where the mansion rearranges itself between runs, rewarding meta-knowledge over memorization.
 
 ---
 
@@ -333,6 +335,25 @@ Interventions are not cards dealt to you. They emerge from your insight map — 
 
 This is pillar #1 in mechanical form: listening before deciding isn't just flavor — it's the system. You literally cannot access the best emergency response tools without doing the ground work. HCD's principle that the people closest to the problem are closest to the solution is encoded directly into the unlock structure.
 
+#### 5.7a Bento Box Policy Builder (future — spatial policy construction)
+
+Instead of selecting pre-made policy cards, the player **constructs** policies by placing component tiles into a fixed-size grid — a bento box. The grid's finite area is the budget constraint made spatial and visceral.
+
+**Tile types:**
+- **WHERE** tiles — target a borough or district. Placing one scopes the intervention geographically.
+- **WHAT** tiles — infrastructure type: plows, generators, shelters, outreach teams, medical supply caches.
+- **HOW** tiles — deployment strategy: prioritize by population density, by vulnerability index, or equal spread.
+- **FUNDING** blocks — each block = $0.2B. More blocks = more coverage, but the grid has finite space.
+
+**Spatial rules:**
+- Adjacent compatible components create **synergies** (e.g., a generator tile next to a medical cache tile = backup power for insulin storage, stronger combined effect).
+- Conflicting components **cannot be placed adjacent** (e.g., "prioritize density" HOW tile next to a rural-district WHERE tile — the strategies contradict).
+- Insights unlock **smaller, more efficient** component versions. A generic generator tile is 2x2; an informed generator tile (unlocked after discovering which buildings need backup power) is 1x1 and more effective. This is how listening translates directly into better policy design.
+
+**Why spatial:** The fixed grid makes budget tradeoffs tangible. You can *see* that adding outreach teams to a fourth borough means removing the medical cache from the first. Traditional policy menus hide these tradeoffs behind numbers; the bento box makes them physical. The interaction is drag-and-place, with snap feedback and adjacency highlighting.
+
+**Status:** Design concept. Not yet prototyped in either web or Swift. See S11 for open design questions.
+
 ### 5.8 The cost of governing (the Frostpunk clock)
 
 Pressure that never stops:
@@ -346,6 +367,14 @@ Together these create the knife's-edge: you can never rest, you can never know e
 ### 5.9 Disasters & events (the primary antagonist)
 
 Disasters are not random 30% interruptions — they are the **final exam**. The entire 48-week term follows a single escalating crisis arc: a major winter nor'easter that the player can see coming from week 4 onward. The left panel shows a countdown ("BLIZZARD ARRIVING IN X WEEKS") and a preparation checklist that tracks districts visited, insights gathered, patterns found, and citywide resilience. The disaster never surprises you — but how ready you are is entirely up to you.
+
+**Multiple disaster types (roguelike direction):** The blizzard is the first fully scripted arc, but the concern graph and scenario system are designed to support additional disaster types for roguelike run variation:
+- **Hurricane** — storm surge flooding in coastal districts (Red Hook, Rockaways, Staten Island). Concern axis shifts toward infrastructure and transit. Shorter warning window.
+- **Heat wave** — prolonged extreme heat. Health and services become the dominant axes. Community assets like AC-equipped mosques and pharmacy generators become critical. Longer timeline (48 weeks), but the crisis is slower and more diffuse.
+- **Pandemic** — health emergency across all boroughs. Every district is affected; the question is which ones have the community trust to coordinate testing and vaccination. Trust and knowledge matter more than infrastructure.
+- **Infrastructure collapse** — cascading failure (power grid, water main, transit). Concentrated in aging-infrastructure districts. Shorter timeline (~30 weeks), higher urgency.
+
+Each disaster type reshuffles which concern axes matter most, which districts are most vulnerable, and which community assets are life-or-death. The same 19-district graph, the same conversation system, the same trust mechanics — but the final exam tests different preparation. See S5.13 for full roguelike structure.
 
 #### The blizzard arc (10 scripted events)
 
@@ -412,6 +441,41 @@ The previous simulator validated the old loop's balance. The new loop requires a
 
 The balance harness should be rebuilt to model these new dynamics as a first-class dev tool.
 
+### 5.12 Candidates & political opposition (future)
+
+The current game has no political opponents — the player governs unopposed, and the only tension is between preparation and neglect. **Candidates** add a second axis: doing what's right for the city vs. what wins the election.
+
+**How it works:**
+- Each run features **2–3 rival candidates**, each aligned with different bloc coalitions and running on different platforms. One might champion outer-borough transit; another might push Manhattan-first business recovery.
+- Candidates **react to your moves in the social feed**. When you post about infrastructure in the South Bronx, a finance-aligned candidate might post: *"While the Mayor tours the outer boroughs, Midtown businesses are closing."* When you enact a progressive policy, the real-estate candidate attacks your fiscal record.
+- Your policies shift **bloc support** between you and your opponents. An approval rating tracks your standing alongside the resilience score. You can have high resilience and low approval (you did the right thing but it wasn't popular) or the reverse.
+- Candidates can **exploit your public posts**. A grounded post about a vulnerability you discovered can be twisted: *"The Mayor admits the city isn't ready."* A hollow post gets fact-checked: *"The Mayor claims progress in Bushwick — has he ever been there?"*
+- The core tension: **do what's right for the city, or do what wins the election?** A player who prioritizes vulnerable outer-borough districts may lose approval with the finance and real-estate blocs. A player who campaigns for popularity may win re-election but leave the city unprepared.
+
+**Candidate AI:** Each candidate has a profile (name, platform, bloc alignment, rhetorical style) and a simple reactive model: they respond to the player's posts and policies with counter-messages that appear in the feed. The LLM generates candidate reactions from their profile + the player's recent actions. Candidates don't visit districts or gather insights — they operate purely in the media layer.
+
+**Status:** Design concept. Not yet prototyped. See S11 for open design questions.
+
+### 5.13 Roguelike structure (future)
+
+Inspired by *Blue Prince* (Dogubomb), where each run through the mansion reshuffles the room layout so that memorizing a path never works — only understanding the *system* carries over. Mandate applies the same principle to civic governance: each term is a new city, and the player's advantage comes from meta-knowledge about *how* to govern, not from remembering which district needs what.
+
+**What reshuffles between runs:**
+- **Disaster type** — blizzard, hurricane, heat wave, pandemic, or infrastructure collapse (see S5.9). Each changes which concern axes matter and which districts are most exposed.
+- **District concern scores** — the concern weights (health, transit, housing, etc.) shift. A district that was transit-critical in one run might be health-critical in the next.
+- **Available characters** — some NPCs rotate in and out. The bodega owner in Jackson Heights might be replaced by a school principal. Core characters (1 per district) are always present; secondary characters (2–4 per district) are drawn from a pool.
+- **Political landscape** — starting bloc hostility varies. In one run, the labor bloc starts hostile; in another, they're your allies. Candidates (S5.12) have different platforms each run.
+- **Timeline pressure** — some disasters give the full 48 weeks; others compress to 30. Pandemics might start at week 1 with no warning phase. Infrastructure collapses give 30 weeks with an abrupt onset.
+
+**What persists across runs:**
+- **Meta-knowledge** — the player learns that listening sessions reveal community assets, that trust erodes without follow-through, that pattern interventions are more efficient than generic ones. This system understanding is the real progression.
+- **Legacy score** — a cumulative measure of how many runs you've completed, how many lives you've saved, how many districts you've served. Cosmetic, not mechanical — no persistent upgrades that make future runs easier.
+- **Unlocked disaster types** — the first run is always a blizzard (the tutorial disaster). Subsequent runs draw from the full pool.
+
+**Why roguelike:** The game's core lesson — that you have to listen before you can act — is most powerful when it can't be shortcut by memorization. If the player knows that Maria in East Harlem always needs heat fixed, the listening becomes performative. When the characters, concerns, and disasters shift, the player has to *actually listen* every time. The roguelike structure makes HCD's empathy phase mechanically necessary, not just narratively encouraged.
+
+**Status:** Design concept. The concern graph and scenario system already support variable disaster types and concern weights. Character rotation and run persistence are not yet built. See S11 for open design questions.
+
 ---
 
 ## 6. Content scope (current → target)
@@ -419,7 +483,7 @@ The balance harness should be rebuilt to model these new dynamics as a first-cla
 | Content type | Built | First-release target | Notes |
 |---|---|---|---|
 | Districts | 19 | 19 | Complete with concerns, blocs, vulnerability tags, positions |
-| Characters with scripted conversations | 3 | 19 (1 per district minimum) | South Bronx, Harlem, Midtown done. LLM generates dynamic conversations from character profiles, reducing the need for hand-authored scripts. |
+| Characters with scripted conversations | 10 | 19 (1 per district minimum) | 10 districts done (both web + Swift). LLM generates dynamic conversations from character profiles, reducing the need for hand-authored scripts. |
 | Character profiles (for LLM conversations) | 3 | 3–5 per district (~60–95) | Name, role, traits, knowledge domain. Lightweight to author — the LLM does the dialogue. |
 | Insight templates per district | ~6–9 (via conversations) | 8–12 per district (~150–230) | LLM conversations generate insights dynamically from district concerns + character knowledge |
 | Concern weights per district | 19 | 19 | All districts have 6-category concern scores (0–10). Drives LLM scoring. |
@@ -879,6 +943,35 @@ game.start
        └─ clock.weekStart {week: 1}  ← normal loop begins, all views active
 ```
 
+### 10.8 Swift/macOS port (MandateSwift/)
+
+A native macOS app built in SwiftUI, targeting App Store distribution. The Swift port is the **release target**; the web prototype remains the playtesting and design iteration tool.
+
+**Architecture:**
+- **7 core systems ported:** EventBus, GameState, ContentGraph, ClockSystem, TrustSystem, PolicySystem, ScenarioSystem — all as Swift classes/structs mirroring the JS bus-connected pattern.
+- **Static data:** All 115+ content graph entries and 170+ links ported as Swift static arrays (`Entries.swift`, `Links.swift`). 10 scenario events (`ScenarioEvents.swift`). 10 NPC conversation scripts (`Conversations.swift`).
+- **Views:** SwiftUI views for the three-view shell (GameShell, StatusBar, BlocBar), canvas-based hex map with radial menu and 4 view modes (MapView, HexRadialMenu, DistrictDetailPanel), calendar with scheduling and week advancement (CalendarView), conversation overlay (ConversationOverlay), social feed with compose bar, feed timeline, and DM sidebar (SocialView, ComposeBar, FeedTimeline, DMSidebar), and game end overlay with all 5 outcomes (GameEndOverlay).
+- **Design tokens:** Centralized `Theme` enum (DesignTokens.swift) with palette, typography, spacing, and animation constants — the Swift equivalent of the CSS custom properties in the web version.
+- **LLM integration:** Ollama HTTP at `localhost:11434`, same as web. `LLMService.swift` handles the connection; `PostScorer.swift` mirrors the web's `handlePost()` with per-district scoring; `FallbackScorer.swift` provides keyword-matching when Ollama is unavailable.
+
+**What's missing vs. web:**
+- Pattern detection system (cross-district insight linking)
+- Chatter generation (procedural feed content based on district knowledge)
+- 3 of 8 post pipeline steps (full grounding chain not yet wired)
+- Pan/zoom gestures on the map canvas
+- Drag-to-schedule on the calendar
+- Initial feed and DM seeding on game start
+- Node flashing animation on label
+- Map badge rendering for labeled districts
+
+**Platform strategy:**
+- **Web = prototype and playtesting tool.** Zero-friction access — send one HTML file. Design iteration happens here first.
+- **Swift = release target.** App Store distribution, native performance, presentation-quality UI.
+- **Don't maintain both in parallel.** Finalize design decisions in the web prototype, then do a final Swift port pass.
+- **LLM path:** Ollama HTTP works from both platforms today. The future path for self-contained distribution is **MLX Swift** — Apple's native ML framework — which would allow the game to run its own local model without requiring Ollama. This is the key advantage of the native port: a single `.app` bundle with embedded inference.
+
+**File count:** 37 Swift source files, ~4,300 lines.
+
 ---
 
 ## 11. Open design questions
@@ -902,6 +995,10 @@ game.start
 - **Community asset amplification:** When a discovered asset meets a pre-positioned intervention, the asset's protective radius should double. But what's the right multiplier? Too high and assets feel overpowered. Too low and the discovery doesn't feel meaningful.
 - **Listening session dynamics:** With 2–3 characters in a single LLM conversation, how do we prevent the meeting from becoming incoherent? The LLM needs structure: each character speaks in turn, they build on each other's points, disagreements surface real tensions. This is harder than 1-on-1 conversations.
 - **Model selection & performance:** `llama3.2` (3B) is fast but may lack the nuance for in-character roleplay. `llama3.1:8b` is better but slower. Should the game offer a model selector, or should it auto-detect what's available? What's the latency budget for a conversation turn? (>3 seconds breaks immersion.)
+- **Roguelike balance:** How much variation between runs is enough to prevent memorization without making the game feel arbitrary? If concern weights shift too much, returning players can't build on prior knowledge. If they shift too little, the second run feels like the same city. The *Blue Prince* lesson: the rooms change, but the rules don't. What are Mandate's invariant rules vs. variable parameters?
+- **Candidate AI quality:** Candidates need to feel like real opponents, not strawmen. Their feed reactions must be plausible — a finance-aligned candidate should make arguments that *sound reasonable*, not cartoonishly evil. How much LLM context does a candidate reaction need? Can it be a single prompt with the candidate profile + the player's recent action, or does it need run history?
+- **Bento box UX:** Spatial policy construction is intuitive in concept but potentially fiddly in execution. How many tiles fit in the grid? If the grid is too small (3x3), options feel limited. If too large (6x6), the combinatorial space overwhelms. What's the right grid size for "feels like a real budget constraint but not a puzzle game"? How do synergy/conflict rules get communicated — tooltips, color coding, physical snap/repel feedback?
+- **Approval vs. resilience:** With candidates, the player manages two scores — approval (political) and resilience (civic). Do these compete for the same resources (time slots, budget), or are they orthogonal? If a player can max both, there's no tension. If they're zero-sum, the game risks feeling punitive. The sweet spot: they're correlated in the short term (popular moves build resilience) but diverge under pressure (the right move for the city is unpopular).
 
 ---
 
@@ -950,7 +1047,7 @@ Two balance-tested slices: the card loop and the spatial map.
 - [x] Label → Queue → Schedule pipeline (hex menu tags flow to Calendar, drag to slots)
 - [x] Calendar view: monthly grid, 3 slots/week, drag-to-schedule, undo via ×/click
 - [x] Social view: compose bar, LLM-scored posts (Ollama), feed timeline, DM sidebar, insight list
-- [x] Conversation overlay: typing indicator, NPC text, player choices, depth meter, insight chips (3 scripted districts)
+- [x] Conversation overlay: typing indicator, NPC text, player choices, depth meter, insight chips (10 scripted districts)
 - [x] GO execution: plays scheduled engagements in order, triggers conversations
 - [x] END WEEK: trust erosion, knowledge decay (−4/week), operating deficit (−$0.375B), feed chatter, win/lose checks
 - [x] Trust chain: visits → insights → posts → trust deltas → map update
@@ -961,7 +1058,7 @@ Two balance-tested slices: the card loop and the spatial map.
 
 **Remaining:**
 - [ ] **LLM-powered conversations** — wire Ollama to generate dynamic conversations from character profiles (the biggest remaining feature; solves the content bottleneck)
-- [ ] **Character profiles for all 19 districts** — name, role, traits, knowledge domain (lightweight authoring; LLM generates the dialogue)
+- [ ] **Character profiles for remaining 9 districts** — name, role, traits, knowledge domain (10 of 19 done; LLM generates the dialogue)
 - [ ] **Onboarding / Week 0** — scripted first day (§4.0, beats 1–6)
 - [ ] **Notebook drawer** — slide-out panel showing all insights, accessible from any view
 - [ ] **Insight freshness decay** — insights go stale after ~6–8 weeks, stop grounding posts
@@ -1000,10 +1097,23 @@ Make the LLM conversation system feel alive. **Pick a subset — do not build al
 
 **Exit:** a shippable web build with a reason to return tomorrow.
 
+### Phase 5 — Roguelike, candidates & bento box · ~6–8 wks
+
+The three systems that turn Mandate from a single-arc experience into a replayable political survival game. Build in order: roguelike first (structural), then candidates (content), then bento box (interaction).
+
+- **Roguelike run variation** — disaster type selection (blizzard/hurricane/heat wave/pandemic/infrastructure collapse), concern weight reshuffling, character rotation from pool, variable timeline pressure, starting bloc hostility variation. First run always blizzard (tutorial). Subsequent runs draw from pool.
+- **Legacy & persistence** — meta-knowledge progression (no mechanical advantages). Legacy score across runs. Unlocked disaster types. Run history with coverage heatmaps.
+- **Candidates** — 2–3 rival candidates per run with bloc alignments, platforms, and reactive feed behavior. Approval rating alongside resilience. Candidate LLM reactions to player posts and policies. Election outcome as second win/lose axis.
+- **Bento Box Policy Builder** — spatial grid for policy construction. WHERE/WHAT/HOW/FUNDING tiles. Adjacency synergies and conflicts. Insight-unlocked efficient tile variants. Replaces the current policy card selection UI.
+- **Balance pass** — new difficulty curves for multiple disaster types. Candidate AI tuning. Bento box grid sizing. Cross-run balance (is each disaster type winnable?).
+
+**Exit:** three distinct runs feel meaningfully different. Candidates add political tension without feeling unfair. The bento box makes policy construction tangible and rewarding. A player who's done 5 runs understands the *system* but can't predict the *city*.
+
 ### Cross-cutting (every phase)
 - Rebuild and maintain the balance simulator for the new loop.
-- Playtest at the end of each phase against the §13 metrics; feed findings back into tuning.
+- Playtest at the end of each phase against the S13 metrics; feed findings back into tuning.
 - Maintain the design-pillar test: any new feature that fails pillar #2 (knowledge is earned) or pillar #4 (time is the constraint) gets cut or redesigned.
+- **Platform strategy:** iterate in web first, then port to Swift. Don't maintain both in parallel. The Swift port gets a final sync pass before each release milestone. MLX Swift integration (self-contained LLM) is the gating feature for App Store distribution.
 
 ---
 
@@ -1050,6 +1160,62 @@ Target survival      ~15% (blind response) / ~25% (random visits) / ~60% (strate
 ### Dev tools
 - `graph.html` — Content graph visualizer with D3 force layout.
 - `test-llm.html` — Ollama post-scoring test harness.
+
+### MandateSwift/ (native macOS port)
+```
+MandateSwift/
+├── Package.swift                          ← SPM manifest (SwiftUI, MLX dependencies)
+└── Sources/
+    ├── MandateApp.swift                   ← App entry point
+    ├── Core/
+    │   ├── EventBus.swift                 ← Pub/sub backbone (mirrors bus.js)
+    │   ├── GameState.swift                ← Observable state model
+    │   ├── GameEngine.swift               ← Orchestrator: wires systems to state
+    │   ├── ContentGraph.swift             ← Entry/link queries (mirrors registry.js)
+    │   ├── ClockSystem.swift              ← Weekly cadence, deficit, win/lose
+    │   ├── TrustSystem.swift              ← Per-district resilience, bloc aggregates
+    │   ├── PolicySystem.swift             ← Insight-gated intervention tiers
+    │   └── ScenarioSystem.swift           ← Condition-based weekly events
+    ├── Data/
+    │   ├── Entries.swift                  ← 115+ static entries (districts, infra, blocs, etc.)
+    │   ├── Links.swift                    ← 170+ static links (threatens, mitigates, etc.)
+    │   ├── Conversations.swift            ← 10 NPC conversation scripts
+    │   └── ScenarioEvents.swift           ← 10 blizzard-arc events
+    ├── Models/
+    │   ├── District.swift                 ← District data model
+    │   ├── Entry.swift                    ← Content graph entry type
+    │   ├── Link.swift                     ← Content graph link type
+    │   ├── Post.swift                     ← Social post model
+    │   └── Scenario.swift                 ← Scenario event model
+    ├── LLM/
+    │   ├── LLMService.swift               ← Ollama HTTP client
+    │   ├── PostScorer.swift               ← LLM-based post scoring (per-district)
+    │   └── FallbackScorer.swift           ← Keyword matching when Ollama unavailable
+    ├── Utilities/
+    │   ├── DesignTokens.swift             ← Theme enum: palette, typography, spacing
+    │   └── Clamp.swift                    ← Numeric clamping utility
+    └── Views/
+        ├── Shell/
+        │   ├── GameShell.swift            ← Three-view tab router
+        │   ├── StatusBar.swift            ← Week, resilience, reserve display
+        │   ├── BlocBar.swift              ← Five constituency bloc indicators
+        │   └── LLMStatusView.swift        ← Ollama connection status indicator
+        ├── Map/
+        │   ├── MapView.swift              ← Canvas-based hex map, 4 view modes
+        │   ├── HexRadialMenu.swift        ← Radial action menu (VISIT/LISTEN/MSG/INFO/CLOSE)
+        │   └── DistrictDetailPanel.swift   ← Trust, knowledge, concern detail
+        ├── Calendar/
+        │   └── CalendarView.swift          ← Monthly grid, scheduling, GO/END WEEK
+        ├── Conversation/
+        │   └── ConversationOverlay.swift   ← NPC dialogue with depth meter
+        ├── Social/
+        │   ├── SocialView.swift            ← Two-pane layout (posts + feed)
+        │   ├── ComposeBar.swift            ← Post composition with tone selector
+        │   ├── FeedTimeline.swift          ← Scrolling feed of city chatter + reactions
+        │   └── DMSidebar.swift             ← Character DM threads
+        └── GameEnd/
+            └── GameEndOverlay.swift        ← Frostpunk-style ending with 5 outcomes
+```
 
 ### Documentation
 - `gdd.md` — This document.

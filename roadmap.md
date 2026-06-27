@@ -1,6 +1,6 @@
 # MANDATE — Roadmap
 
-Updated 2026-06-22. Tasks derived from `interactions.md` system specification.
+Updated 2026-06-27. Tasks derived from `interactions.md` system specification.
 
 ---
 
@@ -19,14 +19,27 @@ Mandate/
 ├── data/
 │   ├── entries.js          ← Content graph nodes (districts, infra, blocs, policies, outcomes)
 │   └── links.js            ← Content graph edges (threatens, mitigates, protects, etc.)
-└── systems/
-    ├── bus.js              ← EventBus (done)
-    ├── state.js            ← StateStore (done)
-    ├── registry.js         ← EntryRegistry (done)
-    ├── clock.js            ← ClockSystem — weekly cadence, win/lose (done, inline duplicate)
-    ├── trust.js            ← TrustSystem — per-district resilience (done, inline duplicate)
-    ├── policy.js           ← InterventionSystem — insight-gated tiers (done, not yet wired)
-    └── scenario.js         ← ScenarioSystem — weekly events (done, not yet wired)
+├── systems/
+│   ├── bus.js              ← EventBus (done)
+│   ├── state.js            ← StateStore (done)
+│   ├── registry.js         ← EntryRegistry (done)
+│   ├── clock.js            ← ClockSystem — weekly cadence, win/lose (done, inline duplicate)
+│   ├── trust.js            ← TrustSystem — per-district resilience (done, inline duplicate)
+│   ├── policy.js           ← InterventionSystem — insight-gated tiers (done, not yet wired)
+│   └── scenario.js         ← ScenarioSystem — weekly events (done, not yet wired)
+└── MandateSwift/           ← Native macOS port (SwiftUI, ~80% feature parity)
+    ├── Package.swift        ← SPM manifest
+    └── Sources/
+        ├── MandateApp.swift
+        ├── Core/            ← 7 ported systems (EventBus, GameState, GameEngine,
+        │                       ContentGraph, Clock, Trust, Policy, Scenario)
+        ├── Data/            ← Static entries (61), links (170+), 10 conversations,
+        │                       10 scenario events
+        ├── Models/          ← District, Entry, Link, Post, Scenario
+        ├── LLM/             ← Ollama HTTP client, PostScorer, FallbackScorer
+        ├── Utilities/       ← DesignTokens (Theme enum), Clamp
+        └── Views/           ← Shell, Map, Calendar, Conversation, Social, GameEnd
+                               (37 Swift files, ~4,300 lines total)
 ```
 
 ### Built and wired (all inline in index.html)
@@ -40,7 +53,7 @@ Mandate/
 - [x] Calendar undo: x buttons on sidebar schedule cards, x buttons on queue chips, click calendar agenda items to unschedule, drag dead-zone fix (6px threshold)
 - [x] Calendar ↔ Map linking: click district name → navigateToDistrict() → map view + hex menu
 - [x] GO: executes schedule → conversation overlay (if content exists) or direct stat bump
-- [x] Conversations: 3 scripts (South Bronx, Harlem, Midtown), typing indicator, depth meter, insight chips
+- [x] Conversations: 11 scripts (11 districts), typing indicator, depth meter, insight chips
 - [x] END WEEK: trust erosion (-1/unvisited), knowledge decay (-4), deficit (-$0.375B), feed chatter, win/lose
 - [x] Social: dynamic compose bar, LLM-scored posts (Ollama), feed timeline, DM sidebar, insight list
 - [x] LLM post scoring: async handlePost() calls Ollama → per-district scores + resident reactions → trust deltas + feed reactions; keyword fallback when offline
@@ -95,27 +108,29 @@ The scripted first day that teaches the loop without tutorials (see interactions
 - [ ] Beat 6 — Handoff: Calendar + Social tabs unlock (animate in). Feed populates with initial chatter. Week 1 begins.
 - [ ] During onboarding: Calendar and Social tabs visible but locked (dimmed, "Week 1" label)
 
-### 1C. Conversation Content — 16 More Districts
+### 1C. Conversation Content — 8 More Districts
 
-3 conversations exist (South Bronx, Harlem, Midtown). Need 16 more for full map coverage.
+11 conversations exist in web (11 districts), 10 ported to Swift (missing Bay Ridge). Need 8 more for full 19-district coverage.
 
-- [ ] Write conversation scripts for each district — 1 character, 3-5 exchanges, 2-3 insights each
-- [ ] Each character framed as subject matter expert on their own survival (per GDD §3)
+- [x] Write conversation scripts for 11 districts — 1 character, 3-5 exchanges, 2-3 insights each
+- [ ] Write conversation scripts for remaining 8 districts
+- [ ] Each character framed as subject matter expert on their own survival (per GDD S3)
 - [ ] Each conversation reveals at least 1 vulnerability insight + 1 community asset
 - [ ] Insight categories: HEALTH, HOUSING, INFRA, SERVICES, SAFETY, ASSET
 - [ ] Add character entries to `data/entries.js` (type: "character", with lives_in links)
 - [ ] Add insight template entries to `data/entries.js` (type: "insight", with contributes_to links)
 - [ ] Add conversation fragment entries to `data/entries.js` (type: "fragment", with leads_to links)
+- [ ] Port Bay Ridge conversation to Swift
 
-Priority districts (diverse borough coverage for early playtesting):
-1. [ ] Fordham (Bronx, labor)
-2. [ ] Astoria (Queens, progressive)
-3. [ ] Jackson Heights (Queens, working)
-4. [ ] Williamsburg (Brooklyn, progressive)
-5. [ ] Crown Heights (Brooklyn, working)
-6. [ ] Flushing (Queens, working)
-7. [ ] Bay Ridge (Brooklyn, realestate)
-8. [ ] Staten Island — North Shore (labor)
+Remaining districts (no conversation yet):
+1. [ ] Riverdale (Bronx)
+2. [ ] Upper East Side (Manhattan)
+3. [ ] Lower Manhattan (Manhattan)
+4. [ ] Long Island City (Queens)
+5. [ ] Jamaica (Queens)
+6. [ ] Downtown Brooklyn (Brooklyn)
+7. [ ] Bushwick (Brooklyn)
+8. [ ] Mid-Island (Staten Island)
 
 ### 1D. Insight System — Freshness & Patterns
 
@@ -220,10 +235,80 @@ Pick a subset — do not build all at once.
 
 ---
 
+## Swift Port Status
+
+The native macOS port (`MandateSwift/`) is at ~80% feature parity with the web prototype. It serves as the release target for App Store distribution.
+
+### Built
+- [x] 7 core systems: EventBus, GameState, GameEngine, ContentGraph, ClockSystem, TrustSystem, PolicySystem, ScenarioSystem
+- [x] All 61 content graph entries and 170+ links as static Swift data
+- [x] 10 scenario events (full blizzard arc)
+- [x] 10 NPC conversation scripts (web has 11; Bay Ridge not yet ported)
+- [x] Canvas-based hex map with radial menu and 4 view modes
+- [x] Calendar with scheduling and week advancement
+- [x] Social feed with compose bar, feed timeline, DM sidebar
+- [x] LLM integration via Ollama HTTP (PostScorer + FallbackScorer)
+- [x] Centralized design token system (Theme enum)
+- [x] Game end overlay with all 5 outcomes
+- [x] Three-view shell with tab router, status bar, bloc bar
+
+### Missing vs. web
+- [ ] Pattern detection (cross-district insight linking)
+- [ ] Chatter generation (procedural feed content based on district knowledge level)
+- [ ] 3 of 8 post pipeline steps (full grounding chain)
+- [ ] Pan/zoom gestures on map canvas
+- [ ] Drag-to-schedule on calendar (currently click-to-assign)
+- [ ] Initial feed and DM seeding on game start
+- [ ] Node flashing animation on VISIT/LISTEN label
+- [ ] Map badge rendering for labeled districts
+
+### Future: MLX Swift
+The key advantage of the native port is self-contained LLM inference. MLX Swift (Apple's ML framework) would allow the game to embed a local model in the `.app` bundle — no Ollama dependency, no server, just a single download. This is the gating feature for zero-friction App Store distribution.
+
+---
+
+## Phase 5 — Roguelike & Political Depth
+
+Three new systems that transform Mandate from a single-arc experience into a replayable political survival game. Design in web first, then port to Swift.
+
+### 5A. Roguelike Run Variation
+- [ ] Disaster type selection: blizzard (default/tutorial), hurricane, heat wave, pandemic, infrastructure collapse
+- [ ] Concern weight reshuffling per run (district concern scores vary within bounds)
+- [ ] Character rotation: core characters always present, secondary characters drawn from pool
+- [ ] Variable timeline pressure (48 weeks for blizzard/heat, 30 for infrastructure collapse)
+- [ ] Starting bloc hostility variation
+- [ ] Legacy score: cumulative cross-run measure (cosmetic, no mechanical advantage)
+- [ ] Run history with coverage heatmaps and disaster outcomes
+
+### 5B. Candidates & Political Opposition
+- [ ] 2-3 rival candidates per run with bloc alignments and platforms
+- [ ] Candidate feed reactions: LLM-generated responses to player posts and policies
+- [ ] Approval rating alongside resilience score
+- [ ] Candidates exploit player posts (grounded posts get twisted, hollow posts get fact-checked)
+- [ ] Election outcome as second win/lose axis
+- [ ] Candidate profiles as data entries (name, platform, bloc, rhetorical style)
+
+### 5C. Bento Box Policy Builder
+- [ ] Fixed-size grid UI for spatial policy construction
+- [ ] WHERE tiles (borough/district targeting)
+- [ ] WHAT tiles (infrastructure types: plows, generators, shelters, outreach)
+- [ ] HOW tiles (deployment strategy: density, vulnerability, equal spread)
+- [ ] FUNDING blocks ($0.2B each, grid space = budget constraint)
+- [ ] Adjacency synergies (compatible tiles boost each other)
+- [ ] Adjacency conflicts (incompatible tiles can't be placed next to each other)
+- [ ] Insight-unlocked efficient tile variants (smaller, more effective versions)
+- [ ] Replaces current policy card selection UI
+
+**Exit criteria:** Three distinct runs feel meaningfully different. Candidates add political tension. The bento box makes policy construction tangible. A player who's done 5 runs understands the system but can't predict the city.
+
+---
+
 ## Cross-cutting (every phase)
 
 - Rebuild balance simulator for the new loop (CLI tool, reads same data)
-- Playtest at each phase gate against GDD §13 metrics
+- Playtest at each phase gate against GDD S13 metrics
 - Design-pillar test: features that fail pillar #2 (knowledge is earned) or #4 (time is the constraint) get cut
 - Reconcile index.html inline data with data/entries.js as single source of truth
-- **Ollama requirement:** LLM post scoring requires Ollama running locally at `localhost:11434` with a model loaded (default: `llama3.2`). Game is fully playable without it (keyword fallback), but the LLM path is the intended experience. Configure model via `OLLAMA_MODEL` const in `index.html`.
+- **Platform strategy:** Iterate design in web prototype first (zero-friction playtesting). Port finalized features to Swift before each release milestone. Don't maintain both in parallel — the web version leads, the Swift version follows.
+- **Ollama requirement:** LLM post scoring requires Ollama running locally at `localhost:11434` with a model loaded (default: `llama3.2`). Game is fully playable without it (keyword fallback), but the LLM path is the intended experience. Configure model via `OLLAMA_MODEL` const in `index.html`. Both web and Swift use the same Ollama HTTP endpoint.
+- **MLX Swift path:** For App Store distribution, replace Ollama dependency with MLX Swift native inference. This is the gating feature for self-contained distribution — a single `.app` bundle with embedded model.

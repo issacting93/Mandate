@@ -266,6 +266,8 @@ Insights are the atoms of understanding. Each has:
 
 ## 5. Social View — Interactions
 
+The Social view will also surface **candidate reactions** (see S11) once the candidates system is built. Rival candidates respond to the player's posts and policies in the feed, creating a second layer of social dynamics beyond district chatter and resident reactions.
+
 ### 5.1 Compose & Post
 ```
 Player types in compose input
@@ -555,6 +557,8 @@ Modular systems can wire via bus. Future extraction:
 │  knowledge.js ── KnowledgeSystem (per-district brightness) │
 │  social.js ───── SocialSystem (posts, grounding, feed)     │
 │  onboarding.js ─ OnboardingSystem (Week 0 sequence)        │
+│  candidate.js ── CandidateSystem (rival reactions, approval)│
+│  policybuilder.js PolicyBuilderSystem (bento box grid)     │
 └────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────┐
@@ -584,7 +588,7 @@ Modular systems can wire via bus. Future extraction:
 - [x] Calendar undo (x on sidebar cards, x on queue chips, click agenda to unschedule, 6px drag dead-zone)
 - [x] Calendar → Map linking (click district name → navigateToDistrict)
 - [x] GO → conversation overlay (typing indicator, choices, depth meter, insight chips)
-- [x] 3 conversation scripts (South Bronx, Harlem, Midtown)
+- [x] 10 conversation scripts (10 districts, also ported to Swift)
 - [x] END WEEK (trust erosion, knowledge decay, deficit, feed generation, win/lose checks)
 - [x] Social view with dynamic rendering (compose bar, LLM-scored posts, feed, DMs, insights)
 - [x] LLM post scoring (async Ollama at localhost:11434, per-district scores + resident reactions, keyword fallback)
@@ -598,7 +602,7 @@ Modular systems can wire via bus. Future extraction:
 ### Next priorities (Phase 1 remaining)
 - [ ] Extract game logic from index.html into systems/ modules (bus-connected, EventBus bridge already inline)
 - [ ] Wire systems/ to the shell via ES module imports
-- [ ] Build remaining conversation scripts (16 more districts)
+- [ ] Build remaining conversation scripts (9 more districts)
 - [ ] Build OnboardingSystem (Week 0 scripted sequence)
 - [ ] Build InsightSystem (freshness decay, cross-district pattern detection)
 - [x] Blizzard-arc scenario events inlined (10 events, weeks 4-44) — still needs extraction to data entries + scenario.js wiring
@@ -606,3 +610,154 @@ Modular systems can wire via bus. Future extraction:
 - [ ] DM system: weekly character messages, reply functionality
 - [ ] Notebook drawer (slide-out panel showing all insights, accessible from any view)
 - [ ] Intervention planning: informed/pattern tiers unlocked from insight patterns
+
+---
+
+## 10. Bento Box Policy Builder (future)
+
+Spatial policy construction that replaces the current policy card selection. The player builds interventions by dragging component tiles into a fixed-size grid.
+
+### 10.1 Grid structure
+The bento box is a fixed-size grid (target: 4x4 or 5x5, pending playtesting). Each cell can hold one tile. The grid's total area represents the budget constraint — you can't place more tiles than the grid has cells.
+
+### 10.2 Tile types
+
+| Tile | Size | Color | Function |
+|---|---|---|---|
+| **WHERE** | 1x1 | Blue | Targets a borough or specific district. Must be placed before WHAT tiles can be assigned to that area. |
+| **WHAT** | 1x1 or 2x2 | Green | Infrastructure type: plows, generators, shelters, outreach teams, medical caches. Generic WHAT tiles are 2x2; insight-unlocked versions shrink to 1x1. |
+| **HOW** | 1x1 | Purple | Deployment strategy modifier. Applies to adjacent WHAT tiles: prioritize density, vulnerability index, or equal spread. |
+| **FUNDING** | 1x1 | Gold | Each block = $0.2B. Required adjacent to WHAT tiles to activate them. More funding blocks = wider coverage. |
+
+### 10.3 Placement rules
+```
+Player drags a WHERE tile onto an empty grid cell
+  → Cell fills with borough/district color
+  → Adjacent empty cells highlight as valid WHAT placement zones
+
+Player drags a WHAT tile adjacent to a WHERE tile
+  → Snaps into place with haptic feedback
+  → If generic (no insight): occupies 2x2 (4 cells)
+  → If informed (insight-unlocked): occupies 1x1 (1 cell)
+  → Cost indicator updates: shows FUNDING blocks needed to activate
+
+Player drags a HOW tile adjacent to a WHAT tile
+  → Modifier applied: deployment strategy text appears on WHAT tile
+  → Synergy glow if compatible (e.g., "vulnerability" HOW + outreach WHAT)
+  → Conflict rejection if incompatible (e.g., "density" HOW + rural WHERE)
+    → Tile bounces back to tray with shake animation
+
+Player drags a FUNDING block adjacent to a WHAT tile
+  → Reserve decreases by $0.2B
+  → WHAT tile activation meter fills
+  → When fully funded: tile glows, intervention is queued for enactment
+```
+
+### 10.4 Synergies and conflicts
+```
+Adjacent compatible tiles → synergy:
+  → Visual: golden connecting line between tiles, both pulse
+  → Mechanical: combined effect > sum of individual effects
+  → Example: generator WHAT + medical cache WHAT adjacent = backup power for insulin
+    storage, protecting medically vulnerable residents automatically
+
+Adjacent incompatible tiles → conflict:
+  → Visual: red X between tiles, placement rejected
+  → Tile bounces back to tray
+  → Example: "prioritize density" HOW + Staten Island WHERE = contradiction
+    (low density borough can't benefit from density-first strategy)
+```
+
+### 10.5 Insight-unlocked efficiency
+```
+Player discovers insight about specific vulnerability (e.g., "pharmacy on 138th needs generator")
+  → Generic "generator" WHAT tile (2x2) gets an informed variant (1x1) in the tile tray
+  → Informed variant: same effect, quarter the grid space
+  → More efficient tiles = more interventions in the same budget
+  → This is how listening translates directly into better policy design
+```
+
+### 10.6 State changes
+```
+Player finalizes bento box and clicks ENACT
+  → For each fully-funded WHAT tile:
+    → policy.resolved {type, targets, strategy, cost}
+    → Trust deltas applied to targeted districts
+    → Infrastructure effects registered for disaster phase
+    → Reserve reduced by total FUNDING blocks * $0.2B
+  → Bento box clears
+  → Feed: "Mayor announces [intervention description]"
+  → Map: targeted district nodes flash with policy color
+```
+
+**Status:** Design concept. Not yet prototyped. Grid size, tile inventory, and synergy/conflict rules need playtesting.
+
+---
+
+## 11. Candidate Feed Reactions (future)
+
+Rival political candidates appear in the Social view's feed, reacting to the player's posts and policies. They add political tension without new views or interaction modes — everything happens within the existing feed.
+
+### 11.1 Candidate presence in feed
+
+| Feed item type | Trigger | Visual |
+|---|---|---|
+| **Candidate post** | Player publishes a post | Candidate avatar (colored border matching their bloc alignment), name, reaction text. "CANDIDATE" label. |
+| **Candidate attack** | Player enacts a policy that hurts the candidate's aligned blocs | More aggressive tone. "OPPOSITION" label with red tint. |
+| **Candidate exploit** | Player posts a hollow or contradictory message | Candidate quotes the player's post and rebuts it. "FACT CHECK" label. |
+| **Candidate platform** | Periodic (every 4-6 weeks) | Candidate announces their own policy position. Not reactive — proactive. |
+
+### 11.2 Candidate reaction flow
+```
+Player publishes a post
+  → post.published event fires
+  → CandidateSystem receives post text + candidate profiles
+  → For each candidate:
+    → LLM prompt: candidate profile + player's post + recent game context
+    → LLM generates a reaction in the candidate's voice
+    → Reaction added to gameState.feed with type "candidate_reaction"
+    → Feed renders reaction 1-2 items below the player's post (slight delay for realism)
+
+Player enacts a policy (via bento box or current policy card)
+  → policy.resolved event fires
+  → CandidateSystem evaluates policy against candidate's bloc alignment
+  → If policy hurts candidate's blocs: generate attack post
+  → If policy helps candidate's blocs: candidate stays silent or grudgingly agrees
+  → Approval rating adjusts based on bloc trust shifts
+```
+
+### 11.3 Candidate profiles (data)
+```javascript
+{
+  id: "cand_chen",
+  name: "David Chen",
+  role: "City Council President",
+  bloc: "finance",                    // primary alignment
+  secondaryBloc: "realestate",
+  platform: "Fiscal responsibility and business recovery",
+  style: "measured",                  // rhetorical style for LLM prompting
+  attackStyle: "fact-based",          // how they attack: "fact-based", "populist", "moral"
+  portrait: "chen"
+}
+```
+
+### 11.4 Approval rating
+```
+Approval = f(bloc trust weighted by candidate opposition)
+  → When player's trust increases with a bloc that opposes the leading candidate,
+     approval increases
+  → When player's trust decreases with a key bloc, approval decreases
+  → Displayed alongside resilience in status bar: "Resilience: 62% | Approval: 48%"
+  → Election outcome determined by approval at term end (separate from resilience outcome)
+  → Possible to win the city (high resilience) but lose the election (low approval), or vice versa
+```
+
+### 11.5 Interaction limits
+Candidates are **read-only** in the feed. The player cannot:
+- Reply to candidate posts (no direct debate mechanic)
+- DM candidates
+- Visit candidates on the map
+
+The player's only response to candidates is to **govern well** — make grounded posts, enact informed policies, build trust in the districts that matter. The candidate system creates pressure through the media layer, not through new interaction modes.
+
+**Status:** Design concept. CandidateSystem not yet built. Requires LLM prompt design for candidate voice generation and approval rating math.
