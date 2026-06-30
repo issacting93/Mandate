@@ -1,0 +1,284 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-06-30T05:16:23.972Z",
+  "duration": 2637202,
+  "finalState": {
+    "week": 1,
+    "reserve": 5,
+    "resilience": 55,
+    "disorder": 10,
+    "insightCount": 4,
+    "patternCount": 0,
+    "postCount": 0,
+    "visitedDistricts": [
+      "harlem",
+      "astoria"
+    ],
+    "schedule": [
+      null,
+      null,
+      null
+    ],
+    "labels": [],
+    "districts": [
+      {
+        "id": "riverdale",
+        "trust": 58,
+        "know": 30,
+        "lastVisited": null
+      },
+      {
+        "id": "fordham",
+        "trust": 44,
+        "know": 72,
+        "lastVisited": null
+      },
+      {
+        "id": "southbronx",
+        "trust": 36,
+        "know": 80,
+        "lastVisited": null
+      },
+      {
+        "id": "harlem",
+        "trust": 68,
+        "know": 92,
+        "lastVisited": 1
+      },
+      {
+        "id": "ues",
+        "trust": 71,
+        "know": 40,
+        "lastVisited": null
+      },
+      {
+        "id": "midtown",
+        "trust": 54,
+        "know": 88,
+        "lastVisited": null
+      },
+      {
+        "id": "lowerman",
+        "trust": 60,
+        "know": 48,
+        "lastVisited": null
+      },
+      {
+        "id": "astoria",
+        "trust": 73,
+        "know": 82,
+        "lastVisited": 1
+      },
+      {
+        "id": "lic",
+        "trust": 69,
+        "know": 25,
+        "lastVisited": null
+      },
+      {
+        "id": "jackson",
+        "trust": 41,
+        "know": 18,
+        "lastVisited": null
+      },
+      {
+        "id": "flushing",
+        "trust": 38,
+        "know": 12,
+        "lastVisited": null
+      },
+      {
+        "id": "jamaica",
+        "trust": 47,
+        "know": 33,
+        "lastVisited": null
+      },
+      {
+        "id": "williamsburg",
+        "trust": 64,
+        "know": 60,
+        "lastVisited": null
+      },
+      {
+        "id": "dtbk",
+        "trust": 57,
+        "know": 50,
+        "lastVisited": null
+      },
+      {
+        "id": "bushwick",
+        "trust": 43,
+        "know": 22,
+        "lastVisited": null
+      },
+      {
+        "id": "crown",
+        "trust": 39,
+        "know": 35,
+        "lastVisited": null
+      },
+      {
+        "id": "bayridge",
+        "trust": 67,
+        "know": 28,
+        "lastVisited": null
+      },
+      {
+        "id": "northshore",
+        "trust": 49,
+        "know": 20,
+        "lastVisited": null
+      },
+      {
+        "id": "midisland",
+        "trust": 72,
+        "know": 15,
+        "lastVisited": null
+      }
+    ]
+  },
+  "events": [
+    {
+      "t": 3525,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "listen",
+        "districtId": "lic"
+      }
+    },
+    {
+      "t": 306940,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "listen",
+        "districtId": "lic"
+      }
+    },
+    {
+      "t": 310524,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "listen",
+        "districtId": "astoria"
+      }
+    },
+    {
+      "t": 2561391,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "listen",
+        "districtId": "harlem"
+      }
+    },
+    {
+      "t": 2565879,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "info",
+        "districtId": "astoria"
+      }
+    },
+    {
+      "t": 2567275,
+      "event": "engagement.started",
+      "week": 1,
+      "data": {
+        "action": "visit",
+        "districtId": "astoria"
+      }
+    },
+    {
+      "t": 2616110,
+      "event": "state.changed",
+      "week": 1,
+      "data": {
+        "path": "districts.astoria.disorder",
+        "newValue": 15
+      }
+    },
+    {
+      "t": 2616110,
+      "event": "state.changed",
+      "week": 1,
+      "data": {
+        "path": "districts.astoria.disorder",
+        "oldValue": 15,
+        "newValue": 12
+      }
+    },
+    {
+      "t": 2616110,
+      "event": "conversation.ended",
+      "week": 1,
+      "data": {
+        "districtId": "astoria",
+        "insights": {
+          "0": {
+            "category": "HEALTH",
+            "text": "11 homebound residents can’t evacuate — 8 on oxygen, elevator-dependent, no emergency contact system"
+          },
+          "1": {
+            "category": "ASSET",
+            "text": "Health worker network — 1 person covers 37 homebound residents; 3 more + radios covers full zip code for $180K"
+          }
+        },
+        "trustDelta": 7,
+        "depth": 5,
+        "characterName": "Yuki Tanaka"
+      }
+    },
+    {
+      "t": 2628065,
+      "event": "state.changed",
+      "week": 1,
+      "data": {
+        "path": "districts.harlem.disorder",
+        "newValue": 15
+      }
+    },
+    {
+      "t": 2628065,
+      "event": "state.changed",
+      "week": 1,
+      "data": {
+        "path": "districts.harlem.disorder",
+        "oldValue": 15,
+        "newValue": 12
+      }
+    },
+    {
+      "t": 2628065,
+      "event": "conversation.ended",
+      "week": 1,
+      "data": {
+        "districtId": "harlem",
+        "insights": {
+          "0": {
+            "category": "INFRA",
+            "text": "High-rise walk-ups during blackouts — elevator-dependent residents trapped above 6th floor"
+          },
+          "1": {
+            "category": "ASSET",
+            "text": "Block association maintains vulnerable-resident registry — 14 mobility-limited, medical volunteers available"
+          }
+        },
+        "trustDelta": 6,
+        "depth": 4,
+        "characterName": "James Washington"
+      }
+    }
+  ],
+  "summary": {
+    "totalEvents": 12,
+    "weeksPlayed": 1,
+    "conversationsHad": 2,
+    "postsPublished": 0,
+    "scenariosFired": 0,
+    "policiesResolved": 0
+  }
+}

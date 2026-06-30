@@ -1,0 +1,4991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANDATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+/* ── Tokens ──────────────────────────────────── */
+:root {
+  --bg: #ececea;
+  --bg-light: #f7f7f5;
+  --bg-dark: #e2e2df;
+  --red: #ff2d2d;
+  --dark: #121212;
+  --dark2: #141414;
+  --dark3: #1a1a1a;
+  --muted: #9a9a9a;
+  --secondary: #6e6e6e;
+  --panel-bg: rgba(250,250,248,0.94);
+  --panel-border: rgba(0,0,0,0.12);
+  --divider: rgba(0,0,0,0.08);
+  --edge-thick: #d6d6d2;
+  --edge-thin: #a9a9a4;
+  --font-ui: 'Space Grotesk', sans-serif;
+  --font-data: 'Doto', monospace;
+}
+
+/* ── Reset & Base ────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-ui);
+  background: radial-gradient(ellipse at 50% 40%, var(--bg-light) 0%, var(--bg) 55%, var(--bg-dark) 100%);
+  color: var(--dark);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Status Bar ──────────────────────────────── */
+.status-bar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--dark);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  gap: 24px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+.status-bar .logo {
+  font-family: var(--font-data);
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--red);
+}
+.status-bar .sep {
+  color: rgba(255,255,255,0.2);
+  font-weight: 400;
+}
+.status-bar .stat-val {
+  font-family: var(--font-data);
+  font-weight: 700;
+}
+.status-bar .stat-label {
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+/* ── Bloc Bar ────────────────────────────────── */
+.bloc-bar {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid var(--divider);
+  gap: 18px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--secondary);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.bloc-bar .bloc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.bloc-bar .bloc-val {
+  font-family: var(--font-data);
+  font-weight: 700;
+  margin-left: 3px;
+}
+
+/* ── Main Area ───────────────────────────────── */
+.main-area {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Panels (glassmorphism) ──────────────────── */
+.panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.panel::-webkit-scrollbar { width: 4px; }
+.panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+
+/* Left Panel */
+.left-panel {
+  width: 280px;
+  padding: 20px 18px;
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.obj-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.obj-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.obj-desc {
+  font-size: 12px;
+  color: var(--secondary);
+  line-height: 1.5;
+}
+.obj-divider {
+  height: 1px;
+  background: var(--divider);
+}
+
+/* Briefing countdown */
+.briefing-box {
+  background: var(--dark);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #fff;
+}
+.briefing-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 6px;
+}
+.briefing-time {
+  font-family: var(--font-data);
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  animation: breathe 3s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Checklist */
+.checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--secondary);
+  line-height: 1.4;
+}
+.checklist .check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  margin-top: 1px;
+}
+.checklist .check.done {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+
+/* Credit dots */
+.credit-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.credit-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+}
+.credit-dot.filled {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+/* Right Panel */
+.right-panel {
+  width: 280px;
+  border-left: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+}
+.right-panel.empty {
+  align-items: center;
+  justify-content: center;
+}
+.right-panel .empty-msg {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+.district-header {
+  background: var(--dark);
+  padding: 16px 18px 14px;
+  flex-shrink: 0;
+}
+.district-boro {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+.district-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+.district-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.district-bloc {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.district-bloc .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.district-trust-num {
+  font-family: var(--font-data);
+  font-weight: 900;
+  font-size: 48px;
+  line-height: 1;
+}
+.district-trust-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-top: -6px;
+}
+.district-pop {
+  font-size: 11px;
+  color: var(--muted);
+}
+.district-pop .val {
+  font-family: var(--font-data);
+  font-weight: 700;
+}
+.district-concern {
+  font-size: 12px;
+  color: var(--secondary);
+  line-height: 1.5;
+  font-style: italic;
+  border-left: 2px solid var(--panel-border);
+  padding-left: 10px;
+}
+.district-concern.unknown {
+  color: var(--muted);
+  font-style: normal;
+}
+.knowledge-track {
+  height: 4px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.knowledge-fill {
+  height: 100%;
+  background: var(--dark);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.knowledge-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: -6px;
+}
+.knowledge-label .kval {
+  font-family: var(--font-data);
+  font-weight: 700;
+}
+
+/* ── SVG Map Container ───────────────────────── */
+.map-container {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+#map3d {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+#map3d.loaded {
+  opacity: 1;
+}
+#map3d .maplibregl-canvas { outline: none; }
+.map-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── View Mode Pills ─────────────────────────── */
+.view-mode-bar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  background: rgba(10,10,16,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 3px;
+  z-index: 10;
+}
+.view-pill {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 5px 14px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: rgba(255,255,255,0.55);
+  background: transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.view-pill:hover {
+  background: rgba(255,255,255,0.08);
+}
+.view-pill.active {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+/* ── Bottom Nav ──────────────────────────────── */
+.bottom-nav {
+  height: 48px;
+  display: flex;
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  z-index: 100;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  color: var(--muted);
+  border-top: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+.nav-tab:hover {
+  color: var(--secondary);
+}
+.nav-tab.active {
+  color: var(--dark);
+  border-top-color: var(--red);
+}
+.nav-tab .nav-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.nav-tab .nav-label {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+/* ── Tab Views (Calendar / Social) ──────────── */
+.tab-view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.tab-view.active {
+  display: flex;
+}
+
+.micro-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── 2/3 + 1/3 Split Layout ────────────────── */
+.view-split {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+.view-main {
+  flex: 2;
+  border-right: 1px solid var(--divider);
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.view-main::-webkit-scrollbar { width: 4px; }
+.view-main::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+.view-sidebar {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  min-width: 240px;
+  max-width: 320px;
+}
+.view-sidebar::-webkit-scrollbar { width: 4px; }
+.view-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+
+/* Thin row dividers (NYT style) */
+.row-divider {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 0;
+}
+
+/* Large data numbers */
+.data-xl {
+  font-family: var(--font-data);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--dark);
+  line-height: 1;
+}
+.data-lg {
+  font-family: var(--font-data);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+/* ── Calendar View — Grid Layout ──────────── */
+.cal-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.cal-month-title {
+  font-family: var(--font-data);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--dark);
+  letter-spacing: -0.02em;
+}
+.cal-month-nav {
+  display: flex;
+  gap: 4px;
+}
+.cal-month-nav button {
+  background: none;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+}
+.cal-month-nav button:hover {
+  border-color: var(--dark);
+  color: var(--dark);
+}
+.cal-week-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+.cal-week-label {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.cal-progress {
+  flex: 1;
+  height: 2px;
+  background: var(--divider);
+  border-radius: 1px;
+}
+.cal-progress-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 1px;
+  transition: width 0.3s;
+}
+
+/* Day-of-week headers */
+.cal-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--divider);
+  padding-bottom: 6px;
+  margin-bottom: 0;
+}
+.cal-dow {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0 4px;
+}
+
+/* Grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal-cell {
+  min-height: 72px;
+  padding: 6px 6px 8px;
+  border-bottom: 1px solid var(--divider);
+  cursor: default;
+  position: relative;
+  transition: background 0.12s;
+}
+.cal-cell:hover {
+  background: rgba(0,0,0,0.015);
+}
+.cal-cell.out-of-month {
+  opacity: 0.18;
+}
+.cal-cell.past {
+  opacity: 0.5;
+}
+.cal-cell.current-week {
+  background: rgba(255,45,45,0.03);
+}
+.cal-cell.current-week:hover {
+  background: rgba(255,45,45,0.06);
+  cursor: pointer;
+}
+.cal-cell.disaster-zone:not(.current-week) {
+  background: rgba(255,100,45,0.02);
+}
+.cal-cell.selected-day {
+  background: rgba(255,45,45,0.08) !important;
+}
+.cal-day-num {
+  font-family: var(--font-data);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.cal-day-num.today {
+  background: var(--red);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.cal-day-agenda {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.cal-agenda-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.cal-agenda-item:hover {
+  text-decoration: underline;
+}
+.cal-agenda-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Queue strip below grid */
+.cal-queue-strip {
+  padding: 14px 0 8px;
+  border-top: 1px solid var(--divider);
+  margin-top: 4px;
+}
+.cal-queue-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 0;
+  scrollbar-width: none;
+}
+.cal-queue-row::-webkit-scrollbar { display: none; }
+.cal-queue-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: grab;
+  transition: box-shadow 0.15s;
+}
+.cal-queue-chip:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.cal-queue-chip.scheduled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cal-queue-chip.dragging {
+  opacity: 0.3;
+  transform: scale(0.97);
+}
+.cal-queue-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-queue-chip .cal-trust-sm {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: auto;
+}
+.cal-chip-remove, .cal-remove-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.cal-chip-remove:hover, .cal-remove-btn:hover {
+  color: var(--red);
+}
+
+/* Sidebar -- day detail */
+.cal-side-day {
+  font-family: var(--font-data);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cal-side-slot {
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.cal-side-slot.filled {
+  border-left: 3px solid;
+}
+.cal-side-slot.empty {
+  border-style: dashed;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+.cal-side-slot.empty:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.cal-side-district {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  cursor: pointer;
+}
+.cal-side-district:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+.cal-side-action {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+.cal-side-concern {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--secondary);
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--red);
+}
+.cal-side-trust {
+  font-family: var(--font-data);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--dark);
+  margin: 8px 0 4px;
+}
+.cal-side-trust-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cal-commitments {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+.cal-commitment-item {
+  font-size: 11px;
+  color: var(--secondary);
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cal-commitment-item::before {
+  content: '\25CF';
+  color: var(--red);
+  font-size: 6px;
+}
+
+/* Borough Coverage */
+.cal-coverage {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+}
+.cal-boro-tag {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+}
+.cal-boro-tag .check-mark {
+  color: #34d399;
+  margin-left: 2px;
+}
+.cal-boro-tag .dash-mark {
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+/* GO / End Week Buttons */
+.cal-btn-go {
+  width: 100%;
+  height: 44px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.cal-btn-go:hover { opacity: 0.9; }
+.cal-btn-end {
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  color: var(--secondary);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cal-btn-end:hover {
+  border-color: rgba(0,0,0,0.25);
+  color: var(--dark);
+}
+
+/* Sidebar detail */
+.sidebar-section {
+  margin-bottom: 16px;
+}
+.sidebar-section + .sidebar-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+}
+.sidebar-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.sidebar-stat-label {
+  font-size: 12px;
+  color: var(--secondary);
+}
+.sidebar-stat-val {
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+/* Drag states */
+.cal-chip-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.9;
+  transform: scale(1.04) rotate(1.5deg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+  transition: none;
+}
+.cal-cell.drop-target {
+  background: rgba(255,45,45,0.08) !important;
+  outline: 2px dashed var(--red);
+  outline-offset: -2px;
+  transition: all 0.15s ease;
+}
+
+/* ── Conversation Overlay ──────────────────── */
+.convo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px 80px;
+  background: rgba(0,0,0,0.35);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.convo-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.convo-panel {
+  width: 100%;
+  max-width: 520px;
+  max-height: 70vh;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.convo-overlay.active .convo-panel {
+  transform: translateY(0);
+}
+
+/* Header */
+.convo-header {
+  background: var(--dark);
+  color: #fff;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.convo-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-data);
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.convo-char-info { flex: 1; }
+.convo-char-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.convo-char-role {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+}
+.convo-district-tag {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+}
+
+/* Depth meter */
+.convo-depth {
+  padding: 0 18px;
+  height: 3px;
+  background: var(--divider);
+}
+.convo-depth-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Messages */
+.convo-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+}
+.convo-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: msgIn 0.3s ease forwards;
+}
+@keyframes msgIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.convo-msg.npc {
+  align-self: flex-start;
+  background: rgba(0,0,0,0.06);
+  color: var(--dark);
+  border-bottom-left-radius: 4px;
+}
+.convo-msg.player {
+  align-self: flex-end;
+  background: var(--dark);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+/* Typing indicator */
+.convo-typing {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+}
+.convo-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.convo-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.convo-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Insight chip */
+.convo-insight {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,45,45,0.08);
+  border: 1px solid rgba(255,45,45,0.2);
+  border-radius: 8px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transform: scale(0.8);
+  animation: insightPop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes insightPop {
+  to { opacity: 1; transform: scale(1); }
+}
+.convo-insight::before {
+  content: '\25C6';
+  font-size: 7px;
+}
+
+/* Choices */
+.convo-choices {
+  padding: 12px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--divider);
+}
+.convo-choice {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--dark);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+}
+.convo-choice:hover {
+  border-color: var(--red);
+  background: rgba(255,45,45,0.03);
+}
+.convo-choice.selected {
+  border-color: var(--dark);
+  background: var(--dark);
+  color: #fff;
+}
+.convo-choice.faded {
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+/* ── Social View ────────────────────────────── */
+
+/* Compose bar */
+.compose-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.compose-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--dark);
+  outline: none;
+}
+.compose-input::placeholder { color: var(--muted); }
+.compose-post-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.compose-post-btn:hover { opacity: 0.9; }
+.compose-tones {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.compose-tone {
+  font-family: var(--font-data);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.compose-tone.active {
+  background: var(--dark);
+  color: #fff;
+  border-color: var(--dark);
+}
+.compose-ground {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.compose-insight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255,45,45,0.08);
+  color: var(--red);
+  cursor: pointer;
+  border: 1px solid rgba(255,45,45,0.15);
+}
+.compose-insight-chip:hover { background: rgba(255,45,45,0.14); }
+.compose-insight-chip.selected {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+/* Feed timeline */
+.feed-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  gap: 12px;
+}
+.feed-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.feed-dot.player { background: var(--red); }
+.feed-dot.chatter { background: var(--dark); }
+.feed-dot.news { background: var(--muted); }
+.feed-dot.dm { background: #2b2b2b; }
+.feed-dot.reaction { background: var(--red); }
+.feed-body { flex: 1; min-width: 0; }
+.feed-text { font-size: 13px; line-height: 1.5; color: var(--dark); }
+.feed-text .feed-district {
+  text-decoration: underline;
+  cursor: pointer;
+  color: var(--dark);
+}
+.feed-text .feed-district:hover { color: var(--red); }
+.feed-meta {
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.feed-time {
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.feed-engagement {
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--secondary);
+  margin-top: 6px;
+}
+.feed-grounding {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+.feed-grounding.grounded { background: rgba(52,211,153,0.1); color: #34d399; }
+.feed-grounding.hollow { background: rgba(0,0,0,0.04); color: var(--muted); }
+.feed-dm-inline {
+  font-style: italic;
+}
+.feed-reply-link {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--red);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  margin-left: 8px;
+}
+.feed-reply-link:hover { text-decoration: underline; }
+
+/* DM threads */
+.dm-thread {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+  cursor: pointer;
+}
+.dm-thread:hover { background: rgba(0,0,0,0.02); margin: 0 -24px; padding: 12px 24px; }
+.dm-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-data);
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.dm-info { flex: 1; min-width: 0; }
+.dm-name { font-size: 13px; font-weight: 700; color: var(--dark); }
+.dm-district {
+  font-family: var(--font-data);
+  font-size: 9px; font-weight: 700;
+  color: var(--muted); letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dm-preview {
+  font-size: 11px; color: var(--secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.dm-time {
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.dm-expanded {
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--divider);
+}
+.dm-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dm-expanded-msg {
+  font-size: 12px;
+  color: var(--dark);
+  line-height: 1.5;
+  padding: 6px 0 6px 42px;
+}
+.dm-expanded-msg.sent {
+  color: var(--secondary);
+}
+.dm-unread-badge {
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--red);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+/* Insight chips compact */
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.insight-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--dark);
+  line-height: 1.4;
+}
+.insight-chip::before {
+  content: '\25C6';
+  font-size: 7px;
+  color: var(--red);
+  flex-shrink: 0;
+}
+
+/* ── Hex Menu SVG Styles ─────────────────────── */
+.hex-item {
+  cursor: pointer;
+  transition: opacity 220ms ease;
+}
+.hex-item polygon {
+  transition: fill 80ms ease, stroke 80ms ease, stroke-width 80ms ease;
+}
+.hex-item:hover polygon {
+  fill: var(--red);
+  stroke: var(--red);
+  stroke-width: 2;
+}
+.hex-item:hover text {
+  fill: #fff;
+}
+
+/* Selection ring pulse */
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.selection-ring {
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+/* ── Hex menu wrap base state (animated via JS) ── */
+.hex-menu-group .hex-action-wrap {
+  opacity: 0;
+}
+
+/* ── Map dimming when hex menu is open ────────── */
+.district-label {
+  transition: opacity 0.2s ease;
+}
+.district-label.dimmed {
+  opacity: 0.18;
+}
+.district-node {
+  transition: opacity 0.3s ease;
+}
+.district-node.dimmed {
+  opacity: 0.15;
+}
+.edges.dimmed {
+  opacity: 0.08;
+  transition: opacity 0.3s ease;
+}
+.edges {
+  transition: opacity 0.3s ease;
+}
+.boro-labels.dimmed {
+  opacity: 0.02;
+  transition: opacity 0.3s ease;
+}
+.boro-labels {
+  transition: opacity 0.3s ease;
+}
+
+/* ── View-hidden class (for tab switching) ───── */
+.view-hidden { display: none !important; }
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 900px) {
+  .left-panel { display: none !important; }
+  .right-panel { display: none !important; }
+}
+@media (max-width: 700px) {
+  .view-split {
+    flex-direction: column;
+  }
+  .view-main {
+    border-right: none;
+    border-bottom: 1px solid var(--divider);
+  }
+  .view-sidebar {
+    max-width: none;
+    min-width: 0;
+  }
+}
+@media (max-width: 600px) {
+  .status-bar { padding: 0 10px; gap: 12px; font-size: 10px; }
+  .bloc-bar { display: none; }
+}
+
+/* ── Reduced motion ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Notebook Drawer ───────────────────────── */
+.notebook-drawer {
+  position: fixed; right: 0; top: 38px; bottom: 50px;
+  width: 360px; background: var(--panel-bg); border-left: 1px solid var(--panel-border);
+  transform: translateX(100%); transition: transform 250ms ease;
+  z-index: 800; overflow-y: auto; font-family: var(--font-ui);
+}
+.notebook-drawer.open { transform: translateX(0); }
+.notebook-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--panel-border);
+  position: sticky; top: 0; background: var(--panel-bg); z-index: 1;
+}
+.notebook-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dark); }
+.notebook-badge { display: inline-block; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+.notebook-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #999; padding: 0 4px; }
+.notebook-section { padding: 12px 16px; border-bottom: 1px solid var(--panel-border); }
+.notebook-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 8px; }
+.notebook-pattern {
+  background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.notebook-pattern-cat { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #34d399; text-transform: uppercase; }
+.notebook-pattern-districts { font-size: 12px; color: var(--dark); margin-top: 4px; }
+.notebook-pattern-chip { display: inline-block; background: #34d399; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 6px; letter-spacing: 0.06em; }
+.notebook-district-group { margin-bottom: 12px; }
+.notebook-district-name { font-size: 11px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+.notebook-insight {
+  background: #fff; border: 1px solid var(--panel-border); border-radius: 6px;
+  padding: 8px 10px; margin-bottom: 6px; position: relative;
+}
+.notebook-insight.stale { border-style: dashed; opacity: 0.6; }
+.notebook-insight.dead { opacity: 0.35; text-decoration: line-through; }
+.notebook-insight-cat {
+  display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 1px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 4px;
+}
+.notebook-insight-cat.HEALTH { background: #fef3c7; color: #92400e; }
+.notebook-insight-cat.HOUSING { background: #dbeafe; color: #1e40af; }
+.notebook-insight-cat.INFRA { background: #e0e7ff; color: #3730a3; }
+.notebook-insight-cat.SERVICES { background: #fce7f3; color: #9d174d; }
+.notebook-insight-cat.SAFETY { background: #fee2e2; color: #991b1b; }
+.notebook-insight-cat.ASSET { background: #d1fae5; color: #065f46; }
+.notebook-insight-text { font-size: 12px; color: var(--dark); line-height: 1.4; }
+.notebook-freshness { height: 3px; background: #e5e5e5; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.notebook-freshness-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.notebook-stale-badge { display: inline-block; font-size: 9px; font-weight: 700; color: var(--red); letter-spacing: 0.06em; margin-left: 6px; }
+.notebook-dead-toggle { font-size: 11px; color: #999; cursor: pointer; padding: 4px 0; }
+.notebook-dead-toggle:hover { color: var(--dark); }
+
+/* ── Intervention Cards ────────────────────── */
+.intervention-card {
+  background: #fff; border: 1px solid var(--panel-border); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.intervention-card.locked { opacity: 0.5; }
+.intervention-tier { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; }
+.intervention-tier.generic { background: #e5e5e5; color: #666; }
+.intervention-tier.informed { background: #dbeafe; color: #1e40af; }
+.intervention-tier.pattern { background: #d1fae5; color: #065f46; }
+.intervention-name { font-size: 13px; font-weight: 700; color: var(--dark); margin: 4px 0; }
+.intervention-desc { font-size: 11px; color: #666; line-height: 1.4; }
+.intervention-cost { font-size: 11px; font-weight: 700; color: var(--dark); margin-top: 6px; }
+.intervention-req { font-size: 10px; color: #999; margin-top: 4px; }
+.intervention-exec {
+  background: var(--red); color: #fff; border: none; border-radius: 6px;
+  font-size: 11px; font-weight: 700; padding: 6px 16px; cursor: pointer;
+  margin-top: 8px; font-family: var(--font-ui); letter-spacing: 0.04em;
+}
+.intervention-exec:hover { opacity: 0.85; }
+.intervention-exec:disabled { background: #ccc; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span class="logo">MANDATE</span>
+  <span class="sep">|</span>
+  <span><span class="stat-label">Q2</span> <span class="sep">&middot;</span> <span class="stat-label">WEEK</span> <span class="stat-val" id="hud-week">06/52</span></span>
+  <span class="sep">|</span>
+  <span>&#9733; <span class="stat-val" id="hud-resilience">53%</span></span>
+  <span class="sep">|</span>
+  <span>&#9670; <span class="stat-val" id="hud-reserve">$4.2B</span></span>
+</div>
+
+<!-- Bloc Bar -->
+<div class="bloc-bar" id="blocBar"></div>
+
+<!-- Main Area -->
+<div class="main-area" id="mainArea">
+
+  <!-- Left Panel (Objectives) -->
+  <div class="panel left-panel" id="leftPanel">
+    <div>
+      <div class="obj-section-title">CURRENT OBJECTIVE</div>
+      <div class="obj-title">Build Resilience Before the Storm</div>
+      <div class="obj-desc">Visit districts, listen to residents, and build community trust networks. Every conversation maps vulnerabilities the city can't see from City Hall.</div>
+    </div>
+    <div class="obj-divider"></div>
+    <div class="briefing-box" id="blizzard-countdown">
+      <div class="briefing-label">&#10052; BLIZZARD ARRIVING IN</div>
+      <div class="briefing-time" id="blizzard-weeks">44 WEEKS</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;" id="blizzard-sub">Listen to the city before the storm does.</div>
+    </div>
+    <div class="obj-divider"></div>
+    <div>
+      <div class="obj-section-title">PREPARATION</div>
+      <ul class="checklist" id="prep-checklist">
+        <li><span class="check"></span> Visit 5+ districts</li>
+        <li><span class="check"></span> Discover 3 insights</li>
+        <li><span class="check"></span> Identify a cross-district pattern</li>
+        <li><span class="check"></span> Build community trust above 50%</li>
+      </ul>
+    </div>
+    <div class="obj-divider"></div>
+    <div>
+      <div class="obj-section-title">PUBLIC CREDIT</div>
+      <div class="credit-dots">
+        <span class="credit-dot filled"></span>
+        <span class="credit-dot filled"></span>
+        <span class="credit-dot filled"></span>
+        <span class="credit-dot"></span>
+        <span class="credit-dot"></span>
+        <span class="credit-dot"></span>
+        <span class="credit-dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map View -->
+  <div class="map-container" id="mapView">
+    <div id="map3d"></div>
+    <svg id="mapSvg" viewBox="60 50 690 700" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="view-mode-bar" id="viewModeBar">
+      <button class="view-pill active" data-mode="coalition">COALITION</button>
+      <button class="view-pill" data-mode="trust">TRUST</button>
+      <button class="view-pill" data-mode="knowledge">KNOWLEDGE</button>
+      <button class="view-pill" data-mode="needs">NEEDS</button>
+    </div>
+  </div>
+
+  <!-- Calendar View -->
+  <div class="tab-view" id="calendarView">
+    <div class="view-split">
+      <div class="view-main" id="calMain">
+        <!-- Rendered by renderCalendar() -->
+      </div>
+      <div class="view-sidebar" id="calSidebar">
+        <!-- Rendered by renderCalendar() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Socials View -->
+  <div class="tab-view" id="socialsView">
+    <div class="view-split">
+      <div class="view-main" id="socMain">
+        <!-- Rendered by renderSocial() -->
+
+        <!-- Feed Timeline -->
+
+      </div>
+      <div class="view-sidebar" id="socSidebar">
+        <!-- Rendered by renderSocial() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel (District Detail) -->
+  <div class="panel right-panel empty" id="rightPanel">
+    <div class="empty-msg">Select a district on the map to view details.</div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-tab active" data-view="map">
+    <span class="nav-icon">&#9673;</span>
+    <span class="nav-label">MAP</span>
+  </div>
+  <div class="nav-tab" data-view="calendar">
+    <span class="nav-icon" style="position:relative">&#9783;<span id="calBadge" style="display:none;position:absolute;top:-6px;right:-8px;background:var(--red);color:#fff;font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;line-height:14px;text-align:center;font-family:var(--font-data)"></span></span>
+    <span class="nav-label">CALENDAR</span>
+  </div>
+  <div class="nav-tab" data-view="socials">
+    <span class="nav-icon">&#9998;</span>
+    <span class="nav-label">SOCIALS</span>
+  </div>
+  <div class="nav-tab" onclick="toggleNotebook()">
+    <span class="nav-icon" style="position:relative">&#9782;<span id="notebookNavBadge" style="display:none;position:absolute;top:-6px;right:-8px;background:var(--red);color:#fff;font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;line-height:14px;text-align:center;font-family:var(--font-data)"></span></span>
+    <span class="nav-label">NOTEBOOK</span>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   EVENT BUS — bridges inline UI to modular systems
+   Lightweight pub/sub so systems can listen to UI events
+   and UI can listen to system events.
+═══════════════════════════════════════════════ */
+class EventBus {
+  constructor() { this._listeners = new Map(); }
+  on(channel, fn) {
+    if (!this._listeners.has(channel)) this._listeners.set(channel, new Set());
+    this._listeners.get(channel).add(fn);
+    return () => this._listeners.get(channel)?.delete(fn);
+  }
+  once(channel, fn) {
+    const unsub = this.on(channel, (d) => { unsub(); fn(d); });
+    return unsub;
+  }
+  emit(channel, data = {}) {
+    const event = { channel, ...data, _ts: performance.now() };
+    this._listeners.get(channel)?.forEach(fn => fn(event));
+    // wildcard: "clock.*" fires for "clock.weekStart"
+    for (const [pat, fns] of this._listeners) {
+      if (pat.endsWith(".*")) {
+        const prefix = pat.slice(0, -1);
+        if (channel.startsWith(prefix) && channel !== pat) {
+          fns.forEach(fn => fn(event));
+        }
+      }
+    }
+    return event;
+  }
+  clear() { this._listeners.clear(); }
+}
+
+const bus = new EventBus();
+
+// Debug: log all events in dev mode
+if (location.search.includes('debug')) {
+  const _emit = bus.emit.bind(bus);
+  bus.emit = (ch, data) => { console.log(`[bus] ${ch}`, data); return _emit(ch, data); };
+}
+
+/* ── Game State ─────────────────────────────── */
+const gameState = {
+  week: 1,
+  reserve: 5.0,
+  slotsTotal: 3,
+  labels: [],      // [{districtId, action, labeledAt}]
+  schedule: [null, null, null], // each slot: {districtId, action} or null
+  weekStarted: false,
+  insights: [],    // [{category, text, districtId, week, freshness:1.0}]
+  patterns: [],    // [{category, districts[], text, week}]
+  posts: [],       // [{text, tone, grounded, groundedInsights[], engagement:{likes,shares,replies}, week}]
+  feed: [          // [{type, text, districtId?, time, week}]
+    { type:'chatter', text:'People in Flushing are talking about the bus cuts. Nobody\u2019s been out there.', districtId:'flushing', time:'2h ago', week:0 },
+    { type:'news', text:'Federal infrastructure grants announced \u2014 $2.1B available for transit.', time:'3h ago', week:0 },
+    { type:'chatter', text:'Another scaffolding collapse on the Upper East Side. Third one this month.', districtId:'ues', time:'3h ago', week:0 },
+    { type:'chatter', text:'Community board in Crown Heights passed a resolution demanding more police foot patrols.', districtId:'crown', time:'6h ago', week:0 },
+  ],
+  dms: [           // [{characterName, initials, districtId, districtName, messages:[{text,sent}], unread}]
+    { characterName:'Maria Delgado', initials:'MD', districtId:'southbronx', districtName:'South Bronx', messages:[], unread:false },
+    { characterName:'James Washington', initials:'JW', districtId:'harlem', districtName:'Harlem', messages:[], unread:false },
+  ],
+};
+
+// Compute citywide resilience from DISTRICTS array
+function computeCitywide() {
+  let total = 0, count = 0;
+  DISTRICTS.forEach(d => { total += d.trust; count++; });
+  return Math.round(total / count);
+}
+
+function updateStatusBar() {
+  const wk = document.getElementById('hud-week');
+  const res = document.getElementById('hud-resilience');
+  const rev = document.getElementById('hud-reserve');
+  if (wk) wk.textContent = String(gameState.week).padStart(2, '0') + '/48';
+  if (res) res.textContent = computeCitywide() + '%';
+  if (rev) rev.textContent = '$' + gameState.reserve.toFixed(1) + 'B';
+}
+
+/* ── Data ────────────────────────────────────── */
+const BLOC_COLORS = {
+  working:     '#1a1a1a',
+  business:    '#3d3d3d',
+  realestate:  '#595959',
+  progressive: '#777777',
+  labor:       '#2b2b2b',
+};
+const BLOC_NAMES = {
+  working:     'Working Families',
+  business:    'Business Coalition',
+  realestate:  'Real Estate',
+  progressive: 'Progressives',
+  labor:       'Labor',
+};
+
+const DISTRICTS = [
+  { id: 'riverdale',   name: 'Riverdale',        boro: 'The Bronx',     bloc: 'realestate',  x: 170, y: 110, r: 14, trust: 58, know: 30, pop: '1.4M', concern: 'Flooding near the Harlem River', cat: 'Housing' },
+  { id: 'fordham',     name: 'Fordham',           boro: 'The Bronx',     bloc: 'labor',       x: 275, y: 135, r: 18, trust: 44, know: 72, pop: '2.1M', concern: 'Bus routes cut, commutes doubled', cat: 'Jobs' },
+  { id: 'southbronx',  name: 'South Bronx',       boro: 'The Bronx',     bloc: 'working',     x: 360, y: 210, r: 20, trust: 36, know: 80, pop: '2.6M', concern: 'Asthma rates and air quality near the expressway', cat: 'Services' },
+  { id: 'harlem',      name: 'Harlem Heights',    boro: 'Manhattan',     bloc: 'progressive', x: 340, y: 285, r: 17, trust: 62, know: 55, pop: '1.7M', concern: 'Displacement from rezoning', cat: 'Housing' },
+  { id: 'ues',         name: 'Upper East Side',   boro: 'Manhattan',     bloc: 'realestate',  x: 410, y: 345, r: 16, trust: 71, know: 40, pop: '1.5M', concern: 'Construction noise and scaffolding everywhere', cat: 'Safety' },
+  { id: 'midtown',     name: 'Midtown',           boro: 'Manhattan',     bloc: 'business',    x: 370, y: 420, r: 21, trust: 54, know: 88, pop: '2.4M', concern: 'Office vacancies hollowing out the tax base', cat: 'Transit' },
+  { id: 'lowerman',    name: 'Lower Manhattan',   boro: 'Manhattan',     bloc: 'business',    x: 345, y: 505, r: 17, trust: 60, know: 48, pop: '1.6M', concern: 'Flood prep stalled since Sandy', cat: 'Transit' },
+  { id: 'astoria',     name: 'Astoria',           boro: 'Queens',        bloc: 'progressive', x: 480, y: 335, r: 16, trust: 66, know: 42, pop: '1.5M', concern: 'Rent hikes pushing out longtime tenants', cat: 'Housing' },
+  { id: 'lic',         name: 'Long Island City',  boro: 'Queens',        bloc: 'realestate',  x: 460, y: 415, r: 15, trust: 69, know: 25, pop: '1.2M', concern: null, cat: 'Housing' },
+  { id: 'jackson',     name: 'Jackson Heights',   boro: 'Queens',        bloc: 'working',     x: 580, y: 360, r: 18, trust: 41, know: 18, pop: '2.2M', concern: null, cat: 'Services' },
+  { id: 'flushing',    name: 'Flushing',          boro: 'Queens',        bloc: 'working',     x: 695, y: 300, r: 19, trust: 38, know: 12, pop: '2.5M', concern: null, cat: 'Jobs' },
+  { id: 'jamaica',     name: 'Jamaica',           boro: 'Queens',        bloc: 'labor',       x: 670, y: 450, r: 17, trust: 47, know: 33, pop: '1.9M', concern: 'Archer Ave floods every hard rain', cat: 'Transit' },
+  { id: 'williamsburg',name: 'Williamsburg',      boro: 'Brooklyn',      bloc: 'progressive', x: 455, y: 500, r: 16, trust: 64, know: 60, pop: '1.4M', concern: 'Waterfront development blocking park access', cat: 'Housing' },
+  { id: 'dtbk',        name: 'Downtown Brooklyn', boro: 'Brooklyn',      bloc: 'business',    x: 405, y: 570, r: 17, trust: 57, know: 50, pop: '1.8M', concern: 'Atlantic Ave congestion from arena traffic', cat: 'Transit' },
+  { id: 'bushwick',    name: 'Bushwick',          boro: 'Brooklyn',      bloc: 'working',     x: 535, y: 535, r: 17, trust: 43, know: 22, pop: '1.6M', concern: null, cat: 'Services' },
+  { id: 'crown',       name: 'Crown Heights',     boro: 'Brooklyn',      bloc: 'working',     x: 500, y: 615, r: 18, trust: 39, know: 35, pop: '2.0M', concern: 'Crown St shootings up 40% this year', cat: 'Safety' },
+  { id: 'bayridge',    name: 'Bay Ridge',         boro: 'Brooklyn',      bloc: 'realestate',  x: 360, y: 655, r: 15, trust: 67, know: 28, pop: '1.1M', concern: null, cat: 'Housing' },
+  { id: 'northshore',  name: 'North Shore',       boro: 'Staten Island', bloc: 'labor',       x: 195, y: 615, r: 15, trust: 49, know: 20, pop: '0.9M', concern: null, cat: 'Jobs' },
+  { id: 'midisland',   name: 'Mid-Island',        boro: 'Staten Island', bloc: 'realestate',  x: 140, y: 690, r: 14, trust: 72, know: 15, pop: '0.8M', concern: null, cat: 'Transit' },
+];
+
+const EDGES = [
+  ['riverdale','fordham'],['fordham','southbronx'],['southbronx','harlem'],
+  ['harlem','ues'],['ues','midtown'],['midtown','lowerman'],['harlem','midtown'],
+  ['ues','astoria'],['midtown','lic'],
+  ['astoria','lic'],['lic','jackson'],['jackson','flushing'],['jackson','jamaica'],['flushing','jamaica'],
+  ['lowerman','dtbk'],['lowerman','williamsburg'],
+  ['lic','williamsburg'],['jamaica','crown'],
+  ['williamsburg','bushwick'],['williamsburg','dtbk'],['dtbk','crown'],['bushwick','crown'],['dtbk','bayridge'],['crown','bayridge'],
+  ['northshore','midisland'],['northshore','bayridge'],
+];
+
+DISTRICTS.forEach(d => { d.lastVisited = null; });
+
+const HEX_ACTIONS = [
+  { id: 'visit',   label: 'VISIT',   icon: 'directions_walk', angle: -90  },
+  { id: 'listen',  label: 'LISTEN',  icon: 'hearing',         angle: -18  },
+  { id: 'info',    label: 'INFO',    icon: 'info',            angle: 54   },
+  { id: 'message', label: 'MSG',     icon: 'mail',            angle: 126  },
+  { id: 'close',   label: 'CLOSE',   icon: 'close',           angle: 198  },
+];
+
+/* ── Helpers ─────────────────────────────────── */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const districtMap = Object.fromEntries(DISTRICTS.map(d => [d.id, d]));
+
+const CONCERN_SCORES = {
+  southbronx:   { health: 9, housing: 6, transit: 4, safety: 3, infra: 7, services: 5 },
+  riverdale:    { health: 6, housing: 3, transit: 2, safety: 7, infra: 4, services: 5 },
+  fordham:      { health: 4, housing: 5, transit: 7, safety: 4, infra: 5, services: 6 },
+  harlem:       { health: 6, housing: 8, transit: 3, safety: 4, infra: 7, services: 8 },
+  ues:          { health: 4, housing: 2, transit: 2, safety: 6, infra: 3, services: 3 },
+  midtown:      { health: 2, housing: 2, transit: 9, safety: 4, infra: 8, services: 3 },
+  lowerman:     { health: 3, housing: 2, transit: 7, safety: 5, infra: 8, services: 2 },
+  astoria:      { health: 4, housing: 6, transit: 5, safety: 3, infra: 8, services: 4 },
+  lic:          { health: 2, housing: 5, transit: 4, safety: 3, infra: 4, services: 3 },
+  jackson:      { health: 5, housing: 7, transit: 4, safety: 3, infra: 5, services: 8 },
+  flushing:     { health: 5, housing: 4, transit: 3, safety: 6, infra: 4, services: 7 },
+  jamaica:      { health: 6, housing: 3, transit: 9, safety: 4, infra: 6, services: 5 },
+  williamsburg: { health: 3, housing: 6, transit: 3, safety: 7, infra: 4, services: 4 },
+  dtbk:         { health: 3, housing: 4, transit: 7, safety: 4, infra: 5, services: 4 },
+  bushwick:     { health: 4, housing: 6, transit: 3, safety: 4, infra: 5, services: 7 },
+  crown:        { health: 4, housing: 5, transit: 3, safety: 8, infra: 5, services: 5 },
+  bayridge:     { health: 5, housing: 3, transit: 4, safety: 6, infra: 5, services: 6 },
+  northshore:   { health: 4, housing: 3, transit: 8, safety: 5, infra: 6, services: 5 },
+  midisland:    { health: 3, housing: 3, transit: 6, safety: 4, infra: 5, services: 4 },
+};
+
+function hexPoints(cx, cy, r) {
+  return Array.from({length: 6}, (_, i) => {
+    const a = (i * 60 - 90) * Math.PI / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }).map(p => p.join(',')).join(' ');
+}
+
+function svgEl(tag, attrs, parent) {
+  const el = document.createElementNS(SVG_NS, tag);
+  if (attrs) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  if (parent) parent.appendChild(el);
+  return el;
+}
+
+/* ── State ───────────────────────────────────── */
+let selectedDistrict = null;
+let hexMenuOpen = false;
+let currentView = 'map';
+let currentMode = 'coalition';
+let calViewMonth = null; // {year, month} — set on first render
+let calSelectedDay = null; // Date object or null
+
+/* ── Bloc Bar ────────────────────────────────── */
+function buildBlocBar() {
+  const bar = document.getElementById('blocBar');
+  const blocs = {};
+  DISTRICTS.forEach(d => {
+    if (!blocs[d.bloc]) blocs[d.bloc] = { trusts: [], color: BLOC_COLORS[d.bloc], name: BLOC_NAMES[d.bloc] };
+    blocs[d.bloc].trusts.push(d.trust);
+  });
+  Object.entries(blocs).forEach(([key, b]) => {
+    const avg = Math.round(b.trusts.reduce((a, c) => a + c, 0) / b.trusts.length);
+    const span = document.createElement('span');
+    span.innerHTML = `<span class="bloc-dot" style="background:${b.color}"></span>${b.name}<span class="bloc-val">${avg}%</span>`;
+    bar.appendChild(span);
+  });
+}
+buildBlocBar();
+
+/* ── 3D MapLibre Background ──────────────────── */
+const DISTRICT_LATLNG = {
+  riverdale:    [-73.905, 40.895],
+  fordham:      [-73.890, 40.862],
+  southbronx:   [-73.875, 40.820],
+  harlem:       [-73.945, 40.812],
+  ues:          [-73.956, 40.774],
+  midtown:      [-73.975, 40.755],
+  lowerman:     [-74.007, 40.710],
+  astoria:      [-73.923, 40.772],
+  lic:          [-73.958, 40.744],
+  jackson:      [-73.883, 40.755],
+  flushing:     [-73.830, 40.763],
+  jamaica:      [-73.793, 40.703],
+  williamsburg: [-73.953, 40.714],
+  dtbk:         [-73.985, 40.692],
+  bushwick:     [-73.921, 40.694],
+  crown:        [-73.948, 40.669],
+  bayridge:     [-74.023, 40.635],
+  northshore:   [-74.077, 40.643],
+  midisland:    [-74.105, 40.583],
+};
+
+const map3d = new maplibregl.Map({
+  container: 'map3d',
+  style: {
+    version: 8,
+    sources: {
+      openmaptiles: {
+        type: 'vector',
+        url: 'https://tiles.openfreemap.org/planet',
+      },
+    },
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#0a0a0f' },
+      },
+      {
+        id: 'water',
+        type: 'fill',
+        source: 'openmaptiles',
+        'source-layer': 'water',
+        paint: { 'fill-color': '#0d1117' },
+      },
+      {
+        id: 'landcover',
+        type: 'fill',
+        source: 'openmaptiles',
+        'source-layer': 'landcover',
+        paint: { 'fill-color': '#10121a', 'fill-opacity': 0.6 },
+      },
+      {
+        id: 'park',
+        type: 'fill',
+        source: 'openmaptiles',
+        'source-layer': 'park',
+        paint: { 'fill-color': '#0f1518', 'fill-opacity': 0.5 },
+      },
+      {
+        id: 'roads-highway',
+        type: 'line',
+        source: 'openmaptiles',
+        'source-layer': 'transportation',
+        filter: ['==', 'class', 'motorway'],
+        paint: { 'line-color': '#1a1a24', 'line-width': 2 },
+      },
+      {
+        id: 'roads-major',
+        type: 'line',
+        source: 'openmaptiles',
+        'source-layer': 'transportation',
+        filter: ['in', 'class', 'trunk', 'primary', 'secondary'],
+        paint: { 'line-color': '#151520', 'line-width': 1 },
+      },
+      {
+        id: 'buildings',
+        type: 'fill',
+        source: 'openmaptiles',
+        'source-layer': 'building',
+        paint: { 'fill-color': '#181822', 'fill-opacity': 0.7 },
+      },
+      {
+        id: '3d-buildings',
+        type: 'fill-extrusion',
+        source: 'openmaptiles',
+        'source-layer': 'building',
+        minzoom: 13,
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate', ['linear'], ['get', 'render_height'],
+            0, '#1a1a28',
+            50, '#22223a',
+            150, '#2a2a48',
+            300, '#353560',
+          ],
+          'fill-extrusion-height': [
+            'interpolate', ['linear'], ['zoom'],
+            13, 0,
+            14.5, ['get', 'render_height'],
+          ],
+          'fill-extrusion-base': ['get', 'render_min_height'],
+          'fill-extrusion-opacity': 0.75,
+        },
+      },
+    ],
+  },
+  center: [-73.935, 40.730],
+  zoom: 10.8,
+  pitch: 52,
+  bearing: -12,
+  antialias: true,
+  interactive: false,
+  attributionControl: false,
+});
+
+/* ── Blizzard Severity (0.0 → 1.0) ──────────── */
+let blizzardSeverity = 0.0;
+
+function updateBlizzardSeverity() {
+  // Ramps slowly for first 30 weeks, accelerates toward 48
+  const w = gameState.week;
+  const t = Math.min(w / 48, 1.0);
+  blizzardSeverity = t < 0.6 ? t * 0.3 : 0.18 + (t - 0.6) * 2.05;
+  blizzardSeverity = Math.min(blizzardSeverity, 1.0);
+  applyBlizzardEffects();
+}
+
+function applyBlizzardEffects() {
+  const s = blizzardSeverity;
+
+  // ── Fog: thickens with severity ──
+  map3d.setFog({
+    color: `rgb(${Math.round(26 + s * 60)}, ${Math.round(26 + s * 55)}, ${Math.round(46 + s * 50)})`,
+    'horizon-blend': 0.05 + s * 0.15,
+    range: [2.0 - s * 1.5, 12.0 - s * 6.0],
+  });
+
+  // ── Snow-capped buildings: lerp colors toward white ──
+  const lerpC = (dark, light) => Math.round(dark + (light - dark) * s * 0.7);
+  map3d.setPaintProperty('3d-buildings', 'fill-extrusion-color', [
+    'interpolate', ['linear'], ['get', 'render_height'],
+    0,   `rgb(${lerpC(26,140)}, ${lerpC(26,140)}, ${lerpC(40,160)})`,
+    50,  `rgb(${lerpC(34,170)}, ${lerpC(34,165)}, ${lerpC(58,190)})`,
+    150, `rgb(${lerpC(42,200)}, ${lerpC(42,195)}, ${lerpC(72,220)})`,
+    300, `rgb(${lerpC(53,230)}, ${lerpC(53,225)}, ${lerpC(96,245)})`,
+  ]);
+
+  // ── Flat buildings also frost over ──
+  const bFrost = Math.round(24 + s * 100);
+  map3d.setPaintProperty('buildings', 'fill-color',
+    `rgb(${bFrost}, ${bFrost}, ${Math.round(bFrost * 1.1)})`
+  );
+}
+
+map3d.on('load', () => {
+  document.getElementById('map3d').classList.add('loaded');
+  updateBlizzardSeverity();
+
+  /* ── Snow Shader Layer ─────────────────────────── */
+  const SNOW_COUNT = 12000;
+  const DUST_COUNT = 3000;
+  const TOTAL = SNOW_COUNT + DUST_COUNT;
+
+  const snowLayer = {
+    id: 'snow-particles',
+    type: 'custom',
+    renderingMode: '3d',
+
+    onAdd(map, gl) {
+      // ── Vertex Shader ──
+      const vs = `
+        precision highp float;
+        attribute vec3 a_pos;       // x,y in mercator, z = altitude (0-1)
+        attribute float a_size;
+        attribute float a_speed;
+        attribute float a_wobble;
+        attribute float a_opacity;
+        attribute float a_type;     // 0 = snow, 1 = dust/ash
+
+        uniform mat4 u_matrix;
+        uniform float u_time;
+        uniform float u_pitch;
+        uniform float u_severity;  // 0.0 = calm, 1.0 = full blizzard
+
+        varying float v_opacity;
+        varying float v_type;
+        varying float v_streak;    // streak elongation factor for fragment
+
+        void main() {
+          float t = u_time;
+          float sev = u_severity;
+
+          // Fall speed increases with severity
+          float fallMul = 1.0 + sev * 2.5;
+          float z = fract(a_pos.z - t * a_speed * 0.00012 * fallMul);
+
+          // Wind intensifies with severity — strong lateral push
+          float windBase = sin(t * 0.0004 + a_pos.x * 8000.0) * 0.000015;
+          float windGust = sin(t * 0.0008 + a_pos.y * 5000.0) * 0.00004 * sev;
+          float windConst = sev * 0.00006;  // constant directional wind
+          float wobble = sin(t * 0.002 * a_wobble + a_pos.y * 12000.0) * 0.000008 * (1.0 + sev);
+
+          vec2 merc = a_pos.xy + vec2(windBase + windGust + windConst + wobble, 0.0);
+
+          float altitude = z * 0.003;
+
+          vec4 pos = u_matrix * vec4(merc, altitude, 1.0);
+          gl_Position = pos;
+
+          // Size: grows with severity (heavier snow)
+          float pitchScale = 1.0 + u_pitch * 0.008;
+          float depthScale = 0.5 + z * 0.8;
+          float sizeMul = 1.0 + sev * 0.8;
+          gl_PointSize = a_size * pitchScale * sizeMul / depthScale;
+
+          // Fade at top/bottom of cycle
+          float fade = smoothstep(0.0, 0.05, z) * smoothstep(1.0, 0.85, z);
+          // Opacity increases with severity — denser snow
+          float opMul = 1.0 + sev * 1.2;
+          v_opacity = min(a_opacity * fade * opMul, 0.9);
+          v_type = a_type;
+
+          // Pass streak factor: how much wind is blowing (for elongated flakes)
+          v_streak = sev;
+        }
+      `;
+
+      // ── Fragment Shader ──
+      const fs = `
+        precision highp float;
+        varying float v_opacity;
+        varying float v_type;
+        varying float v_streak;
+
+        void main() {
+          vec2 uv = gl_PointCoord - vec2(0.5);
+
+          // Stretch horizontally with wind (streak effect)
+          float stretch = 1.0 + v_streak * 3.0;
+          vec2 scaled = vec2(uv.x * stretch, uv.y);
+          float d = length(scaled);
+
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.12, d) * v_opacity;
+
+          // Snow = white, dust = warm amber (dust fades out in heavy storms)
+          vec3 snowColor = vec3(0.92, 0.94, 0.98);
+          vec3 dustColor = mix(vec3(0.95, 0.75, 0.45), vec3(0.88, 0.88, 0.92), v_streak);
+          vec3 color = mix(snowColor, dustColor, v_type);
+
+          gl_FragColor = vec4(color, alpha);
+        }
+      `;
+
+      function compile(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+
+      const prog = gl.createProgram();
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(prog);
+      this.program = prog;
+
+      // ── Generate particles ──
+      // Center on NYC in Mercator coords
+      const cx = ((-73.935 + 180) / 360);
+      const cyRad = (40.730 * Math.PI) / 180;
+      const cy = (1 - Math.log(Math.tan(cyRad) + 1 / Math.cos(cyRad)) / Math.PI) / 2;
+      const spread = 0.012; // covers metro area
+
+      const data = new Float32Array(TOTAL * 6); // x, y, z, size, speed, wobble
+      const opacityData = new Float32Array(TOTAL);
+      const typeData = new Float32Array(TOTAL);
+
+      for (let i = 0; i < TOTAL; i++) {
+        const isSnow = i < SNOW_COUNT;
+        const off = i * 6;
+        data[off]     = cx + (Math.random() - 0.5) * spread * 2;  // x
+        data[off + 1] = cy + (Math.random() - 0.5) * spread * 1.5; // y
+        data[off + 2] = Math.random();                              // z (altitude)
+        data[off + 3] = isSnow
+          ? 1.5 + Math.random() * 3.0    // snow size
+          : 0.8 + Math.random() * 1.5;   // dust size
+        data[off + 4] = isSnow
+          ? 0.6 + Math.random() * 0.8    // snow speed
+          : 0.2 + Math.random() * 0.4;   // dust speed (slower)
+        data[off + 5] = 0.5 + Math.random() * 2.0; // wobble frequency
+
+        opacityData[i] = isSnow
+          ? 0.25 + Math.random() * 0.45
+          : 0.10 + Math.random() * 0.20;
+
+        typeData[i] = isSnow ? 0.0 : 1.0;
+      }
+
+      // Buffers
+      this.buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+      this.opBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.opBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, opacityData, gl.STATIC_DRAW);
+
+      this.typeBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.typeBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, typeData, gl.STATIC_DRAW);
+
+      // Cache uniform/attrib locations
+      this.uMatrix   = gl.getUniformLocation(prog, 'u_matrix');
+      this.uTime     = gl.getUniformLocation(prog, 'u_time');
+      this.uPitch    = gl.getUniformLocation(prog, 'u_pitch');
+      this.uSeverity = gl.getUniformLocation(prog, 'u_severity');
+      this.aPos    = gl.getAttribLocation(prog, 'a_pos');
+      this.aSize   = gl.getAttribLocation(prog, 'a_size');
+      this.aSpeed  = gl.getAttribLocation(prog, 'a_speed');
+      this.aWobble = gl.getAttribLocation(prog, 'a_wobble');
+      this.aOp     = gl.getAttribLocation(prog, 'a_opacity');
+      this.aType   = gl.getAttribLocation(prog, 'a_type');
+    },
+
+    render(gl, matrix) {
+      if (currentView !== 'map') return;
+
+      const prog = this.program;
+      gl.useProgram(prog);
+
+      gl.uniformMatrix4fv(this.uMatrix, false, matrix);
+      gl.uniform1f(this.uTime, performance.now());
+      gl.uniform1f(this.uPitch, map3d.getPitch());
+      gl.uniform1f(this.uSeverity, blizzardSeverity);
+
+      // Main data buffer: pos(3) + size(1) + speed(1) + wobble(1) = stride 24
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+      gl.enableVertexAttribArray(this.aPos);
+      gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(this.aSize);
+      gl.vertexAttribPointer(this.aSize, 1, gl.FLOAT, false, 24, 12);
+      gl.enableVertexAttribArray(this.aSpeed);
+      gl.vertexAttribPointer(this.aSpeed, 1, gl.FLOAT, false, 24, 16);
+      gl.enableVertexAttribArray(this.aWobble);
+      gl.vertexAttribPointer(this.aWobble, 1, gl.FLOAT, false, 24, 20);
+
+      // Opacity buffer
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.opBuf);
+      gl.enableVertexAttribArray(this.aOp);
+      gl.vertexAttribPointer(this.aOp, 1, gl.FLOAT, false, 0, 0);
+
+      // Type buffer
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.typeBuf);
+      gl.enableVertexAttribArray(this.aType);
+      gl.vertexAttribPointer(this.aType, 1, gl.FLOAT, false, 0, 0);
+
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+      gl.drawArrays(gl.POINTS, 0, TOTAL);
+
+      if (currentView === 'map') map3d.triggerRepaint();
+    },
+  };
+
+  map3d.addLayer(snowLayer);
+});
+
+// Fly to district on selection
+function flyToDistrict(districtId) {
+  const coords = DISTRICT_LATLNG[districtId];
+  if (!coords) return;
+  map3d.flyTo({
+    center: coords,
+    zoom: 14.5,
+    pitch: 60,
+    bearing: -20 + Math.random() * 40,
+    duration: 1800,
+    essential: true,
+  });
+}
+
+function flyToOverview() {
+  map3d.flyTo({
+    center: [-73.935, 40.730],
+    zoom: 10.8,
+    pitch: 52,
+    bearing: -12,
+    duration: 1400,
+    essential: true,
+  });
+}
+
+/* ── SVG Map ─────────────────────────────────── */
+const svg = document.getElementById('mapSvg');
+const defs = svgEl('defs', null, svg);
+
+// Borough label positions
+const BORO_POS = {
+  'The Bronx':     { x: 275, y: 175 },
+  'Manhattan':     { x: 370, y: 400 },
+  'Queens':        { x: 590, y: 390 },
+  'Brooklyn':      { x: 460, y: 580 },
+  'Staten Island': { x: 170, y: 660 },
+};
+
+// 1) Borough watermark labels
+const boroGroup = svgEl('g', { class: 'boro-labels' }, svg);
+Object.entries(BORO_POS).forEach(([name, pos]) => {
+  svgEl('text', {
+    x: pos.x, y: pos.y,
+    'text-anchor': 'middle',
+    'font-family': "'Space Grotesk', sans-serif",
+    'font-size': '38',
+    'font-weight': '700',
+    fill: '#fff',
+    opacity: '0.08',
+    'pointer-events': 'none',
+  }, boroGroup).textContent = name.toUpperCase();
+});
+
+// 2) Edges
+const edgeGroup = svgEl('g', { class: 'edges' }, svg);
+EDGES.forEach(([aId, bId]) => {
+  const a = districtMap[aId], b = districtMap[bId];
+  if (!a || !b) return;
+  // thick background
+  svgEl('line', {
+    x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+    stroke: 'rgba(255,255,255,0.08)', 'stroke-width': '4', 'stroke-linecap': 'round',
+  }, edgeGroup);
+  // thin foreground
+  svgEl('line', {
+    x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+    stroke: 'rgba(255,255,255,0.18)', 'stroke-width': '1.5', 'stroke-linecap': 'round',
+  }, edgeGroup);
+});
+
+// 3) District nodes
+const nodeGroup = svgEl('g', { class: 'nodes' }, svg);
+const labelGroup = svgEl('g', { class: 'labels' }, svg);
+
+// Create glow gradients per bloc
+Object.entries(BLOC_COLORS).forEach(([bloc, color]) => {
+  const grad = svgEl('radialGradient', { id: `glow-${bloc}`, cx: '50%', cy: '50%', r: '50%' }, defs);
+  svgEl('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0.3' }, grad);
+  svgEl('stop', { offset: '100%', 'stop-color': color, 'stop-opacity': '0' }, grad);
+});
+
+const districtElements = {};
+
+DISTRICTS.forEach(d => {
+  const g = svgEl('g', {
+    class: 'district-node',
+    'data-id': d.id,
+    cursor: 'pointer',
+  }, nodeGroup);
+
+  // Glow
+  svgEl('circle', {
+    cx: d.x, cy: d.y, r: d.r * 1.8,
+    fill: `url(#glow-${d.bloc})`,
+    opacity: '0.6',
+    'pointer-events': 'none',
+  }, g);
+
+  // Main node
+  const nodeCircle = svgEl('circle', {
+    cx: d.x, cy: d.y, r: d.r * 0.6,
+    fill: BLOC_COLORS[d.bloc],
+    stroke: 'rgba(0,0,0,0.5)',
+    'stroke-width': '2',
+  }, g);
+
+  g.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectDistrict(d.id);
+  });
+
+  districtElements[d.id] = { group: g, node: nodeCircle };
+
+  // Label
+  const label = svgEl('text', {
+    x: d.x, y: d.y + d.r * 0.6 + 14,
+    'text-anchor': 'middle',
+    'font-family': "'Space Grotesk', sans-serif",
+    'font-size': '10.5',
+    'font-weight': '600',
+    fill: 'rgba(255,255,255,0.75)',
+    'pointer-events': 'none',
+    class: 'district-label',
+    'data-id': d.id,
+  }, labelGroup);
+  label.textContent = d.name;
+});
+
+// 4) Hex menu overlay group
+const hexMenuGroup = svgEl('g', { class: 'hex-menu-group', style: 'display:none' }, svg);
+
+/* ── District Selection & Hex Menu ───────────── */
+function selectDistrict(id) {
+  if (selectedDistrict === id && hexMenuOpen) {
+    closeHexMenu();
+    return;
+  }
+  selectedDistrict = id;
+  showDistrictPanel(id);
+  dimLabels(id);
+  openHexMenu(id);
+  flyToDistrict(id);
+}
+
+function dimLabels(activeId) {
+  document.querySelectorAll('.district-label').forEach(el => {
+    el.classList.toggle('dimmed', el.getAttribute('data-id') !== activeId);
+  });
+  document.querySelectorAll('.district-node').forEach(el => {
+    el.classList.toggle('dimmed', el.getAttribute('data-id') !== activeId);
+  });
+  document.querySelector('.edges')?.classList.add('dimmed');
+  document.querySelector('.boro-labels')?.classList.add('dimmed');
+}
+
+function clearDimLabels() {
+  document.querySelectorAll('.district-label').forEach(el => el.classList.remove('dimmed'));
+  document.querySelectorAll('.district-node').forEach(el => el.classList.remove('dimmed'));
+  document.querySelector('.edges')?.classList.remove('dimmed');
+  document.querySelector('.boro-labels')?.classList.remove('dimmed');
+}
+
+function openHexMenu(id) {
+  const d = districtMap[id];
+  if (!d) return;
+  closeHexMenuImmediate();
+
+  hexMenuGroup.style.display = '';
+  hexMenuGroup.innerHTML = '';
+  hexMenuGroup.classList.remove('closing');
+  hexMenuGroup.classList.add('opening');
+  hexMenuOpen = true;
+
+  // Selection ring
+  const ringPoly = svgEl('polygon', {
+    points: hexPoints(d.x, d.y, d.r + 9),
+    fill: 'none',
+    stroke: '#ff2d2d',
+    'stroke-width': '2.5',
+    class: 'selection-ring',
+  }, hexMenuGroup);
+
+  const actionDist = d.r + 70;
+  const hexR = 28;
+
+  HEX_ACTIONS.forEach((action, i) => {
+    const rad = action.angle * Math.PI / 180;
+    const ax = d.x + actionDist * Math.cos(rad);
+    const ay = d.y + actionDist * Math.sin(rad);
+
+    // Wrapper with animation
+    const wrap = svgEl('g', {
+      class: 'hex-action-wrap',
+      style: `animation-delay: ${i * 35}ms; transform-origin: ${d.x}px ${d.y}px;`,
+    }, hexMenuGroup);
+
+    // We need CSS keyframes per item, so we set them via inline style
+    // Instead, use JS-driven animation
+    wrap.style.opacity = '0';
+
+    // Connector line
+    svgEl('line', {
+      x1: d.x, y1: d.y, x2: ax, y2: ay,
+      stroke: 'rgba(255,255,255,0.2)', 'stroke-opacity': '1', 'stroke-width': '1',
+      'pointer-events': 'none',
+    }, wrap);
+
+    // Hex item group
+    const itemG = svgEl('g', {
+      class: 'hex-item',
+      'data-action': action.id,
+    }, wrap);
+
+    // Hex polygon
+    const poly = svgEl('polygon', {
+      points: hexPoints(ax, ay, hexR),
+      fill: 'rgba(18,18,24,0.85)',
+      stroke: 'rgba(255,255,255,0.3)',
+      'stroke-width': '1.2',
+    }, itemG);
+
+    // Icon inside hex (Material Symbols)
+    const icon = svgEl('text', {
+      x: ax, y: ay + 6,
+      'text-anchor': 'middle',
+      'font-family': "'Material Symbols Rounded'",
+      'font-size': '18',
+      fill: 'rgba(255,255,255,0.9)',
+      'pointer-events': 'none',
+    }, itemG);
+    icon.textContent = action.icon;
+
+    // Label text outside hex
+    const labelDist = hexR + 14;
+    const lx = ax + labelDist * Math.cos(rad);
+    const ly = ay + labelDist * Math.sin(rad);
+
+    const labelEl = svgEl('text', {
+      x: lx, y: ly + 3.5,
+      'text-anchor': 'middle',
+      'font-family': "'Doto', monospace",
+      'font-size': '8',
+      'font-weight': '700',
+      fill: 'rgba(255,255,255,0.6)',
+      'letter-spacing': '0.08em',
+      'pointer-events': 'none',
+    }, wrap);
+    labelEl.textContent = action.label;
+
+    // Stable hover scale — swap polygon points instead of CSS transform
+    const normalPts = hexPoints(ax, ay, hexR);
+    const hoverPts = hexPoints(ax, ay, hexR * 1.1);
+    itemG.addEventListener('mouseenter', () => {
+      poly.setAttribute('points', hoverPts);
+      icon.setAttribute('fill', '#fff');
+      labelEl.setAttribute('fill', '#ff2d2d');
+    });
+    itemG.addEventListener('mouseleave', () => {
+      poly.setAttribute('points', normalPts);
+      icon.setAttribute('fill', 'rgba(255,255,255,0.9)');
+      labelEl.setAttribute('fill', 'rgba(255,255,255,0.6)');
+    });
+
+    // Click handler
+    itemG.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleHexAction(action.id, selectedDistrict);
+    });
+
+    // Animate in with JS
+    animateHexIn(wrap, d.x, d.y, ax, ay, i);
+  });
+}
+
+function animateHexIn(wrap, cx, cy, tx, ty, index) {
+  const delay = index * 35;
+  const duration = 220;
+  const start = performance.now() + delay;
+
+  function tick(now) {
+    const elapsed = now - start;
+    if (elapsed < 0) {
+      requestAnimationFrame(tick);
+      return;
+    }
+    let t = Math.min(elapsed / duration, 1);
+    // cubic-bezier(0.175, 0.885, 0.32, 1.275) approximation — back.out
+    t = backOut(t);
+
+    const dx = tx - cx;
+    const dy = ty - cy;
+    const x = cx + dx * t - cx;
+    const y = cy + dy * t - cy;
+    const s = t;
+
+    // We move the whole wrap group. The wrap is drawn at final position,
+    // so we translate from (cx-tx, cy-ty) to (0,0)
+    const ox = (1 - t) * (cx - tx);
+    const oy = (1 - t) * (cy - ty);
+    wrap.setAttribute('transform', `translate(${ox}, ${oy}) scale(1)`);
+    wrap.style.opacity = Math.min(t * 2, 1);
+
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function backOut(t) {
+  const s = 1.70158;
+  return 1 + (--t) * t * ((s + 1) * t + s);
+}
+
+function closeHexMenu(callback) {
+  if (!hexMenuOpen) {
+    if (callback) callback();
+    return;
+  }
+  hexMenuOpen = false;
+  flyToOverview();
+
+  const wraps = hexMenuGroup.querySelectorAll('.hex-action-wrap');
+  const count = wraps.length;
+  if (count === 0) {
+    hexMenuGroup.style.display = 'none';
+    hexMenuGroup.innerHTML = '';
+    clearDimLabels();
+    if (callback) callback();
+    return;
+  }
+
+  let done = 0;
+  wraps.forEach((wrap, i) => {
+    animateHexOut(wrap, i, () => {
+      done++;
+      if (done >= count) {
+        hexMenuGroup.style.display = 'none';
+        hexMenuGroup.innerHTML = '';
+        clearDimLabels();
+        if (callback) callback();
+      }
+    });
+  });
+}
+
+function animateHexOut(wrap, index, onDone) {
+  const delay = index * 15;
+  const duration = 150;
+  const start = performance.now() + delay;
+
+  // Parse current transform to find where it ended up
+  const currentTransform = wrap.getAttribute('transform') || '';
+  const startOpacity = parseFloat(wrap.style.opacity) || 1;
+
+  function tick(now) {
+    const elapsed = now - start;
+    if (elapsed < 0) {
+      requestAnimationFrame(tick);
+      return;
+    }
+    let t = Math.min(elapsed / duration, 1);
+    // quad.in
+    t = t * t;
+
+    wrap.style.opacity = startOpacity * (1 - t);
+    const s = 1 - t * 0.5;
+    wrap.setAttribute('transform', `${currentTransform} scale(${s})`);
+
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function closeHexMenuImmediate() {
+  hexMenuOpen = false;
+  hexMenuGroup.style.display = 'none';
+  hexMenuGroup.innerHTML = '';
+}
+
+function handleHexAction(actionId, districtId) {
+  bus.emit('engagement.started', { action: actionId, districtId });
+
+  switch (actionId) {
+    case 'close':
+      closeHexMenu();
+      selectedDistrict = null;
+      clearDimLabels();
+      clearDistrictPanel();
+      break;
+    case 'info':
+      showDistrictPanel(districtId);
+      closeHexMenu();
+      break;
+    case 'visit':
+      toggleLabel(districtId, 'visit');
+      closeHexMenu();
+      break;
+    case 'listen':
+      toggleLabel(districtId, 'listen');
+      closeHexMenu();
+      break;
+    case 'message':
+      // Switch to socials tab
+      document.querySelector('[data-view="socials"]').click();
+      closeHexMenu();
+      break;
+  }
+}
+
+/* ── Label System ───────────────────────────── */
+const ACTION_COLORS = { visit: '#34d399', listen: '#2fc3e8' };
+
+function toggleLabel(districtId, action) {
+  const existing = gameState.labels.findIndex(l => l.districtId === districtId);
+  let added = false;
+  if (existing >= 0) {
+    if (gameState.labels[existing].action === action) {
+      gameState.labels.splice(existing, 1);
+      gameState.schedule = gameState.schedule.map(s =>
+        s && s.districtId === districtId ? null : s
+      );
+    } else {
+      gameState.labels[existing].action = action;
+      added = true;
+    }
+  } else {
+    gameState.labels.push({ districtId, action, labeledAt: gameState.week });
+    added = true;
+  }
+  renderMapBadges();
+  renderCalendar();
+
+  // Visual feedback: flash the node and show toast
+  const d = districtMap[districtId];
+  if (d && added) {
+    flashNode(districtId, ACTION_COLORS[action] || '#34d399');
+    showToast(`${d.name} → ${action.toUpperCase()}`, ACTION_COLORS[action]);
+  } else if (d && !added) {
+    showToast(`${d.name} removed from queue`, '#9a9a9a');
+  }
+}
+
+function flashNode(districtId, color) {
+  const els = districtElements[districtId];
+  if (!els) return;
+  const node = els.node;
+  const origFill = node.getAttribute('fill');
+  node.setAttribute('fill', color);
+  node.setAttribute('stroke', color);
+  node.setAttribute('stroke-width', '3');
+  setTimeout(() => {
+    node.setAttribute('fill', origFill);
+    node.setAttribute('stroke', 'rgba(0,0,0,0.5)');
+    node.setAttribute('stroke-width', '2');
+  }, 600);
+}
+
+function showToast(text, color) {
+  let toast = document.getElementById('map-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'map-toast';
+    toast.style.cssText = `
+      position:fixed;top:50px;left:50%;transform:translateX(-50%) translateY(-8px);
+      background:var(--dark);color:#fff;padding:8px 16px;border-radius:6px;
+      font-size:12px;font-weight:600;font-family:var(--font-ui);
+      z-index:9000;opacity:0;transition:opacity 0.2s, transform 0.2s;
+      pointer-events:none;white-space:nowrap;
+    `;
+    document.body.appendChild(toast);
+  }
+  if (color) toast.style.borderLeft = `3px solid ${color}`;
+  toast.textContent = text;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(-8px)';
+  }, 2000);
+}
+
+function renderMapBadges() {
+  // Update calendar tab badge
+  const calBadge = document.getElementById('calBadge');
+  if (calBadge) {
+    const count = gameState.labels.length;
+    calBadge.style.display = count > 0 ? '' : 'none';
+    calBadge.textContent = count;
+  }
+
+  // Remove existing badges
+  document.querySelectorAll('.map-label-badge').forEach(el => el.remove());
+
+  gameState.labels.forEach(label => {
+    const d = districtMap[label.districtId];
+    if (!d) return;
+    const color = ACTION_COLORS[label.action] || '#9a9a9a';
+    const badge = svgEl('g', { class: 'map-label-badge', 'data-district': label.districtId }, nodeGroup);
+
+    // Badge: colored ring around the district node
+    svgEl('circle', {
+      cx: d.x, cy: d.y, r: d.r * 0.6 + 5,
+      fill: 'none', stroke: color, 'stroke-width': '2.5',
+      'stroke-dasharray': '4,3', opacity: '0.9',
+      'pointer-events': 'none',
+    }, badge);
+
+    // Small action dot offset to upper-right
+    const bx = d.x + d.r * 0.6 + 6;
+    const by = d.y - d.r * 0.6 - 2;
+    svgEl('circle', { cx: bx, cy: by, r: '5', fill: color, stroke: 'rgba(0,0,0,0.5)', 'stroke-width': '1.5' }, badge);
+    svgEl('text', {
+      x: bx, y: by + 3, 'text-anchor': 'middle',
+      'font-size': '6', 'font-weight': '700', fill: '#fff',
+      'pointer-events': 'none',
+    }, badge).textContent = label.action === 'visit' ? 'V' : 'L';
+  });
+}
+
+// ── Calendar Drag System ──
+let dragState = null;
+
+function startDrag(e, sourceType, sourceData, cardEl) {
+  e.preventDefault();
+  const rect = cardEl.getBoundingClientRect();
+  const ghost = cardEl.cloneNode(true);
+  ghost.className = 'cal-chip-ghost';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.left = (e.clientX - rect.width/2) + 'px';
+  ghost.style.top = (e.clientY - 20) + 'px';
+  ghost.style.background = 'var(--panel-bg)';
+  ghost.style.border = '1px solid var(--panel-border)';
+  ghost.style.borderRadius = '8px';
+  ghost.style.padding = '6px 12px';
+  ghost.style.fontSize = '12px';
+  ghost.style.fontWeight = '600';
+  document.body.appendChild(ghost);
+  cardEl.classList.add('dragging');
+
+  dragState = { ghost, sourceType, sourceData, sourceEl: cardEl, startX: e.clientX, startY: e.clientY, moved: false };
+}
+
+document.addEventListener('pointermove', (e) => {
+  if (!dragState) return;
+  // Dead zone: only count as "moved" if pointer traveled 6+ px
+  const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
+  if (!dragState.moved && Math.hypot(dx, dy) < 6) return;
+  dragState.moved = true;
+  dragState.ghost.style.left = (e.clientX - dragState.ghost.offsetWidth/2) + 'px';
+  dragState.ghost.style.top = (e.clientY - 20) + 'px';
+
+  // Hit test calendar cells in current week
+  document.querySelectorAll('.cal-cell.current-week').forEach(cell => {
+    const r = cell.getBoundingClientRect();
+    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    cell.classList.toggle('drop-target', over);
+  });
+});
+
+document.addEventListener('pointerup', (e) => {
+  if (!dragState) return;
+  const { sourceType, sourceData, ghost, sourceEl, moved } = dragState;
+
+  // Find drop target (current-week cell)
+  let droppedOnCurrentWeek = false;
+  document.querySelectorAll('.cal-cell.current-week').forEach(cell => {
+    cell.classList.remove('drop-target');
+    const r = cell.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      droppedOnCurrentWeek = true;
+    }
+  });
+
+  ghost.remove();
+  sourceEl?.classList.remove('dragging');
+
+  if (!moved) {
+    // Click behavior: toggle schedule
+    if (sourceType === 'queue') {
+      const did = sourceData.districtId;
+      const schedIdx = gameState.schedule.findIndex(s => s && s.districtId === did);
+      if (schedIdx >= 0) {
+        gameState.schedule[schedIdx] = null;
+      } else {
+        const openIdx = gameState.schedule.indexOf(null);
+        if (openIdx >= 0) gameState.schedule[openIdx] = { districtId: did, action: sourceData.action };
+      }
+    }
+    dragState = null;
+    renderCalendar();
+    return;
+  }
+
+  if (droppedOnCurrentWeek && sourceType === 'queue') {
+    // Drop from queue into first open slot
+    const openIdx = gameState.schedule.indexOf(null);
+    if (openIdx >= 0) {
+      gameState.schedule[openIdx] = { districtId: sourceData.districtId, action: sourceData.action };
+    }
+  }
+
+  dragState = null;
+  renderCalendar();
+});
+
+// ── Calendar Date Logic ──
+const GAME_START = new Date(2025, 0, 6); // Mon Jan 6 2025
+const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const DAY_NAMES = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+
+function weekToDateRange(week) {
+  const start = new Date(GAME_START);
+  start.setDate(start.getDate() + (week - 1) * 7);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return { start, end };
+}
+
+function dateToGameWeek(date) {
+  const diff = Math.floor((date - GAME_START) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return 0;
+  return Math.floor(diff / 7) + 1;
+}
+
+function getMonthGrid(year, month) {
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
+  // Monday = 0 in our grid (ISO)
+  let startDow = firstOfMonth.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // shift to Mon=0
+
+  const currentWeekRange = weekToDateRange(gameState.week);
+
+  const days = [];
+  // Fill leading days from previous month
+  const prevMonthLast = new Date(year, month, 0);
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    days.push(makeDayObj(d, month, currentWeekRange));
+  }
+  // Current month days
+  for (let i = 1; i <= lastOfMonth.getDate(); i++) {
+    const d = new Date(year, month, i);
+    days.push(makeDayObj(d, month, currentWeekRange));
+  }
+  // Fill trailing days to complete last row
+  while (days.length % 7 !== 0) {
+    const d = new Date(year, month + 1, days.length - (startDow + lastOfMonth.getDate()) + 1);
+    days.push(makeDayObj(d, month, currentWeekRange));
+  }
+
+  // Split into week rows
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+  return weeks;
+}
+
+function makeDayObj(date, viewMonth, currentWeekRange) {
+  const gw = dateToGameWeek(date);
+  return {
+    date: new Date(date),
+    dayNum: date.getDate(),
+    inMonth: date.getMonth() === viewMonth,
+    inCurrentWeek: date >= currentWeekRange.start && date <= currentWeekRange.end,
+    isToday: date.getTime() === currentWeekRange.start.getTime(), // "today" = Monday of current week
+    isDisasterZone: gw >= 30 && gw <= 48,
+    isPast: gw > 0 && gw < gameState.week,
+    gameWeek: gw,
+  };
+}
+
+function navigateToDistrict(districtId) {
+  document.querySelector('[data-view="map"]').click();
+  setTimeout(() => selectDistrict(districtId), 100);
+}
+
+function renderCalendar() {
+  const mainEl = document.getElementById('calMain');
+  const sidebarEl = document.getElementById('calSidebar');
+
+  if (!mainEl || !sidebarEl) return;
+
+  // Initialize calViewMonth to the month containing current game week
+  if (!calViewMonth) {
+    const range = weekToDateRange(gameState.week);
+    calViewMonth = { year: range.start.getFullYear(), month: range.start.getMonth() };
+  }
+
+  const filledSlots = gameState.schedule.filter(Boolean).length;
+  const openSlots = gameState.slotsTotal - filledSlots;
+  const weekPct = Math.round((gameState.week / 48) * 100);
+  const currentWeekRange = weekToDateRange(gameState.week);
+
+  const unscheduledLabels = gameState.labels.filter(l =>
+    !gameState.schedule.some(s => s && s.districtId === l.districtId)
+  );
+
+  // Build month grid
+  const grid = getMonthGrid(calViewMonth.year, calViewMonth.month);
+
+  // Build schedule lookup: map districtId to slot info
+  const scheduleByDistrict = {};
+  gameState.schedule.forEach((s, i) => {
+    if (s) scheduleByDistrict[s.districtId] = { ...s, slotIndex: i };
+  });
+
+  // ── Main Panel: Month header + Grid + Queue ──
+  let mainHtml = '';
+
+  // Month header
+  mainHtml += `<div class="cal-month-header">
+    <span class="cal-month-title">${MONTH_NAMES[calViewMonth.month]}</span>
+    <div class="cal-month-nav">
+      <button id="calPrevMonth">\u25C0</button>
+      <button id="calNextMonth">\u25B6</button>
+    </div>
+  </div>`;
+
+  // Week indicator
+  mainHtml += `<div class="cal-week-indicator">
+    <span class="cal-week-label">WEEK ${String(gameState.week).padStart(2,'0')} OF 48</span>
+    <div class="cal-progress"><div class="cal-progress-fill" style="width:${weekPct}%"></div></div>
+  </div>`;
+
+  // Day-of-week headers
+  mainHtml += `<div class="cal-dow-row">
+    <span class="cal-dow">MON</span><span class="cal-dow">TUE</span><span class="cal-dow">WED</span>
+    <span class="cal-dow">THU</span><span class="cal-dow">FRI</span><span class="cal-dow">SAT</span><span class="cal-dow">SUN</span>
+  </div>`;
+
+  // Calendar grid
+  mainHtml += '<div class="cal-grid">';
+  grid.forEach(week => {
+    week.forEach(day => {
+      let classes = 'cal-cell';
+      if (!day.inMonth) classes += ' out-of-month';
+      else if (day.isPast) classes += ' past';
+      if (day.inCurrentWeek) classes += ' current-week';
+      if (day.isDisasterZone && !day.inCurrentWeek) classes += ' disaster-zone';
+      if (calSelectedDay && day.date.toDateString() === calSelectedDay.toDateString()) classes += ' selected-day';
+
+      // Find agenda entries for this day (scheduled visits distributed across the week)
+      let agendaHtml = '';
+      if (day.inCurrentWeek && day.inMonth) {
+        // Distribute 3 slots across Mon/Wed/Fri of the current week
+        const dayOfWeek = day.date.getDay(); // 0=Sun, 1=Mon, ...
+        const slotDays = [1, 3, 5]; // Mon, Wed, Fri
+        const slotIdx = slotDays.indexOf(dayOfWeek);
+        if (slotIdx >= 0 && gameState.schedule[slotIdx]) {
+          const s = gameState.schedule[slotIdx];
+          const d = districtMap[s.districtId];
+          const color = ACTION_COLORS[s.action] || '#9a9a9a';
+          if (d) {
+            agendaHtml += `<div class="cal-agenda-item" data-district="${s.districtId}">
+              <span class="cal-agenda-dot" style="background:${color}"></span>
+              <span>${d.name}</span>
+            </div>`;
+          }
+        }
+      }
+
+      const dayNumClass = day.isToday ? 'cal-day-num today' : 'cal-day-num';
+      const dayDataAttr = day.inMonth ? ` data-date="${day.date.toISOString().split('T')[0]}"` : '';
+
+      mainHtml += `<div class="${classes}"${dayDataAttr}>
+        <div class="${dayNumClass}">${day.dayNum}</div>
+        ${agendaHtml ? `<div class="cal-day-agenda">${agendaHtml}</div>` : ''}
+      </div>`;
+    });
+  });
+  mainHtml += '</div>';
+
+  // Queue strip below grid
+  mainHtml += `<div class="cal-queue-strip">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px">
+      <span class="micro-label">QUEUE</span>
+      <span style="font-family:var(--font-data);font-size:10px;font-weight:700;color:var(--muted)">${gameState.labels.length}</span>
+    </div>`;
+
+  if (gameState.labels.length === 0) {
+    mainHtml += `<div style="color:var(--muted);font-size:11px;padding:8px 0;">Label districts on the map to plan your week</div>`;
+  } else {
+    mainHtml += '<div class="cal-queue-row">';
+    gameState.labels.forEach(label => {
+      const d = districtMap[label.districtId];
+      if (!d) return;
+      const color = ACTION_COLORS[label.action] || '#9a9a9a';
+      const isScheduled = gameState.schedule.some(s => s && s.districtId === label.districtId);
+      mainHtml += `<div class="cal-queue-chip${isScheduled ? ' scheduled' : ''}" data-district="${label.districtId}" data-action="${label.action}">
+        <span class="cal-queue-chip-dot" style="background:${color}"></span>
+        ${d.name}
+        <span class="cal-trust-sm">${d.trust}</span>
+        <button class="cal-chip-remove" data-district="${label.districtId}" title="Remove from queue">&times;</button>
+      </div>`;
+    });
+    mainHtml += '</div>';
+  }
+  mainHtml += '</div>';
+
+  mainEl.innerHTML = mainHtml;
+
+  // ── Sidebar ──
+  let sideHtml = '';
+
+  if (calSelectedDay && calSelectedDay >= currentWeekRange.start && calSelectedDay <= currentWeekRange.end) {
+    // Day detail mode
+    const dayName = DAY_NAMES[calSelectedDay.getDay()];
+    const dateStr = calSelectedDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    sideHtml += `<div class="cal-side-day">${dayName} <span style="font-weight:500;color:var(--secondary);font-size:11px;margin-left:4px">${dateStr}</span></div>`;
+
+    // Show which slots fall on this day
+    const dayOfWeek = calSelectedDay.getDay();
+    const slotDays = [1, 3, 5]; // Mon, Wed, Fri
+    const slotIdx = slotDays.indexOf(dayOfWeek);
+
+    if (slotIdx >= 0) {
+      const slot = gameState.schedule[slotIdx];
+      if (slot) {
+        const d = districtMap[slot.districtId];
+        const color = ACTION_COLORS[slot.action] || '#9a9a9a';
+        sideHtml += `<div class="cal-side-slot filled" style="border-left-color:${color}">
+          <div class="cal-side-district" data-district="${slot.districtId}">${d ? d.name : slot.districtId}</div>
+          <div class="cal-side-action" style="color:${color}">${slot.action.toUpperCase()}</div>
+          ${d && d.concern ? `<div class="cal-side-concern">${d.concern}</div>` : ''}
+          ${d ? `<div class="cal-side-trust">${d.trust}</div><div class="cal-side-trust-label">LOCAL TRUST</div>` : ''}
+        </div>`;
+      } else {
+        sideHtml += `<div class="cal-side-slot empty" id="calAssignSlot" data-slot="${slotIdx}">
+          ${unscheduledLabels.length > 0 ? 'Click a queue chip to assign' : 'No labels in queue'}
+        </div>`;
+      }
+    } else {
+      sideHtml += `<div style="color:var(--muted);font-size:12px;padding:8px 0;">No slots on this day. Visits are on Mon / Wed / Fri.</div>`;
+    }
+
+    // Separator and back to week view
+    sideHtml += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--divider)">
+      <button class="cal-btn-end" id="calBackToWeek" style="height:32px;font-size:10px">BACK TO WEEK</button>
+    </div>`;
+
+  } else {
+    // Default: Week summary
+    sideHtml += `<div class="sidebar-section">`;
+    sideHtml += `<div style="font-family:var(--font-data);font-size:18px;font-weight:700;color:var(--dark);margin-bottom:12px">WEEK ${String(gameState.week).padStart(2,'0')}</div>`;
+    sideHtml += `<div style="font-size:12px;color:var(--secondary);margin-bottom:12px">${gameState.slotsTotal} slots \u00B7 ${filledSlots} scheduled</div>`;
+
+    // Slot summary cards
+    gameState.schedule.forEach((slot, i) => {
+      if (slot) {
+        const d = districtMap[slot.districtId];
+        const color = ACTION_COLORS[slot.action] || '#9a9a9a';
+        const dayLabel = ['MON','WED','FRI'][i] || '';
+        sideHtml += `<div class="cal-side-slot filled" style="border-left-color:${color}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="cal-side-district" data-district="${slot.districtId}">${d ? d.name : slot.districtId}</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:var(--font-data);font-size:9px;font-weight:700;color:var(--muted)">${dayLabel}</span>
+              <button class="cal-remove-btn" data-slot="${i}" title="Unschedule">&times;</button>
+            </div>
+          </div>
+          <div class="cal-side-action" style="color:${color}">${slot.action.toUpperCase()}</div>
+        </div>`;
+      }
+    });
+
+    // Borough coverage
+    const coveredBoros = new Set();
+    gameState.schedule.filter(Boolean).forEach(s => {
+      const d = districtMap[s.districtId];
+      if (d) coveredBoros.add(d.boro);
+    });
+    const allBoros = ['The Bronx', 'Manhattan', 'Queens', 'Brooklyn', 'Staten Island'];
+    const boroNames = { 'The Bronx': 'BX', 'Manhattan': 'MN', 'Queens': 'QN', 'Brooklyn': 'BK', 'Staten Island': 'SI' };
+    sideHtml += '<div class="cal-coverage" style="margin:8px 0">';
+    allBoros.forEach(b => {
+      const covered = coveredBoros.has(b);
+      sideHtml += `<span class="cal-boro-tag">${boroNames[b]}${covered ? '<span class="check-mark"> \u2713</span>' : '<span class="dash-mark"> \u2014</span>'}</span>`;
+    });
+    sideHtml += '</div>';
+
+    sideHtml += '</div>';
+
+    // Commitments from DMs
+    const unreadDms = gameState.dms.filter(dm => dm.unread || dm.messages.length > 0);
+    if (unreadDms.length > 0) {
+      sideHtml += '<div class="cal-commitments">';
+      sideHtml += '<span class="micro-label" style="display:block;margin-bottom:8px">COMMITMENTS</span>';
+      unreadDms.forEach(dm => {
+        const lastMsg = dm.messages[dm.messages.length - 1];
+        if (lastMsg && !lastMsg.sent) {
+          sideHtml += `<div class="cal-commitment-item">
+            <span class="cal-side-district" data-district="${dm.districtId}" style="font-size:11px">${dm.characterName}</span>: ${lastMsg.text.substring(0, 50)}${lastMsg.text.length > 50 ? '...' : ''}
+          </div>`;
+        }
+      });
+      sideHtml += '</div>';
+    }
+
+    // GO button
+    sideHtml += '<div class="sidebar-section" style="margin-top:16px">';
+    const hasScheduled = gameState.schedule.some(Boolean);
+    sideHtml += `<button class="cal-btn-go" id="calGoBtn" ${!hasScheduled || gameState.weekStarted ? 'disabled style="opacity:0.4;cursor:default"' : ''}>GO</button>`;
+
+    // Unscheduled note
+    if (unscheduledLabels.length > 0) {
+      sideHtml += `<div style="font-size:11px;color:var(--muted);text-align:center;margin:6px 0">${unscheduledLabels.length} unscheduled \u2014 will carry to next week</div>`;
+    }
+
+    // END WEEK
+    sideHtml += `<button class="cal-btn-end" id="calEndBtn">END WEEK</button>`;
+    sideHtml += '</div>';
+  }
+
+  sidebarEl.innerHTML = sideHtml;
+
+  // ── Wire interactions ──
+
+  // Month navigation
+  document.getElementById('calPrevMonth')?.addEventListener('click', () => {
+    calViewMonth.month--;
+    if (calViewMonth.month < 0) { calViewMonth.month = 11; calViewMonth.year--; }
+    calSelectedDay = null;
+    renderCalendar();
+  });
+  document.getElementById('calNextMonth')?.addEventListener('click', () => {
+    calViewMonth.month++;
+    if (calViewMonth.month > 11) { calViewMonth.month = 0; calViewMonth.year++; }
+    calSelectedDay = null;
+    renderCalendar();
+  });
+
+  // Click day cells in current week to select
+  mainEl.querySelectorAll('.cal-cell.current-week').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const dateStr = cell.dataset.date;
+      if (!dateStr) return;
+      const parts = dateStr.split('-');
+      calSelectedDay = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      renderCalendar();
+    });
+  });
+
+  // Click agenda items on calendar grid — unschedule
+  mainEl.querySelectorAll('.cal-agenda-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const did = item.dataset.district;
+      const idx = gameState.schedule.findIndex(s => s && s.districtId === did);
+      if (idx >= 0) {
+        gameState.schedule[idx] = null;
+        renderCalendar();
+      }
+    });
+  });
+
+  // Click district names in sidebar to navigate to map
+  document.querySelectorAll('.cal-side-district[data-district]').forEach(el => {
+    el.addEventListener('click', () => {
+      navigateToDistrict(el.dataset.district);
+    });
+  });
+
+  // Drag on queue chips (unscheduled only)
+  mainEl.querySelectorAll('.cal-queue-chip:not(.scheduled)').forEach(chip => {
+    chip.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.cal-chip-remove')) return; // don't drag when clicking ×
+      startDrag(e, 'queue', { districtId: chip.dataset.district, action: chip.dataset.action }, chip);
+    });
+  });
+
+  // × on queue chips — remove from queue entirely
+  mainEl.querySelectorAll('.cal-chip-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const did = btn.dataset.district;
+      gameState.labels = gameState.labels.filter(l => l.districtId !== did);
+      gameState.schedule = gameState.schedule.map(s => s && s.districtId === did ? null : s);
+      renderMapBadges();
+      renderCalendar();
+    });
+  });
+
+  // × on sidebar slot cards — unschedule (keep in queue)
+  document.querySelectorAll('.cal-remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const slotIdx = parseInt(btn.dataset.slot);
+      if (!isNaN(slotIdx)) {
+        gameState.schedule[slotIdx] = null;
+        renderCalendar();
+      }
+    });
+  });
+
+  // Back to week view button
+  document.getElementById('calBackToWeek')?.addEventListener('click', () => {
+    calSelectedDay = null;
+    renderCalendar();
+  });
+
+  // Wire GO button
+  document.getElementById('calGoBtn')?.addEventListener('click', handleGo);
+
+  // Wire END WEEK button
+  document.getElementById('calEndBtn')?.addEventListener('click', handleEndWeek);
+}
+
+function handleGo() {
+  if (gameState.weekStarted) return;
+  gameState.weekStarted = true;
+
+  // Switch to map view for conversation overlay
+  document.querySelector('[data-view="map"]')?.click();
+
+  const scheduled = gameState.schedule.filter(Boolean);
+
+  // Try to start conversation for the first scheduled visit
+  let convoStarted = false;
+  for (const slot of scheduled) {
+    if ((slot.action === 'visit' || slot.action === 'listen') && CONVERSATIONS[slot.districtId]) {
+      convoStarted = startConversation(slot.districtId);
+      if (convoStarted) break;
+    }
+  }
+
+  // For districts without conversation content, bump directly
+  scheduled.forEach(slot => {
+    if (convoStarted && CONVERSATIONS[slot.districtId]) return; // handled by conversation
+    const d = districtMap[slot.districtId];
+    if (!d) return;
+    d.know = Math.min(100, d.know + 25);
+    d.trust = Math.min(100, d.trust + 3);
+    d.lastVisited = gameState.week;
+  });
+
+  // Clear scheduled labels from the label queue
+  const scheduledIds = new Set(scheduled.map(s => s.districtId));
+  gameState.labels = gameState.labels.filter(l => !scheduledIds.has(l.districtId));
+
+  // Clear schedule
+  gameState.schedule = gameState.schedule.map(() => null);
+
+  // Update map visuals
+  renderMapBadges();
+  updateMapNodes();
+  updateStatusBar();
+  renderCalendar();
+
+  // Brief confirmation
+  const sidebarEl = document.getElementById('calSidebar');
+  if (sidebarEl) {
+    const names = scheduled.map(s => districtMap[s.districtId]?.name || s.districtId).join(', ');
+    const toast = document.createElement('div');
+    toast.style.cssText = 'background:var(--dark);color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;font-family:var(--font-ui);margin:8px 0;text-align:center;';
+    toast.textContent = `Visited: ${names}`;
+    sidebarEl.insertBefore(toast, sidebarEl.querySelector('.cal-btn-end'));
+    setTimeout(() => toast.remove(), 3000);
+  }
+}
+
+function handleEndWeek() {
+  // Emit weekEnd for systems (insight freshness decay + pattern detection)
+  bus.emit('clock.weekEnd', { week: gameState.week });
+
+  // Apply weekly resilience erosion for unvisited districts
+  DISTRICTS.forEach(d => {
+    if (d.lastVisited !== gameState.week) {
+      d.trust = Math.max(0, d.trust - 1);
+    }
+    // Knowledge decay
+    if (d.know > 0 && d.lastVisited !== gameState.week) {
+      d.know = Math.max(0, d.know - 4);
+    }
+  });
+
+  // (Insight freshness decay + pattern detection now handled by InsightSystem via clock.weekEnd)
+
+  // Operating deficit
+  gameState.reserve = +(gameState.reserve - 0.375).toFixed(2);
+
+  // Advance week
+  gameState.week++;
+  gameState.weekStarted = false;
+  updateBlizzardSeverity();
+
+  // Reset calendar view to follow the new week
+  const newRange = weekToDateRange(gameState.week);
+  calViewMonth = { year: newRange.start.getFullYear(), month: newRange.start.getMonth() };
+  calSelectedDay = null;
+
+  // Check lose conditions
+  const citywide = computeCitywide();
+  if (citywide < 20) {
+    showGameEnd('EVACUATION FAILURE — Community resilience collapsed.', false);
+    return;
+  }
+  if (gameState.reserve < -3.0) {
+    showGameEnd('FISCAL CRISIS — The state takes over.', false);
+    return;
+  }
+  if (gameState.week > 48) {
+    if (citywide >= 75) showGameEnd('THE RESILIENT CITY — Zero preventable casualties. You earned it.', true);
+    else if (citywide >= 50) showGameEnd('HELD TOGETHER — Losses occurred, but the system bent without breaking.', true);
+    else showGameEnd('THE BLIND RESPONSE — Preventable casualties in districts you never visited.', false);
+    return;
+  }
+
+  // Generate new weekly feed chatter
+  const unvisitedDistricts = DISTRICTS.filter(d => d.lastVisited !== gameState.week && d.know < 30);
+  if (unvisitedDistricts.length > 0) {
+    const pick = unvisitedDistricts[Math.floor(Math.random() * unvisitedDistricts.length)];
+    const chatterTemplates = [
+      `People in ${pick.name} are saying things are getting worse. Nobody from City Hall has been by.`,
+      `Heard complaints from ${pick.name} this week. Residents feel ignored.`,
+      `${pick.name} community board meeting drew 200 people. They want to know where the mayor is.`,
+      `Tensions rising in ${pick.name}. Local organizations stepping in where the city hasn't.`,
+    ];
+    gameState.feed.unshift({
+      type: 'chatter',
+      text: chatterTemplates[Math.floor(Math.random() * chatterTemplates.length)],
+      districtId: pick.id,
+      time: 'new',
+      week: gameState.week,
+      order: Date.now(),
+    });
+  }
+
+  // Emit for systems
+  bus.emit('clock.weekStart', { week: gameState.week });
+
+  // Update everything
+  updateMapNodes();
+  renderMapBadges();
+  updateStatusBar();
+  updateBlocBar();
+  renderCalendar();
+  renderSocial();
+  renderNotebook();
+}
+
+function updateMapNodes() {
+  if (currentMode !== 'knowledge') return;
+  DISTRICTS.forEach(d => {
+    const els = districtElements[d.id];
+    if (!els) return;
+    els.group.style.opacity = Math.max(0.14, d.know / 100);
+  });
+}
+
+function updateBlocBar() {
+  // Recompute bloc averages from districts
+  const blocTotals = {};
+  const blocCounts = {};
+  DISTRICTS.forEach(d => {
+    const bloc = d.bloc;
+    blocTotals[bloc] = (blocTotals[bloc] || 0) + d.trust;
+    blocCounts[bloc] = (blocCounts[bloc] || 0) + 1;
+  });
+
+  const blocBar = document.getElementById('blocBar');
+  if (!blocBar) return;
+  blocBar.innerHTML = Object.entries(BLOC_NAMES).map(([key, name]) => {
+    const avg = blocCounts[key] ? Math.round(blocTotals[key] / blocCounts[key]) : 0;
+    return `<span><span class="bloc-dot" style="background:${BLOC_COLORS[key]}"></span>${name} <span class="bloc-val">${avg}%</span></span>`;
+  }).join('');
+}
+
+/* ── Conversation System ────────────────────── */
+
+// CONVERSATIONS populated by module script from data/conversations.js
+window.CONVERSATIONS = {};
+
+let convoState = null; // { districtId, exchangeIdx, depth, insights[] }
+
+function startConversation(districtId) {
+  const d = districtMap[districtId];
+  const convo = CONVERSATIONS[districtId];
+  if (!convo || !d) return false;
+
+  convoState = { districtId, exchangeIdx: 0, depth: 0, maxDepth: convo.exchanges.length * 2, insights: [] };
+
+  const overlay = document.getElementById('convoOverlay');
+  const header = document.getElementById('convoHeader');
+  const messages = document.getElementById('convoMessages');
+  const choices = document.getElementById('convoChoices');
+  const depthFill = document.getElementById('convoDepth');
+
+  // Set header
+  header.innerHTML = `
+    <div class="convo-avatar">${convo.character.initials}</div>
+    <div class="convo-char-info">
+      <div class="convo-char-name">${convo.character.name}</div>
+      <div class="convo-char-role">${convo.character.role}</div>
+    </div>
+    <span class="convo-district-tag">${d.name}</span>
+  `;
+
+  messages.innerHTML = '';
+  choices.innerHTML = '';
+  depthFill.style.width = '0%';
+
+  // Show overlay
+  overlay.classList.add('active');
+
+  // Switch to map tab if not already
+  document.querySelector('[data-view="map"]')?.click();
+
+  // Show first exchange after a beat
+  setTimeout(() => showExchange(0), 400);
+
+  return true;
+}
+
+function showExchange(idx) {
+  const convo = CONVERSATIONS[convoState.districtId];
+  if (!convo || idx >= convo.exchanges.length) {
+    endConversation();
+    return;
+  }
+
+  convoState.exchangeIdx = idx;
+  const exchange = convo.exchanges[idx];
+  const messages = document.getElementById('convoMessages');
+  const choices = document.getElementById('convoChoices');
+
+  // Show typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'convo-typing';
+  typing.innerHTML = '<span class="convo-typing-dot"></span><span class="convo-typing-dot"></span><span class="convo-typing-dot"></span>';
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+
+  // After delay, replace with message
+  const delay = 600 + Math.random() * 800;
+  setTimeout(() => {
+    typing.remove();
+
+    // Add NPC message
+    const msg = document.createElement('div');
+    msg.className = 'convo-msg npc';
+    msg.textContent = exchange.npc;
+    messages.appendChild(msg);
+
+    // Add insight chip if present
+    if (exchange.insight) {
+      setTimeout(() => {
+        const chip = document.createElement('div');
+        chip.className = 'convo-insight';
+        chip.textContent = exchange.insight.category + ' \u2014 ' + exchange.insight.text;
+        messages.appendChild(chip);
+        messages.scrollTop = messages.scrollHeight;
+        convoState.insights.push(exchange.insight);
+      }, 300);
+    }
+
+    messages.scrollTop = messages.scrollHeight;
+
+    // Show choices after a beat
+    setTimeout(() => {
+      choices.innerHTML = '';
+      exchange.choices.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'convo-choice';
+        btn.textContent = c.text;
+        btn.addEventListener('click', () => selectChoice(idx, i, c));
+        choices.appendChild(btn);
+      });
+    }, 400);
+
+  }, delay);
+}
+
+function selectChoice(exchangeIdx, choiceIdx, choice) {
+  const choices = document.getElementById('convoChoices');
+  const messages = document.getElementById('convoMessages');
+  const depthFill = document.getElementById('convoDepth');
+
+  // Fade out unchosen, highlight chosen
+  choices.querySelectorAll('.convo-choice').forEach((btn, i) => {
+    if (i === choiceIdx) {
+      btn.classList.add('selected');
+    } else {
+      btn.classList.add('faded');
+    }
+  });
+
+  // Add player message
+  setTimeout(() => {
+    const msg = document.createElement('div');
+    msg.className = 'convo-msg player';
+    msg.textContent = choice.text;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+
+    // Update depth
+    convoState.depth += choice.depth;
+    const pct = Math.min(100, (convoState.depth / convoState.maxDepth) * 100);
+    depthFill.style.width = pct + '%';
+
+    // Next exchange after a beat
+    setTimeout(() => {
+      choices.innerHTML = '';
+      showExchange(convoState.exchangeIdx + 1);
+    }, 500);
+  }, 200);
+}
+
+function endConversation() {
+  const overlay = document.getElementById('convoOverlay');
+  const messages = document.getElementById('convoMessages');
+  const choices = document.getElementById('convoChoices');
+
+  // Show summary
+  const summary = document.createElement('div');
+  summary.className = 'convo-msg npc';
+  summary.style.background = 'rgba(255,45,45,0.06)';
+  summary.style.borderLeft = '3px solid var(--red)';
+  summary.innerHTML = `<strong>${convoState.insights.length} insight${convoState.insights.length !== 1 ? 's' : ''} discovered</strong>`;
+  messages.appendChild(summary);
+  messages.scrollTop = messages.scrollHeight;
+
+  // Show close button
+  setTimeout(() => {
+    choices.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'convo-choice';
+    btn.textContent = 'Thank you. I need to go.';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    btn.addEventListener('click', () => {
+      overlay.classList.remove('active');
+
+      // Apply conversation results to district
+      const d = districtMap[convoState.districtId];
+      if (d) {
+        d.know = Math.min(100, d.know + 25 + convoState.depth * 3);
+        d.trust = Math.min(100, d.trust + 2 + convoState.depth);
+        d.lastVisited = gameState.week;
+      }
+
+      // Push insights into game state
+      convoState.insights.forEach(ins => {
+        gameState.insights.push({
+          category: ins.category,
+          text: ins.text,
+          districtId: convoState.districtId,
+          week: gameState.week,
+          freshness: 1.0,
+        });
+      });
+
+      // Add feed items for the visit
+      const convo = CONVERSATIONS[convoState.districtId];
+      const charName = convo?.character?.name || 'A resident';
+      gameState.feed.unshift({
+        type: 'reaction',
+        text: `${d?.name || convoState.districtId}: The mayor visited today. ${convoState.insights.length} concerns documented.`,
+        districtId: convoState.districtId,
+        time: 'just now',
+        week: gameState.week,
+      });
+
+      // Add DM from the character
+      const dmIdx = gameState.dms.findIndex(dm => dm.districtId === convoState.districtId);
+      if (dmIdx >= 0) {
+        gameState.dms[dmIdx].messages.push({ text: `Thanks for coming by. I'll hold you to what we talked about.`, sent: false });
+        gameState.dms[dmIdx].unread = true;
+      } else if (convo) {
+        gameState.dms.push({
+          characterName: charName,
+          initials: convo.character.initials,
+          districtId: convoState.districtId,
+          districtName: d?.name || convoState.districtId,
+          messages: [{ text: `Thanks for coming by. I'll hold you to what we talked about.`, sent: false }],
+          unread: true,
+        });
+      }
+
+      // Emit for systems (InsightSystem listens for insight tracking)
+      bus.emit('conversation.ended', {
+        districtId: convoState.districtId,
+        insights: convoState.insights,
+        trustDelta: 2 + convoState.depth,
+        depth: convoState.depth,
+      });
+
+      updateMapNodes();
+      renderMapBadges();
+      updateStatusBar();
+      updateBlocBar();
+      renderSocial();
+
+      convoState = null;
+    });
+    choices.appendChild(btn);
+  }, 600);
+}
+
+/* ── Click empty space to close ──────────────── */
+svg.addEventListener('click', (e) => {
+  if (panState.moved) return; // don't close if we just panned
+  // Don't close if click was on a hex menu item (it handles itself)
+  if (e.target.closest('.hex-item') || e.target.closest('.hex-action-wrap') || e.target.closest('.hex-menu-group')) return;
+  if (hexMenuOpen) {
+    closeHexMenu();
+    selectedDistrict = null;
+    clearDimLabels();
+    clearDistrictPanel();
+  }
+});
+
+/* ── Pan & Zoom ─────────────────────────────── */
+const BASE_VB = { x: 60, y: 50, w: 690, h: 700 };
+let vb = { ...BASE_VB };
+let panState = { active: false, moved: false, startX: 0, startY: 0, vbStart: null };
+
+function applyViewBox() {
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+}
+
+// Zoom with scroll wheel
+document.getElementById('mapView').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 1.08 : 0.93;
+  const rect = svg.getBoundingClientRect();
+  // Cursor position as fraction of SVG element
+  const fx = (e.clientX - rect.left) / rect.width;
+  const fy = (e.clientY - rect.top) / rect.height;
+  // Cursor in viewBox coords
+  const cx = vb.x + fx * vb.w;
+  const cy = vb.y + fy * vb.h;
+  // Scale viewBox dimensions
+  const nw = Math.max(200, Math.min(BASE_VB.w * 2.5, vb.w * factor));
+  const nh = nw * (BASE_VB.h / BASE_VB.w);
+  // Keep cursor point stable
+  vb.x = cx - fx * nw;
+  vb.y = cy - fy * nh;
+  vb.w = nw;
+  vb.h = nh;
+  applyViewBox();
+}, { passive: false });
+
+// Pan with click-drag
+svg.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.district-node') || e.target.closest('.hex-menu-group') || e.target.closest('.hex-item') || e.target.closest('.hex-action-wrap')) return;
+  panState = { active: true, moved: false, startX: e.clientX, startY: e.clientY, vbStart: { ...vb } };
+  svg.setPointerCapture(e.pointerId);
+  svg.style.cursor = 'grabbing';
+});
+svg.addEventListener('pointermove', (e) => {
+  if (!panState.active) return;
+  const dx = e.clientX - panState.startX;
+  const dy = e.clientY - panState.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panState.moved = true;
+  const rect = svg.getBoundingClientRect();
+  // Convert pixel drag to viewBox units
+  const scaleX = vb.w / rect.width;
+  const scaleY = vb.h / rect.height;
+  vb.x = panState.vbStart.x - dx * scaleX;
+  vb.y = panState.vbStart.y - dy * scaleY;
+  applyViewBox();
+});
+svg.addEventListener('pointerup', () => {
+  panState.active = false;
+  svg.style.cursor = '';
+});
+svg.addEventListener('pointercancel', () => {
+  panState.active = false;
+  svg.style.cursor = '';
+});
+
+/* ── Right Panel ─────────────────────────────── */
+function showDistrictPanel(id) {
+  const d = districtMap[id];
+  if (!d) return;
+  const panel = document.getElementById('rightPanel');
+  panel.classList.remove('empty');
+
+  const trustColor = d.trust >= 60 ? '#141414' : d.trust >= 45 ? '#8a8a8a' : '#ff2d2d';
+  const isVisited = d.lastVisited !== null;
+  const heardAbout = gameState.heardAbout?.[d.id] || [];
+  const concernText = isVisited && d.concern
+    ? `\u201C${d.concern}\u201D`
+    : heardAbout.length > 0
+    ? `Heard about: ${heardAbout.join(', ')}. Not verified \u2014 you haven\u2019t been here.`
+    : "You haven\u2019t been here yet.";
+  const concernClass = isVisited ? '' : ' unknown';
+
+  // Concern score bars (from CONCERN_SCORES)
+  const concerns = CONCERN_SCORES[d.id];
+  let concernBarsHtml = '';
+  if (concerns && isVisited) {
+    const sorted = Object.entries(concerns).sort((a, b) => b[1] - a[1]);
+    concernBarsHtml = `<div style="margin-top:4px">
+      <div class="obj-section-title" style="margin-bottom:4px">CONCERNS</div>
+      ${sorted.filter(([,v]) => v >= 3).map(([cat, val]) => {
+        const pct = val * 10;
+        const color = val >= 7 ? '#ff2d2d' : val >= 5 ? '#e8a83e' : '#9a9a9a';
+        return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0;font-size:10px">
+          <span style="width:52px;color:var(--secondary);font-weight:600;text-transform:uppercase">${cat}</span>
+          <div style="flex:1;height:4px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${color};border-radius:2px"></div>
+          </div>
+          <span style="font-family:var(--font-data);font-weight:700;font-size:9px;color:${color}">${val}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } else if (concerns && heardAbout.length > 0) {
+    // Show only heard-about concerns, dimmed
+    concernBarsHtml = `<div style="margin-top:4px">
+      <div class="obj-section-title" style="margin-bottom:4px">HEARD ABOUT <span style="color:var(--red);font-size:8px">UNVERIFIED</span></div>
+      ${heardAbout.map(cat => {
+        const val = concerns[cat] || 0;
+        return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0;font-size:10px;opacity:0.5">
+          <span style="width:52px;color:var(--secondary);font-weight:600;text-transform:uppercase">${cat}</span>
+          <div style="flex:1;height:4px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden">
+            <div style="width:${val*10}%;height:100%;background:#e8a83e;border-radius:2px;border:1px dashed rgba(0,0,0,0.15)"></div>
+          </div>
+          <span style="font-family:var(--font-data);font-weight:700;font-size:9px;color:#e8a83e">?</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Character contact
+  const convo = CONVERSATIONS[d.id];
+  const charHtml = convo ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px 0;border-top:1px solid var(--divider)">
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--dark);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center">${convo.character.initials}</div>
+    <div><div style="font-size:11px;font-weight:600">${convo.character.name}</div><div style="font-size:9px;color:var(--muted)">${convo.character.role}</div></div>
+  </div>` : '';
+
+  panel.innerHTML = `
+    <div class="district-header">
+      <span class="district-boro">${d.boro.toUpperCase()}</span>
+      <span class="district-name">${d.name}</span>
+    </div>
+    <div class="district-body">
+      <div class="district-bloc">
+        <span class="dot" style="background:${BLOC_COLORS[d.bloc]}"></span>
+        ${BLOC_NAMES[d.bloc]}
+      </div>
+      <div class="district-trust-num" style="color:${trustColor}">${d.trust}</div>
+      <div class="district-trust-label">LOCAL TRUST</div>
+      <div class="district-pop">Pop. Weight: <span class="val">${d.pop}</span></div>
+      <div class="obj-divider"></div>
+      <div class="district-concern${concernClass}">${concernText}</div>
+      ${concernBarsHtml}
+      <div class="obj-divider"></div>
+      <div class="knowledge-track">
+        <div class="knowledge-fill" style="width:${d.know}%"></div>
+      </div>
+      <div class="knowledge-label">KNOWLEDGE &middot; <span class="kval">${d.know}%</span></div>
+      ${charHtml}
+    </div>
+  `;
+}
+
+function clearDistrictPanel() {
+  const panel = document.getElementById('rightPanel');
+  panel.classList.add('empty');
+  panel.innerHTML = '<div class="empty-msg">Select a district on the map to view details.</div>';
+}
+
+/* ── View Mode Pills ─────────────────────────── */
+document.getElementById('viewModeBar').addEventListener('click', (e) => {
+  const pill = e.target.closest('.view-pill');
+  if (!pill) return;
+  currentMode = pill.dataset.mode;
+  document.querySelectorAll('.view-pill').forEach(p => p.classList.toggle('active', p === pill));
+  applyViewMode();
+});
+
+function applyViewMode() {
+  DISTRICTS.forEach(d => {
+    const els = districtElements[d.id];
+    if (!els) return;
+    const node = els.node;
+    const g = els.group;
+
+    switch (currentMode) {
+      case 'coalition':
+        node.setAttribute('fill', BLOC_COLORS[d.bloc]);
+        g.style.opacity = '1';
+        break;
+      case 'trust': {
+        // Color intensity by trust
+        const tInt = Math.max(0.2, d.trust / 100);
+        node.setAttribute('fill', BLOC_COLORS[d.bloc]);
+        g.style.opacity = tInt;
+        break;
+      }
+      case 'knowledge': {
+        const kInt = Math.max(0.14, d.know / 100);
+        node.setAttribute('fill', BLOC_COLORS[d.bloc]);
+        g.style.opacity = kInt;
+        break;
+      }
+      case 'needs':
+        node.setAttribute('fill', BLOC_COLORS[d.bloc]);
+        g.style.opacity = '1';
+        break;
+    }
+  });
+}
+
+/* ── Bottom Nav ──────────────────────────────── */
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const view = tab.dataset.view;
+    if (view === currentView) return;
+    currentView = view;
+
+    // Update active state
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t === tab));
+
+    // Toggle views
+    const mapEl = document.getElementById('mapView');
+    const leftEl = document.getElementById('leftPanel');
+    const rightEl = document.getElementById('rightPanel');
+    const calEl = document.getElementById('calendarView');
+    const socEl = document.getElementById('socialsView');
+    mapEl.classList.toggle('view-hidden', view !== 'map');
+    leftEl.classList.toggle('view-hidden', view !== 'map');
+    rightEl.classList.toggle('view-hidden', view !== 'map');
+
+    calEl.classList.toggle('active', view === 'calendar');
+    socEl.classList.toggle('active', view === 'socials');
+
+    // Close hex menu when switching away
+    if (view !== 'map') {
+      closeHexMenuImmediate();
+      selectedDistrict = null;
+      clearDimLabels();
+    }
+
+    // Flash pending post-affected nodes when returning to map
+    if (view === 'map' && gameState._pendingFlashes?.length > 0) {
+      setTimeout(() => {
+        gameState._pendingFlashes.forEach(ad => {
+          flashNode(ad.id, ad.visited ? '#34d399' : '#e8a83e');
+        });
+        gameState._pendingFlashes = [];
+      }, 300);
+    }
+  });
+});
+
+/* ── Briefing Timer (replaced by blizzard countdown) ── */
+
+/* ── Social View Renderer ───────────────────── */
+/* ── Notebook Drawer ────────────────────────── */
+function toggleNotebook() {
+  const drawer = document.getElementById('notebookDrawer');
+  if (drawer) {
+    drawer.classList.toggle('open');
+    if (drawer.classList.contains('open')) renderNotebook();
+  }
+}
+
+function renderNotebook() {
+  const body = document.getElementById('notebookBody');
+  if (!body) return;
+  const insightSys = window.__insightSys;
+  const interventionSys = window.__interventionSys;
+  if (!insightSys) { body.innerHTML = '<div style="padding:16px;color:#999;font-size:12px;">Systems loading...</div>'; return; }
+
+  let html = '';
+
+  // ── Patterns section ──
+  const patterns = insightSys.getPatterns();
+  if (patterns.length > 0) {
+    html += '<div class="notebook-section"><div class="notebook-section-title">Patterns (' + patterns.length + ')</div>';
+    for (const p of patterns) {
+      const districtNames = p.districts.map(id => (districtMap[id]?.name || id)).join(', ');
+      const hasIntervention = interventionSys && interventionSys.getAvailable().pattern.some(
+        i => i.requiredPattern === p.category && i.unlocked && !i.executed
+      );
+      html += '<div class="notebook-pattern">';
+      html += '<div class="notebook-pattern-cat">' + p.category + '</div>';
+      html += '<div class="notebook-pattern-districts">' + districtNames + '</div>';
+      if (hasIntervention) html += '<div class="notebook-pattern-chip">INTERVENTION AVAILABLE</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Fresh insights ──
+  const fresh = insightSys.getFresh();
+  if (fresh.length > 0) {
+    const grouped = {};
+    for (const ins of fresh) {
+      if (!grouped[ins.districtId]) grouped[ins.districtId] = [];
+      grouped[ins.districtId].push(ins);
+    }
+    html += '<div class="notebook-section"><div class="notebook-section-title">Fresh Insights (' + fresh.length + ')</div>';
+    for (const [districtId, insights] of Object.entries(grouped)) {
+      const d = districtMap[districtId];
+      html += '<div class="notebook-district-group">';
+      html += '<div class="notebook-district-name">' + (d?.name || districtId) + '</div>';
+      for (const ins of insights) {
+        const pct = Math.round(ins.freshness * 100);
+        const color = pct > 60 ? '#34d399' : pct > 30 ? '#e8a83e' : '#ff5a52';
+        html += '<div class="notebook-insight">';
+        html += '<span class="notebook-insight-cat ' + ins.category + '">' + ins.category + '</span>';
+        html += '<div class="notebook-insight-text">' + ins.text + '</div>';
+        html += '<div class="notebook-freshness"><div class="notebook-freshness-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Stale insights ──
+  const stale = insightSys.getStale();
+  if (stale.length > 0) {
+    const grouped = {};
+    for (const ins of stale) {
+      if (!grouped[ins.districtId]) grouped[ins.districtId] = [];
+      grouped[ins.districtId].push(ins);
+    }
+    html += '<div class="notebook-section"><div class="notebook-section-title">Stale Insights (' + stale.length + ')</div>';
+    for (const [districtId, insights] of Object.entries(grouped)) {
+      const d = districtMap[districtId];
+      html += '<div class="notebook-district-group">';
+      html += '<div class="notebook-district-name">' + (d?.name || districtId) + ' <span class="notebook-stale-badge">STALE</span></div>';
+      for (const ins of insights) {
+        html += '<div class="notebook-insight stale">';
+        html += '<span class="notebook-insight-cat ' + ins.category + '">' + ins.category + '</span>';
+        html += '<div class="notebook-insight-text">' + ins.text + '</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Dead insights (collapsed) ──
+  const dead = insightSys.getDead();
+  if (dead.length > 0) {
+    html += '<div class="notebook-section">';
+    html += '<div class="notebook-dead-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">Show expired (' + dead.length + ') \u25BE</div>';
+    html += '<div style="display:none">';
+    for (const ins of dead) {
+      html += '<div class="notebook-insight dead">';
+      html += '<span class="notebook-insight-cat ' + ins.category + '">' + ins.category + '</span>';
+      html += '<div class="notebook-insight-text">' + ins.text + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // ── Interventions ──
+  if (interventionSys) {
+    const available = interventionSys.getAvailable();
+    const allInterventions = [...available.pattern, ...available.informed, ...available.generic];
+    html += '<div class="notebook-section"><div class="notebook-section-title">Interventions</div>';
+    if (allInterventions.length === 0) {
+      html += '<div style="font-size:12px;color:#999;">No interventions available yet. Gather insights to unlock options.</div>';
+    }
+    for (const inv of allInterventions) {
+      const locked = !inv.unlocked;
+      html += '<div class="intervention-card' + (locked ? ' locked' : '') + '">';
+      html += '<span class="intervention-tier ' + inv.tier + '">' + inv.tier + '</span>';
+      html += '<div class="intervention-name">' + inv.name + '</div>';
+      html += '<div class="intervention-desc">' + inv.description + '</div>';
+      html += '<div class="intervention-cost">$' + inv.cost + 'B' + (inv.trustEffect.citywide > 0 ? ' \u2022 +' + inv.trustEffect.citywide + ' citywide trust' : '') + '</div>';
+      if (locked) {
+        const req = inv.tier === 'informed'
+          ? 'Need ' + (inv.requiredCount || 2) + '+ fresh ' + inv.requiredCategory + ' insights'
+          : 'Need ' + inv.requiredPattern + ' pattern';
+        html += '<div class="intervention-req">\uD83D\uDD12 ' + req + '</div>';
+      } else {
+        html += '<button class="intervention-exec" ' + (!inv.affordable ? 'disabled title="Insufficient funds"' : '') +
+          ' onclick="bus.emit(\'ui.interventionChosen\', {interventionId:\'' + inv.id + '\'})"' +
+          '>EXECUTE \u2014 $' + inv.cost + 'B</button>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Empty state ──
+  if (!html) {
+    html = '<div style="padding:32px 16px;text-align:center;color:#999;font-size:12px;">Visit districts and have conversations to gather insights.</div>';
+  }
+
+  body.innerHTML = html;
+
+  // Update badge
+  const badge = document.getElementById('notebookBadge');
+  if (badge) {
+    const count = gameState.insights.length;
+    badge.style.display = count > 0 ? '' : 'none';
+    badge.textContent = count;
+  }
+}
+
+// Keyboard shortcut: N to toggle notebook
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'n' || e.key === 'N') {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    toggleNotebook();
+  }
+});
+
+function renderSocial() {
+  const mainEl = document.getElementById('socMain');
+  const sidebarEl = document.getElementById('socSidebar');
+  if (!mainEl || !sidebarEl) return;
+
+  // ── Main: Compose + Feed ──
+  let mainHtml = '';
+
+  // Compose bar
+  mainHtml += `<div class="compose-bar">
+    <input type="text" class="compose-input" id="composeInput" placeholder="What do you want to tell the city?">
+    <button class="compose-post-btn" id="composePostBtn">POST</button>
+  </div>`;
+
+  // Tone pills
+  mainHtml += `<div class="compose-tones">
+    <button class="compose-tone" data-tone="concerned">CONCERNED</button>
+    <button class="compose-tone active" data-tone="optimistic">OPTIMISTIC</button>
+    <button class="compose-tone" data-tone="urgent">URGENT</button>
+    <button class="compose-tone" data-tone="matter-of-fact">MATTER-OF-FACT</button>
+  </div>`;
+
+  // Insight context — show what you know (read-only, no manual selection)
+  const freshInsights = gameState.insights.filter(i => i.freshness > 0.3);
+  if (freshInsights.length > 0) {
+    mainHtml += `<div class="compose-ground"><span style="color:var(--muted)">Your knowledge (${freshInsights.length} fresh insights):</span>`;
+    freshInsights.slice(0, 4).forEach(ins => {
+      const label = ins.text.split('—')[0].trim().substring(0, 35);
+      mainHtml += `<span class="compose-insight-chip" style="cursor:default;opacity:0.7">&#9670; ${ins.category} &#8212; ${label}</span>`;
+    });
+    if (freshInsights.length > 4) mainHtml += `<span style="font-size:10px;color:var(--muted)">+${freshInsights.length - 4} more</span>`;
+    mainHtml += `</div>`;
+  } else {
+    mainHtml += `<div class="compose-ground" style="color:var(--muted)"><span>No insights yet. Visit districts first.</span></div>`;
+  }
+  // LLM status indicator
+  mainHtml += `<div id="llmStatus" style="display:none;font-size:10px;color:var(--muted);padding:4px 0;font-family:var(--font-data)"></div>`;
+
+  // Feed timeline — merge posts + feed items, sorted by recency
+  const allItems = [];
+
+  gameState.posts.forEach(p => {
+    allItems.push({ type: 'post', data: p, week: p.week, order: p.order || 0 });
+  });
+  gameState.feed.forEach(f => {
+    allItems.push({ type: 'feed', data: f, week: f.week, order: f.order || 0 });
+  });
+
+  // Sort: highest week first, then by insertion order
+  allItems.sort((a, b) => b.week - a.week || b.order - a.order);
+
+  allItems.forEach(item => {
+    if (item.type === 'post') {
+      const p = item.data;
+      const score = p.overall ?? (p.grounded ? 7 : 2);
+      const grClass = score >= 5 ? 'grounded' : 'hollow';
+      const grLabel = score >= 7 ? 'RESONATING' : score >= 4 ? 'NOTICED' : 'HOLLOW';
+      const scoreDistricts = (p.scores || []).filter(s => s.score > 0).map(s =>
+        `<span style="font-size:9px;color:${s.score >= 7 ? '#34d399' : s.score >= 4 ? 'var(--secondary)' : 'var(--muted)'}">${districtMap[s.district]?.name || s.district}: ${s.score}/10</span>`
+      ).join(' · ');
+      mainHtml += `<div class="feed-item">
+        <div class="feed-dot player"></div>
+        <div class="feed-body">
+          <div class="feed-text">${p.text}</div>
+          <div class="feed-engagement">${p.engagement.likes} likes &middot; ${p.engagement.shares} shares &middot; ${p.engagement.replies} replies <span class="feed-grounding ${grClass}">${grLabel} ${score}/10</span></div>
+          ${scoreDistricts ? `<div style="margin-top:2px">${scoreDistricts}</div>` : ''}
+          ${p.summary ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${p.summary}</div>` : ''}
+        </div>
+        <span class="feed-time">wk ${p.week}</span>
+      </div>`;
+    } else {
+      const f = item.data;
+      const dotClass = f.type === 'chatter' ? 'chatter' : f.type === 'news' ? 'news' : f.type === 'reaction' ? 'reaction' : f.type === 'dm' ? 'dm' : 'chatter';
+      const metaLabel = f.type === 'chatter' ? 'DISTRICT CHATTER' : f.type === 'news' ? 'NEWS' : f.type === 'reaction' ? 'REACTION' : f.type.toUpperCase();
+      const districtHighlight = f.districtId && districtMap[f.districtId]
+        ? f.text.replace(districtMap[f.districtId].name, `<span class="feed-district">${districtMap[f.districtId].name}</span>`)
+        : f.text;
+      mainHtml += `<div class="feed-item">
+        <div class="feed-dot ${dotClass}"></div>
+        <div class="feed-body">
+          <div class="feed-text">${districtHighlight}</div>
+          <div class="feed-meta">${metaLabel}</div>
+        </div>
+        <span class="feed-time">${f.time || 'wk ' + f.week}</span>
+      </div>`;
+    }
+  });
+
+  if (allItems.length === 0) {
+    mainHtml += `<div style="color:var(--muted);font-size:12px;text-align:center;padding:32px 0;">The city is quiet. For now.</div>`;
+  }
+
+  mainEl.innerHTML = mainHtml;
+
+  // Wire compose button
+  document.getElementById('composePostBtn')?.addEventListener('click', handlePost);
+
+  // Wire tone pills
+  mainEl.querySelectorAll('.compose-tone').forEach(pill => {
+    pill.addEventListener('click', () => {
+      mainEl.querySelectorAll('.compose-tone').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+  });
+
+  // Wire grounding chip selection
+  mainEl.querySelectorAll('.compose-insight-chip').forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('selected'));
+  });
+
+  // ── Sidebar: DMs + Insights ──
+  let sideHtml = '';
+
+  // Messages
+  const unreadCount = gameState.dms.filter(dm => dm.unread).length;
+  sideHtml += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <span class="micro-label">MESSAGES</span>
+    ${unreadCount > 0 ? `<span class="dm-unread-badge">${unreadCount}</span>` : ''}
+  </div>`;
+
+  gameState.dms.forEach(dm => {
+    if (dm.messages.length === 0) {
+      // No messages yet — show collapsed
+      sideHtml += `<div class="dm-thread">
+        <div class="dm-avatar">${dm.initials}</div>
+        <div class="dm-info">
+          <div class="dm-name">${dm.characterName}</div>
+          <div class="dm-district">${dm.districtName.toUpperCase()}</div>
+          <div class="dm-preview">No messages yet</div>
+        </div>
+      </div>`;
+    } else {
+      // Show expanded with messages
+      sideHtml += `<div class="dm-expanded">
+        <div class="dm-expanded-header">
+          <div class="dm-avatar">${dm.initials}</div>
+          <div>
+            <div class="dm-name">${dm.characterName}</div>
+            <div class="dm-district">${dm.districtName.toUpperCase()}</div>
+          </div>
+        </div>`;
+      dm.messages.forEach(msg => {
+        sideHtml += `<div class="dm-expanded-msg${msg.sent ? ' sent' : ''}">${msg.text}</div>`;
+      });
+      sideHtml += `</div>`;
+      dm.unread = false;
+    }
+  });
+
+  // Patterns
+  if (gameState.patterns.length > 0) {
+    sideHtml += `<div style="margin-top:20px;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span class="micro-label">PATTERNS</span>
+      <span style="font-family:var(--font-data);font-size:9px;font-weight:700;color:var(--red)">${gameState.patterns.length}</span>
+    </div>`;
+    gameState.patterns.forEach(p => {
+      sideHtml += `<div class="insight-chip" style="background:rgba(255,45,45,0.08);color:var(--red);border-color:rgba(255,45,45,0.2)">&#9670; ${p.text}</div>`;
+    });
+  }
+
+  // Insights
+  const sidebarFresh = gameState.insights.filter(i => i.freshness > 0.3);
+  const staleInsights = gameState.insights.filter(i => i.freshness > 0 && i.freshness <= 0.3);
+  const deadInsights = gameState.insights.filter(i => i.freshness <= 0);
+
+  sideHtml += `<div style="margin-top:20px;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <span class="micro-label">INSIGHTS</span>
+    <span style="font-family:var(--font-data);font-size:9px;font-weight:700;color:var(--muted)">${gameState.insights.length}</span>
+  </div>`;
+
+  if (gameState.insights.length === 0) {
+    sideHtml += `<div style="color:var(--muted);font-size:11px;">Visit districts to discover insights.</div>`;
+  } else {
+    sideHtml += `<div class="insight-list">`;
+    sidebarFresh.forEach(ins => {
+      sideHtml += `<div class="insight-chip">${ins.category} &#8212; ${ins.text} <span style="font-size:8px;color:var(--muted);margin-left:4px">${Math.round(ins.freshness * 100)}%</span></div>`;
+    });
+    staleInsights.forEach(ins => {
+      sideHtml += `<div class="insight-chip" style="opacity:0.5;border-style:dashed">${ins.category} &#8212; ${ins.text} <span style="font-size:8px;color:var(--red)">STALE</span></div>`;
+    });
+    deadInsights.forEach(ins => {
+      sideHtml += `<div class="insight-chip" style="opacity:0.25;text-decoration:line-through">${ins.category} &#8212; ${ins.text}</div>`;
+    });
+    sideHtml += `</div>`;
+  }
+
+  sidebarEl.innerHTML = sideHtml;
+}
+
+const OLLAMA_URL = 'http://localhost:11434/api/generate';
+const OLLAMA_MODEL = 'llama3.1:8b';
+
+async function handlePost() {
+  const input = document.getElementById('composeInput');
+  const text = input?.value?.trim();
+  if (!text) return;
+
+  const activeTone = document.querySelector('.compose-tone.active')?.dataset.tone || 'optimistic';
+  const statusEl = document.getElementById('llmStatus');
+  const postBtn = document.getElementById('composePostBtn');
+
+  // Disable button, show status
+  if (postBtn) { postBtn.disabled = true; postBtn.textContent = '...'; }
+  if (statusEl) { statusEl.style.display = ''; statusEl.textContent = 'Evaluating post against community knowledge...'; }
+
+  // Build context: all insights the player has gathered
+  const insightContext = gameState.insights
+    .filter(i => i.freshness > 0)
+    .map(ins => {
+      const d = districtMap[ins.districtId];
+      const charName = CONVERSATIONS[ins.districtId]?.character?.name || 'a resident';
+      return `- ${d?.name || ins.districtId} (${charName}): [${ins.category}] ${ins.text} (freshness: ${Math.round(ins.freshness * 100)}%)`;
+    }).join('\n');
+
+  const districtContext = DISTRICTS
+    .filter(d => d.lastVisited !== null)
+    .map(d => {
+      const char = CONVERSATIONS[d.id]?.character;
+      const concerns = CONCERN_SCORES[d.id];
+      const topConcerns = concerns
+        ? Object.entries(concerns).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([k,v]) => `${k}:${v}/10`).join(', ')
+        : 'unknown';
+      return `- ${d.name} (${d.boro}): trust ${d.trust}%, top concerns: [${topConcerns}]${char ? `, contact: ${char.name} (${char.role})` : ''}`;
+    }).join('\n');
+
+  const systemPrompt = `You are a scoring engine for a city governance game. The player is the Mayor of NYC and just published a social media post. Score how well the post reflects specific knowledge gathered from community visits.
+
+INSIGHTS THE PLAYER HAS GATHERED:
+${insightContext || '(none — player has not visited any districts yet)'}
+
+DISTRICTS VISITED:
+${districtContext || '(none)'}
+
+RULES:
+- Score each referenced district 0-10 based on how specifically the post addresses that community's actual concerns
+- A post that vaguely says "we care about all New Yorkers" scores 0-1 per district
+- A post that names specific issues residents told the player about scores 7-10
+- A post referencing concerns the player has NOT heard about (unvisited districts) scores 0
+- Generate a short reaction quote (1 sentence) from each scored resident, in their voice
+
+Respond ONLY with valid JSON, no markdown:
+{
+  "scores": [
+    {"district": "districtId", "score": 0-10, "resident": "Name", "reaction": "their reaction quote"}
+  ],
+  "overall": 0-10,
+  "summary": "one sentence overall assessment"
+}
+
+If no insights exist, return: {"scores":[],"overall":0,"summary":"No community knowledge to draw from."}`;
+
+  let result;
+  try {
+    result = await scorePostWithLLM(systemPrompt, text);
+  } catch (err) {
+    console.warn('LLM unavailable, falling back:', err.message);
+    result = fallbackScore(text);
+  }
+
+  // Apply results
+  const engagement = {
+    likes: Math.round(result.overall * 20 + Math.random() * 20),
+    shares: Math.round(result.overall * 5 + Math.random() * 10),
+    replies: result.scores.length + Math.round(Math.random() * 5),
+  };
+
+  const post = {
+    text,
+    tone: activeTone,
+    grounded: result.overall >= 4,
+    scores: result.scores,
+    overall: result.overall,
+    summary: result.summary,
+    engagement,
+    week: gameState.week,
+    order: Date.now(),
+  };
+
+  gameState.posts.push(post);
+
+  // ── 1. TRUST DELTAS — visited vs unvisited ──
+  const affectedDistricts = [];
+  result.scores.forEach(s => {
+    const d = districtMap[s.district];
+    if (!d) return;
+    const visited = d.lastVisited !== null;
+    // Visited: full trust gain. Unvisited: half, capped.
+    let delta;
+    if (visited) {
+      delta = s.score >= 7 ? 4 : s.score >= 4 ? 2 : 0;
+    } else {
+      delta = s.score >= 7 ? 1 : 0; // feels good but hollow
+    }
+    if (delta !== 0) {
+      const oldTrust = d.trust;
+      d.trust = Math.max(0, Math.min(100, d.trust + delta));
+      affectedDistricts.push({ id: s.district, name: d.name, delta, oldTrust, newTrust: d.trust, score: s.score, visited });
+    }
+  });
+
+  // ── 2. CONCERN SCORES SHIFT — only for visited districts ──
+  result.scores.forEach(s => {
+    const d = districtMap[s.district];
+    if (!d || d.lastVisited === null || s.score < 5) return;
+    const concerns = CONCERN_SCORES[s.district];
+    if (!concerns) return;
+    // Find which concern category the LLM matched — use the district's top concern
+    const topConcern = Object.entries(concerns).sort((a, b) => b[1] - a[1])[0];
+    if (topConcern && topConcern[1] > 1) {
+      concerns[topConcern[0]] = Math.max(1, topConcern[1] - 1); // addressed: ticks down
+    }
+  });
+
+  // ── 3. DISCOVERY — mark concerns as "heard about" for unvisited ──
+  if (!gameState.heardAbout) gameState.heardAbout = {};
+  result.scores.forEach(s => {
+    const d = districtMap[s.district];
+    if (!d || d.lastVisited !== null || s.score < 4) return;
+    if (!gameState.heardAbout[s.district]) gameState.heardAbout[s.district] = [];
+    const topConcern = Object.entries(CONCERN_SCORES[s.district] || {}).sort((a, b) => b[1] - a[1])[0];
+    if (topConcern && !gameState.heardAbout[s.district].includes(topConcern[0])) {
+      gameState.heardAbout[s.district].push(topConcern[0]);
+    }
+  });
+
+  // ── 4. DM TRIGGERS — characters react and invite you ──
+  result.scores.forEach(s => {
+    const d = districtMap[s.district];
+    if (!d || s.score < 5) return;
+    const convo = CONVERSATIONS[s.district];
+    if (!convo) return;
+    const charName = convo.character.name;
+    const visited = d.lastVisited !== null;
+
+    const dmText = visited
+      ? `I saw what you posted. Thank you for remembering what we talked about.`
+      : `I saw your post about ${d.name}. Come see it for yourself — I'll show you what we actually need.`;
+
+    const existingDm = gameState.dms.find(dm => dm.districtId === s.district);
+    if (existingDm) {
+      existingDm.messages.push({ text: dmText, sent: false });
+      existingDm.unread = true;
+    } else {
+      gameState.dms.push({
+        characterName: charName,
+        initials: convo.character.initials,
+        districtId: s.district,
+        districtName: d.name,
+        messages: [{ text: dmText, sent: false }],
+        unread: true,
+      });
+    }
+  });
+
+  // ── 5. FEED CASCADE — neighboring districts react ──
+  const scoredDistrictIds = new Set(result.scores.filter(s => s.score >= 5).map(s => s.district));
+  const cascadeReactions = [];
+  scoredDistrictIds.forEach(did => {
+    // Find neighbors from EDGES
+    EDGES.forEach(([a, b]) => {
+      const neighbor = a === did ? b : b === did ? a : null;
+      if (!neighbor || scoredDistrictIds.has(neighbor)) return;
+      const nd = districtMap[neighbor];
+      if (!nd || cascadeReactions.some(r => r.districtId === neighbor)) return;
+      const nConvo = CONVERSATIONS[neighbor];
+      const nName = nConvo?.character?.name || `Residents of ${nd.name}`;
+      // Neighbor's top concern
+      const nConcerns = CONCERN_SCORES[neighbor];
+      const nTop = nConcerns ? Object.entries(nConcerns).sort((a, b) => b[1] - a[1])[0] : null;
+      const topLabel = nTop ? nTop[0] : 'issues';
+      cascadeReactions.push({
+        districtId: neighbor,
+        text: `${nName}: "What about ${topLabel} in ${nd.name}? We're dealing with the same thing."`,
+      });
+    });
+  });
+  cascadeReactions.slice(0, 3).forEach(r => {
+    gameState.feed.unshift({
+      type: 'chatter',
+      text: r.text,
+      districtId: r.districtId,
+      time: 'just now',
+      week: gameState.week,
+      order: Date.now() - 2,
+    });
+  });
+
+  // ── 6. PATTERN ACCELERATION — posting about same concern across districts ──
+  if (!gameState.postConcernHits) gameState.postConcernHits = {};
+  result.scores.filter(s => s.score >= 5).forEach(s => {
+    const concerns = CONCERN_SCORES[s.district];
+    if (!concerns) return;
+    const topConcern = Object.entries(concerns).sort((a, b) => b[1] - a[1])[0];
+    if (!topConcern) return;
+    const cat = topConcern[0];
+    if (!gameState.postConcernHits[cat]) gameState.postConcernHits[cat] = new Set();
+    gameState.postConcernHits[cat].add(s.district);
+    // Check if we've hit 3+ districts in the same category via posts
+    if (gameState.postConcernHits[cat].size >= 3 && !gameState.patterns.some(p => p.category === cat.toUpperCase() + '_POST')) {
+      gameState.patterns.push({
+        category: cat.toUpperCase() + '_POST',
+        districts: Array.from(gameState.postConcernHits[cat]),
+        text: `Public awareness pattern: ${cat} concerns connect ${Array.from(gameState.postConcernHits[cat]).map(id => districtMap[id]?.name || id).join(', ')}`,
+        week: gameState.week,
+      });
+      gameState.feed.unshift({
+        type: 'reaction',
+        text: `Pattern emerging: your posts about ${cat} are connecting communities across districts. They're sharing experiences.`,
+        time: 'just now',
+        week: gameState.week,
+        order: Date.now() - 3,
+      });
+    }
+  });
+
+  // ── 7. RESIDENT REACTIONS in feed ──
+  const topReactions = result.scores
+    .filter(s => s.score > 0 && s.reaction)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  topReactions.forEach(s => {
+    const d = districtMap[s.district];
+    const visited = d?.lastVisited !== null;
+    gameState.feed.unshift({
+      type: 'reaction',
+      text: `${s.resident} (${d?.name || s.district}): "${s.reaction}"${!visited ? ' 💬 DM sent' : ''}`,
+      districtId: s.district,
+      time: 'just now',
+      week: gameState.week,
+      order: Date.now() - 1,
+    });
+  });
+
+  // Overall summary
+  gameState.feed.unshift({
+    type: result.overall >= 5 ? 'reaction' : 'chatter',
+    text: result.summary || (result.overall >= 5 ? 'Your post is resonating.' : 'Your post received lukewarm engagement.'),
+    time: 'just now',
+    week: gameState.week,
+    order: Date.now(),
+  });
+
+  bus.emit('post.published', {
+    groundingScore: result.overall / 10,
+    scores: result.scores,
+    districtId: result.scores[0]?.district || null,
+    affectedDistricts,
+  });
+
+  // ── 8. VISUAL FEEDBACK — flash affected nodes on map ──
+  if (currentView === 'socials') {
+    // Queue node flashes for when user switches to map
+    gameState._pendingFlashes = affectedDistricts;
+  } else {
+    affectedDistricts.forEach(ad => {
+      flashNode(ad.id, ad.visited ? '#34d399' : '#e8a83e');
+    });
+  }
+
+  // Reset UI
+  if (postBtn) { postBtn.disabled = false; postBtn.textContent = 'POST'; }
+  if (statusEl) { statusEl.style.display = 'none'; }
+  if (input) input.value = '';
+
+  updateStatusBar();
+  updateBlocBar();
+  renderSocial();
+
+  // Show toast with trust changes
+  if (affectedDistricts.length > 0) {
+    const trustSummary = affectedDistricts.map(ad =>
+      `${ad.name} ${ad.delta > 0 ? '+' : ''}${ad.delta}${!ad.visited ? ' (unvisited)' : ''}`
+    ).join(', ');
+    showToast(`Trust: ${trustSummary}`, result.overall >= 5 ? '#34d399' : '#e8a83e');
+  }
+}
+
+async function scorePostWithLLM(systemPrompt, postText) {
+  const res = await fetch(OLLAMA_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      prompt: `MAYOR'S POST:\n"${postText}"\n\nScore this post.`,
+      system: systemPrompt,
+      stream: false,
+      options: { temperature: 0.3, num_predict: 512 },
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+  const data = await res.json();
+  const raw = data.response || '';
+
+  // Parse JSON from response (strip markdown fences if present)
+  const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return {
+      scores: Array.isArray(parsed.scores) ? parsed.scores : [],
+      overall: typeof parsed.overall === 'number' ? parsed.overall : 0,
+      summary: parsed.summary || '',
+    };
+  } catch {
+    console.warn('LLM returned unparseable JSON:', raw);
+    return fallbackScore(postText);
+  }
+}
+
+function fallbackScore(text) {
+  // Offline fallback: keyword match against insight text
+  const scores = [];
+  const words = text.toLowerCase();
+
+  gameState.insights.filter(i => i.freshness > 0).forEach(ins => {
+    const keywords = ins.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+    const hits = keywords.filter(k => words.includes(k)).length;
+    const score = Math.min(10, Math.round((hits / Math.max(keywords.length, 1)) * 10));
+    if (score > 0) {
+      const d = districtMap[ins.districtId];
+      const char = CONVERSATIONS[ins.districtId]?.character;
+      scores.push({
+        district: ins.districtId,
+        score,
+        resident: char?.name || 'A resident',
+        reaction: score >= 5 ? 'They\'re talking about what we actually said.' : 'At least someone\'s paying attention.',
+      });
+    }
+  });
+
+  const overall = scores.length > 0 ? Math.round(scores.reduce((a, s) => a + s.score, 0) / scores.length) : 0;
+  return {
+    scores,
+    overall,
+    summary: scores.length > 0 ? `Post references ${scores.length} community concern(s).` : 'Post lacks specific community knowledge.',
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   SCENARIO SYSTEM — loaded from data/scenarios.js via module script
+   ScenarioSystem (systems/scenario.js) handles condition evaluation and effects.
+═══════════════════════════════════════════════ */
+
+
+
+/* ═══════════════════════════════════════════════
+   SYSTEM EVENT LISTENERS — UI reacts to system events
+═══════════════════════════════════════════════ */
+
+// When systems update trust, reflect in the inline DISTRICTS array
+bus.on('trust.updated', ({ districtId, delta, newValue }) => {
+  const d = districtMap[districtId];
+  if (d && newValue !== undefined) {
+    d.trust = newValue;
+    updateMapNodes();
+    updateStatusBar();
+    updateBlocBar();
+  }
+});
+
+// When scenario triggers an event, add it to the social feed
+bus.on('scenario.triggered', ({ headline, narrative }) => {
+  gameState.feed.unshift({
+    type: 'news',
+    text: `${headline}: ${narrative}`,
+    time: 'just now',
+    week: gameState.week,
+    order: Date.now(),
+  });
+  renderSocial();
+});
+
+// Feed items from scenario effects
+bus.on('feed.item', ({ text, type }) => {
+  gameState.feed.unshift({
+    type: type || 'news',
+    text,
+    time: 'just now',
+    week: gameState.week,
+    order: Date.now(),
+  });
+  renderSocial();
+});
+
+// Game end conditions from systems
+bus.on('game.win', ({ type }) => {
+  const msgs = {
+    resilient_city: 'THE RESILIENT CITY — Zero preventable casualties. You earned it.',
+    held_together: 'HELD TOGETHER — Losses occurred, but the system bent without breaking.',
+  };
+  showGameEnd(msgs[type] || 'You survived.', true);
+});
+
+bus.on('game.lose', ({ type }) => {
+  const msgs = {
+    evacuation_failure: 'EVACUATION FAILURE — Community resilience collapsed.',
+    fiscal_crisis: 'FISCAL CRISIS — The state takes over.',
+    blind_response: 'THE BLIND RESPONSE — Preventable casualties in districts you never visited.',
+  };
+  showGameEnd(msgs[type] || 'Game over.', false);
+});
+
+// Pattern discovery → feed + toast
+bus.on('pattern.discovered', ({ category, text }) => {
+  gameState.feed.unshift({
+    type: 'reaction',
+    text: `Pattern discovered: ${text}. New intervention options may be available.`,
+    time: 'new',
+    week: gameState.week,
+    order: Date.now(),
+  });
+  showToast(`Pattern: ${category}`, '#34d399');
+  renderSocial();
+  renderNotebook();
+});
+
+// Intervention executed → feed + toast + UI update
+bus.on('intervention.executed', ({ name, tier, cost, targets, trustDeltas }) => {
+  gameState.feed.unshift({
+    type: 'news',
+    text: `POLICY: ${name} enacted ($${cost}B). ${targets.length} district${targets.length !== 1 ? 's' : ''} affected.`,
+    time: 'just now',
+    week: gameState.week,
+    order: Date.now(),
+  });
+  showToast(`${name} — $${cost}B`, '#34d399');
+  // Flash affected districts
+  for (const { districtId } of trustDeltas) {
+    flashNode(districtId, '#34d399');
+  }
+  updateMapNodes();
+  updateStatusBar();
+  updateBlocBar();
+  renderSocial();
+  renderNotebook();
+});
+
+function showGameEnd(message, isWin) {
+  // Create cinematic overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.92) 70%);
+    animation: fadeIn 0.5s ease;
+  `;
+  overlay.innerHTML = `
+    <div style="text-align:center;color:#fff;max-width:480px;padding:40px;">
+      <div style="font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.5);font-weight:600;">
+        ${isWin ? 'Victory' : 'Defeat'}
+      </div>
+      <div style="margin:12px auto;width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);"></div>
+      <div style="font-size:20px;font-weight:700;letter-spacing:0.04em;margin:8px 0;color:${isWin ? '#34d399' : '#ff5a52'};">
+        ${message.split('—')[0].trim()}
+      </div>
+      <div style="margin:8px auto;width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);"></div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,0.6);line-height:1.55;margin-top:8px;">
+        ${message.includes('—') ? message.split('—')[1].trim() : ''}
+      </div>
+      <div style="display:flex;gap:24px;justify-content:center;margin:20px 0;">
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Resilience</div>
+          <div style="font-family:var(--font-data);font-size:22px;font-weight:900;color:${computeCitywide() >= 50 ? '#34d399' : '#ff5a52'}">${computeCitywide()}%</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Reserve</div>
+          <div style="font-family:var(--font-data);font-size:22px;font-weight:900;color:${gameState.reserve >= 0 ? '#34d399' : '#ff5a52'}">$${gameState.reserve.toFixed(1)}B</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Week</div>
+          <div style="font-family:var(--font-data);font-size:22px;font-weight:900;">${gameState.week}</div>
+        </div>
+      </div>
+      <button onclick="location.reload()" style="
+        margin-top:12px;border:1px solid rgba(255,255,255,0.2);background:transparent;
+        color:#fff;font-family:var(--font-ui);font-size:11px;font-weight:600;
+        letter-spacing:0.12em;text-transform:uppercase;
+        padding:10px 32px;border-radius:20px;cursor:pointer;
+      ">Play Again</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+/* ═══════════════════════════════════════════════
+   STATE BRIDGE — wraps inline gameState for system access
+   Systems can read/write via dot-path without knowing the inline structure.
+═══════════════════════════════════════════════ */
+const state = {
+  get(path) {
+    if (!path) return gameState;
+    // Special: districts.{id}.trust reads from DISTRICTS array
+    const parts = path.split('.');
+    if (parts[0] === 'districts' && parts.length >= 3) {
+      const d = districtMap[parts[1]];
+      if (d && parts[2]) return d[parts[2]];
+      return d;
+    }
+    if (parts[0] === 'blocs' && parts.length >= 3) {
+      // Compute bloc trust on the fly
+      const bloc = parts[1];
+      let total = 0, count = 0;
+      DISTRICTS.forEach(d => { if (d.bloc === bloc) { total += d.trust; count++; } });
+      if (parts[2] === 'trust') return count > 0 ? Math.round(total / count) : 40;
+      return undefined;
+    }
+    return parts.reduce((o, k) => o?.[k], gameState);
+  },
+  set(path, value) {
+    const parts = path.split('.');
+    if (parts[0] === 'districts' && parts.length >= 3) {
+      const d = districtMap[parts[1]];
+      if (d) d[parts[2]] = value;
+      bus.emit('state.changed', { path, oldValue: undefined, newValue: value });
+      return;
+    }
+    const last = parts.pop();
+    const parent = parts.reduce((o, k) => {
+      if (o[k] === undefined) o[k] = {};
+      return o[k];
+    }, gameState);
+    const old = parent[last];
+    parent[last] = value;
+    bus.emit('state.changed', { path, oldValue: old, newValue: value });
+  },
+  update(path, fn) {
+    this.set(path, fn(this.get(path)));
+  },
+  snapshot() {
+    return JSON.parse(JSON.stringify(gameState));
+  },
+};
+
+/* ═══════════════════════════════════════════════
+   BLIZZARD COUNTDOWN & CHECKLIST — updates each week
+═══════════════════════════════════════════════ */
+function updateBlizzardCountdown() {
+  const blizzardWeek = 44;
+  const weeksLeft = Math.max(0, blizzardWeek - gameState.week);
+  const el = document.getElementById('blizzard-weeks');
+  const sub = document.getElementById('blizzard-sub');
+  const box = document.getElementById('blizzard-countdown');
+
+  if (el) {
+    if (gameState.week >= blizzardWeek) {
+      el.textContent = 'NOW';
+      el.style.color = '#ff2d2d';
+      if (sub) sub.textContent = 'The storm is here.';
+    } else if (weeksLeft <= 8) {
+      el.textContent = weeksLeft + ' WEEK' + (weeksLeft !== 1 ? 'S' : '');
+      el.style.color = '#ff2d2d';
+      if (sub) sub.textContent = 'Time is running out.';
+    } else if (weeksLeft <= 20) {
+      el.textContent = weeksLeft + ' WEEKS';
+      el.style.color = '#e8a83e';
+      if (sub) sub.textContent = 'Models converging. Prepare now.';
+    } else {
+      el.textContent = weeksLeft + ' WEEKS';
+      el.style.color = '#fff';
+      if (sub) sub.textContent = 'Listen to the city before the storm does.';
+    }
+  }
+
+  // Update preparation checklist
+  const checklist = document.getElementById('prep-checklist');
+  if (checklist) {
+    const visitedCount = DISTRICTS.filter(d => d.lastVisited !== null).length;
+    const insightCount = gameState.insights.length;
+    const patternCount = gameState.patterns.length;
+    const citywide = computeCitywide();
+
+    const items = [
+      { done: visitedCount >= 5, text: `Visit 5+ districts (${visitedCount}/5)` },
+      { done: insightCount >= 3, text: `Discover 3 insights (${insightCount}/3)` },
+      { done: patternCount >= 1, text: `Identify a cross-district pattern (${patternCount}/1)` },
+      { done: citywide >= 50, text: `Build resilience above 50% (${citywide}%)` },
+    ];
+
+    checklist.innerHTML = items.map(item =>
+      `<li><span class="check ${item.done ? 'done' : ''}">${item.done ? '&#10003;' : ''}</span> ${item.text}</li>`
+    ).join('');
+  }
+}
+
+// Update countdown every week change and on init
+bus.on('clock.weekStart', updateBlizzardCountdown);
+
+// Also show cinematic overlay for major scenario events
+bus.on('scenario.triggered', ({ eventId, headline, narrative }) => {
+  // Only show cinematic for major events (blizzard arc)
+  const majorEvents = ['evt_blizzard_watch', 'evt_blizzard_warning', 'evt_blizzard_strikes', 'evt_models_converge'];
+  if (!majorEvents.includes(eventId)) return;
+
+  const isBlizzard = eventId.includes('blizzard');
+  showCinematicEvent(headline, narrative, isBlizzard);
+});
+
+function showCinematicEvent(headline, narrative, isDanger) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9998;display:grid;place-items:center;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.93) 70%);
+    opacity:0;transition:opacity 0.5s;
+  `;
+  overlay.innerHTML = `
+    <div style="text-align:center;color:#fff;max-width:480px;padding:40px;opacity:0;transition:opacity 0.5s 0.15s;">
+      <div style="font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.45);font-weight:600;">
+        ${isDanger ? '&#10052; Weather Alert' : 'Intelligence Report'}
+      </div>
+      <div style="margin:12px auto;width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);"></div>
+      <div style="font-size:20px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${isDanger ? '#ff5a52' : '#e8a83e'};">
+        ${headline}
+      </div>
+      <div style="margin:10px auto;width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);"></div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,0.6);line-height:1.55;margin-top:12px;max-width:360px;margin-left:auto;margin-right:auto;">
+        ${narrative}
+      </div>
+      <button id="cinematic-dismiss" style="
+        margin-top:20px;border:1px solid rgba(255,255,255,0.2);background:transparent;
+        color:#fff;font-family:var(--font-ui);font-size:11px;font-weight:600;
+        letter-spacing:0.12em;text-transform:uppercase;
+        padding:10px 32px;border-radius:20px;cursor:pointer;
+      ">I see</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    overlay.querySelector('div > div:first-child')?.parentElement && (overlay.children[0].style.opacity = '1');
+  });
+
+  document.getElementById('cinematic-dismiss').addEventListener('click', () => {
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 500);
+  });
+}
+
+// Expose for debugging & system wiring
+window.__bus = bus;
+window.__state = state;
+window.__gameState = gameState;
+window.__districts = DISTRICTS;
+window.__districtMap = districtMap;
+window.CONCERN_SCORES = CONCERN_SCORES;
+
+/* ── Initial State ──────────────────────────── */
+updateStatusBar();
+updateBlocBar();
+renderCalendar();
+renderSocial();
+updateBlizzardCountdown();
+
+// Wait for module systems to load before starting game
+bus.once('systems.ready', () => bus.emit('game.start', { week: gameState.week }));
+// Fallback: if modules don't load (e.g., file:// without server), start anyway
+setTimeout(() => { if (!window.__insightSys) bus.emit('game.start', { week: gameState.week }); }, 500);
+</script>
+
+<!-- Conversation Overlay -->
+<div class="convo-overlay" id="convoOverlay">
+  <div class="convo-panel">
+    <div class="convo-header" id="convoHeader"></div>
+    <div class="convo-depth"><div class="convo-depth-fill" id="convoDepth" style="width:0%"></div></div>
+    <div class="convo-messages" id="convoMessages"></div>
+    <div class="convo-choices" id="convoChoices"></div>
+  </div>
+</div>
+
+<!-- Notebook Drawer -->
+<div class="notebook-drawer" id="notebookDrawer">
+  <div class="notebook-header">
+    <span><span class="notebook-title">Field Notebook</span><span class="notebook-badge" id="notebookBadge" style="display:none">0</span></span>
+    <button class="notebook-close" onclick="toggleNotebook()">&times;</button>
+  </div>
+  <div id="notebookBody"></div>
+</div>
+
+<!-- Module Systems -->
+<script type="module">
+import { ScenarioSystem } from './systems/scenario.js';
+import { InsightSystem } from './systems/insight.js';
+import { InterventionSystem } from './systems/intervention.js';
+import { SCENARIO_EVENTS } from './data/scenarios.js';
+import { CONVERSATIONS as CONVO_DATA } from './data/conversations.js';
+import { INTERVENTIONS } from './data/interventions.js';
+
+const bus = window.__bus;
+const gameState = window.__gameState;
+const districtMap = window.__districtMap;
+
+// Populate CONVERSATIONS for the classic script
+window.CONVERSATIONS = CONVO_DATA;
+
+// Boot systems
+const scenarioSys = new ScenarioSystem(bus, gameState, districtMap, SCENARIO_EVENTS);
+const insightSys = new InsightSystem(bus, gameState, districtMap);
+const interventionSys = new InterventionSystem(bus, gameState, districtMap, insightSys, INTERVENTIONS);
+
+// Expose for UI queries + debugging
+window.__scenarioSys = scenarioSys;
+window.__insightSys = insightSys;
+window.__interventionSys = interventionSys;
+
+// Signal systems are ready
+bus.emit('systems.ready');
+</script>
+
+</body>
+</html>

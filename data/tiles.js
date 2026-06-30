@@ -1,0 +1,457 @@
+// data/tiles.js — Bento Box Policy Builder tile definitions
+//
+// Tile types:
+//   WHERE — Target a borough or district. Scopes the intervention geographically.
+//   WHAT  — Infrastructure: plows, generators, shelters, medical caches, outreach.
+//   HOW   — Community integration: mutual aid, local leaders, youth corps, faith orgs.
+//   FUNDING — Filler blocks. Pure monetary injection. Always available, low efficiency.
+//
+// Tile sizes: [cols, rows]. The 5x5 grid = 25 cells of political capital + budget.
+// Insight mutations: when player has specific insights, bulky tiles shrink into
+// efficient specialist variants. The tile's `mutatesFrom` field links to the parent.
+//
+// Synergy rules: adjacency pairs that amplify effects.
+// Conflict rules: adjacency pairs that create friction (spikes disorder).
+
+export const TILE_TYPES = ['WHERE', 'WHAT', 'HOW', 'FUNDING'];
+
+export const TILES = [
+
+  // ── WHERE tiles ─────────────────────────────────────────────
+  // Scope WHERE the intervention deploys. Required for WHAT/HOW to have a target.
+  {
+    id: 'w_borough_bronx',
+    type: 'WHERE',
+    label: 'The Bronx',
+    size: [2, 1],
+    cost: 0,
+    targets: ['d_south_bronx', 'd_riverdale', 'd_washington_hts'],
+    desc: 'Target all Bronx districts.',
+  },
+  {
+    id: 'w_borough_manhattan',
+    type: 'WHERE',
+    label: 'Manhattan',
+    size: [2, 1],
+    cost: 0,
+    targets: ['d_harlem', 'd_upper_west', 'd_upper_east', 'd_midtown', 'd_les', 'd_fidi'],
+    desc: 'Target all Manhattan districts.',
+  },
+  {
+    id: 'w_borough_queens',
+    type: 'WHERE',
+    label: 'Queens',
+    size: [2, 1],
+    cost: 0,
+    targets: ['d_astoria', 'd_jackson_hts', 'd_flushing', 'd_jamaica'],
+    desc: 'Target all Queens districts.',
+  },
+  {
+    id: 'w_borough_brooklyn',
+    type: 'WHERE',
+    label: 'Brooklyn',
+    size: [2, 1],
+    cost: 0,
+    targets: ['d_williamsburg', 'd_bed_stuy', 'd_park_slope', 'd_brownsville', 'd_bay_ridge'],
+    desc: 'Target all Brooklyn districts.',
+  },
+  {
+    id: 'w_borough_si',
+    type: 'WHERE',
+    label: 'Staten Island',
+    size: [1, 1],
+    cost: 0,
+    targets: ['d_staten_island'],
+    desc: 'Target Staten Island.',
+  },
+  {
+    id: 'w_district_specific',
+    type: 'WHERE',
+    label: 'Single District',
+    size: [1, 1],
+    cost: 0,
+    targets: [], // set at placement time by player
+    desc: 'Target one specific district. Highest precision.',
+    requiresSelection: true,
+  },
+  {
+    id: 'w_citywide',
+    type: 'WHERE',
+    label: 'Citywide',
+    size: [3, 1],
+    cost: 0.2,
+    targets: 'all',
+    desc: 'Target all 19 districts. Wide but thin coverage.',
+  },
+
+  // ── WHAT tiles (generic — bulky) ────────────────────────────
+  // These are always available. Expensive in grid space. Insight mutations
+  // transform them into smaller, more efficient variants.
+  {
+    id: 'x_plow_fleet',
+    type: 'WHAT',
+    label: 'Snow-Removal Fleet',
+    size: [2, 2],
+    cost: 0.8,
+    resilience: 3,
+    disorder: 0,
+    tags: ['snow', 'ice', 'transit'],
+    desc: 'Plow trucks and salt spreaders. Broad coverage, standard efficiency.',
+  },
+  {
+    id: 'x_generator_bank',
+    type: 'WHAT',
+    label: 'Generator Bank',
+    size: [2, 2],
+    cost: 0.6,
+    resilience: 3,
+    disorder: 0,
+    tags: ['power', 'medical'],
+    desc: 'Backup generators deployed to public buildings. Standard configuration.',
+  },
+  {
+    id: 'x_emergency_shelter',
+    type: 'WHAT',
+    label: 'Emergency Shelter',
+    size: [2, 2],
+    cost: 0.5,
+    resilience: 4,
+    disorder: 1,
+    tags: ['shelter', 'housing'],
+    desc: 'Heated shelters with cots and food. Visible response but neighborhood disruption.',
+  },
+  {
+    id: 'x_medical_cache',
+    type: 'WHAT',
+    label: 'Medical Supply Cache',
+    size: [2, 1],
+    cost: 0.4,
+    resilience: 2,
+    disorder: 0,
+    tags: ['medical', 'health'],
+    desc: 'Pre-positioned medical supplies at public facilities.',
+  },
+  {
+    id: 'x_warning_system',
+    type: 'WHAT',
+    label: 'Alert System',
+    size: [1, 2],
+    cost: 0.4,
+    resilience: 2,
+    disorder: 0,
+    tags: ['communication', 'services'],
+    desc: 'Emergency alert network. English-only unless enhanced.',
+  },
+  {
+    id: 'x_road_salt',
+    type: 'WHAT',
+    label: 'Salt Stockpile',
+    size: [1, 1],
+    cost: 0.3,
+    resilience: 1,
+    disorder: 0,
+    tags: ['ice', 'transit'],
+    desc: 'Road salt reserves. Cheap, visible, limited impact.',
+  },
+
+  // ── WHAT tiles (mutated — efficient) ────────────────────────
+  // These REPLACE their parent tile when the player has the right insights.
+  // Smaller footprint, same or better effect. HCD made spatial.
+  {
+    id: 'x_med_power_cache',
+    type: 'WHAT',
+    label: 'Medical Power Cache',
+    size: [1, 2],
+    cost: 0.3,
+    resilience: 5,
+    disorder: 0,
+    tags: ['power', 'medical', 'health'],
+    desc: 'Generators specifically for pharmacy refrigeration and medical equipment. Learned from field data.',
+    mutatesFrom: 'x_generator_bank',
+    requiredInsightCategory: 'ASSET',
+    requiredInsightCount: 2,
+  },
+  {
+    id: 'x_community_shelter',
+    type: 'WHAT',
+    label: 'Community Shelter Hub',
+    size: [1, 2],
+    cost: 0.3,
+    resilience: 6,
+    disorder: -1,
+    tags: ['shelter', 'housing'],
+    desc: 'Shelters at known community centers (churches, schools) instead of generic sites. Residents trust them.',
+    mutatesFrom: 'x_emergency_shelter',
+    requiredInsightCategory: 'ASSET',
+    requiredInsightCount: 2,
+  },
+  {
+    id: 'x_multilingual_alerts',
+    type: 'WHAT',
+    label: 'Multilingual Alert Net',
+    size: [1, 1],
+    cost: 0.15,
+    resilience: 3,
+    disorder: -1,
+    tags: ['communication', 'services'],
+    desc: '14-language alerts through bodega information hubs. Reaches everyone.',
+    mutatesFrom: 'x_warning_system',
+    requiredInsightCategory: 'SERVICES',
+    requiredInsightCount: 2,
+  },
+  {
+    id: 'x_targeted_plows',
+    type: 'WHAT',
+    label: 'Precision Plow Routes',
+    size: [1, 2],
+    cost: 0.5,
+    resilience: 5,
+    disorder: 0,
+    tags: ['snow', 'transit'],
+    desc: 'Plow routes prioritized by field knowledge: ambulance access corridors, pharmacy supply lines, senior centers.',
+    mutatesFrom: 'x_plow_fleet',
+    requiredInsightCategory: 'INFRA',
+    requiredInsightCount: 2,
+  },
+  {
+    id: 'x_basement_registry',
+    type: 'WHAT',
+    label: 'Basement Flood Registry',
+    size: [1, 1],
+    cost: 0.1,
+    resilience: 3,
+    disorder: -1,
+    tags: ['housing', 'safety'],
+    desc: 'Confidential registry of basement apartments for targeted evacuation. Built on community trust.',
+    mutatesFrom: null,
+    requiredInsightCategory: 'HOUSING',
+    requiredInsightCount: 2,
+  },
+
+  // ── HOW tiles (community integration) ───────────────────────
+  // These determine WHO carries out the intervention. Adjacency to WHAT tiles
+  // creates synergies or conflicts.
+  {
+    id: 'h_mutual_aid',
+    type: 'HOW',
+    label: 'Mutual Aid Network',
+    size: [1, 2],
+    cost: 0.08,
+    resilience: 4,
+    disorder: -2,
+    tags: ['community', 'trust'],
+    desc: 'Community-led response. Block captains, phone trees, local knowledge. Low cost, high trust.',
+  },
+  {
+    id: 'h_local_leaders',
+    type: 'HOW',
+    label: 'Local Leader Liaisons',
+    size: [1, 1],
+    cost: 0.1,
+    resilience: 3,
+    disorder: -1,
+    tags: ['community', 'trust'],
+    desc: 'Pastors, bodega owners, block presidents as official city partners.',
+  },
+  {
+    id: 'h_youth_corps',
+    type: 'HOW',
+    label: 'Emergency Youth Corps',
+    size: [1, 1],
+    cost: 0.12,
+    resilience: 2,
+    disorder: -1,
+    tags: ['community', 'labor'],
+    desc: 'Local youth trained for door-to-door wellness checks and supply distribution.',
+  },
+  {
+    id: 'h_city_workers',
+    type: 'HOW',
+    label: 'City Worker Deployment',
+    size: [2, 1],
+    cost: 0.5,
+    resilience: 2,
+    disorder: 2,
+    tags: ['government', 'labor'],
+    desc: 'Sanitation, OEM, and city agencies. Reliable but expensive. Overtime demands spike disorder.',
+  },
+  {
+    id: 'h_police_enforcement',
+    type: 'HOW',
+    label: 'Police Enforcement',
+    size: [1, 1],
+    cost: 0.3,
+    resilience: 1,
+    disorder: 4,
+    tags: ['enforcement', 'safety'],
+    desc: 'Curfew enforcement and evacuation orders. Effective but deeply unpopular. Disorder spikes.',
+  },
+  {
+    id: 'h_health_workers',
+    type: 'HOW',
+    label: 'Community Health Workers',
+    size: [1, 1],
+    cost: 0.18,
+    resilience: 4,
+    disorder: -1,
+    tags: ['health', 'community'],
+    desc: 'Trained health workers doing home visits. Trusted, targeted, efficient.',
+    requiredInsightCategory: 'HEALTH',
+    requiredInsightCount: 1,
+  },
+  {
+    id: 'h_faith_network',
+    type: 'HOW',
+    label: 'Faith Community Network',
+    size: [1, 1],
+    cost: 0.05,
+    resilience: 3,
+    disorder: -2,
+    tags: ['community', 'trust'],
+    desc: 'Churches, mosques, and synagogues as response hubs. Deep community trust.',
+    requiredInsightCategory: 'ASSET',
+    requiredInsightCount: 1,
+  },
+
+  // ── FUNDING tiles (filler) ──────────────────────────────────
+  // Pure monetary injection. Always available. Low efficiency.
+  // Fills gaps in the grid — represents spending without strategy.
+  {
+    id: 'f_small',
+    type: 'FUNDING',
+    label: 'Budget Allocation',
+    size: [1, 1],
+    cost: 0.2,
+    resilience: 0.5,
+    disorder: 0,
+    desc: 'General funds. No targeting, minimal effect.',
+  },
+  {
+    id: 'f_medium',
+    type: 'FUNDING',
+    label: 'Emergency Fund',
+    size: [2, 1],
+    cost: 0.4,
+    resilience: 1,
+    disorder: 0,
+    desc: 'Dedicated emergency funds. Better than nothing.',
+  },
+  {
+    id: 'f_large',
+    type: 'FUNDING',
+    label: 'Major Appropriation',
+    size: [2, 2],
+    cost: 1.0,
+    resilience: 2,
+    disorder: 2,
+    desc: 'Big spend. Visible commitment but fiscal pressure raises disorder.',
+  },
+];
+
+
+// ── SYNERGY RULES ─────────────────────────────────────────────
+// When two tiles are placed adjacent (sharing an edge), check for synergies.
+// Synergies amplify effects — the whole becomes greater than its parts.
+export const SYNERGIES = [
+  {
+    id: 'syn_cold_storage_clinic',
+    tiles: ['x_medical_cache', 'x_generator_bank'],
+    alsoMatches: ['x_med_power_cache'], // mutated variants count
+    label: 'Cold-Storage Clinic',
+    desc: 'Medical supplies + backup power = functioning emergency clinic. Halves casualty rate.',
+    resilienceBonus: 5,
+    disorderReduction: 1,
+  },
+  {
+    id: 'syn_informed_shelter',
+    tiles: ['x_emergency_shelter', 'h_mutual_aid'],
+    alsoMatches: ['x_community_shelter'],
+    label: 'Community-Run Shelter',
+    desc: 'Shelter managed by people who know the neighborhood. Trust-building, not just roof-providing.',
+    resilienceBonus: 4,
+    disorderReduction: 3,
+  },
+  {
+    id: 'syn_health_outreach',
+    tiles: ['x_medical_cache', 'h_health_workers'],
+    alsoMatches: ['x_med_power_cache'],
+    label: 'Medical Outreach Network',
+    desc: 'Supplies + trained workers who know every homebound resident by name.',
+    resilienceBonus: 6,
+    disorderReduction: 1,
+  },
+  {
+    id: 'syn_faith_shelter',
+    tiles: ['x_emergency_shelter', 'h_faith_network'],
+    alsoMatches: ['x_community_shelter'],
+    label: 'Sanctuary Shelter',
+    desc: 'Shelters at places of worship. People come who would never go to a city-run facility.',
+    resilienceBonus: 4,
+    disorderReduction: 2,
+  },
+  {
+    id: 'syn_precision_routes',
+    tiles: ['x_plow_fleet', 'h_local_leaders'],
+    alsoMatches: ['x_targeted_plows'],
+    label: 'Locally-Guided Plowing',
+    desc: 'Plow crews guided by locals who know which streets have pharmacies, which have seniors.',
+    resilienceBonus: 3,
+    disorderReduction: 1,
+  },
+  {
+    id: 'syn_alert_bodega',
+    tiles: ['x_warning_system', 'h_local_leaders'],
+    alsoMatches: ['x_multilingual_alerts'],
+    label: 'Bodega Alert Network',
+    desc: 'Emergency alerts posted at bodegas and community hubs in every language on the block.',
+    resilienceBonus: 3,
+    disorderReduction: 2,
+  },
+  {
+    id: 'syn_youth_outreach',
+    tiles: ['h_youth_corps', 'h_health_workers'],
+    label: 'Door-to-Door Wellness',
+    desc: 'Youth runners + health workers blanket the neighborhood. Every homebound resident checked.',
+    resilienceBonus: 4,
+    disorderReduction: 1,
+  },
+];
+
+
+// ── CONFLICT RULES ────────────────────────────────────────────
+// When two tiles are adjacent, these create friction: reduced effectiveness
+// and disorder spikes. The game shows this as a red border between tiles.
+export const CONFLICTS = [
+  {
+    id: 'con_police_mutual_aid',
+    tiles: ['h_police_enforcement', 'h_mutual_aid'],
+    label: 'Community Distrust',
+    desc: 'Police enforcement next to mutual aid? The community won\'t cooperate with either.',
+    resiliencePenalty: 3,
+    disorderCost: 5,
+  },
+  {
+    id: 'con_police_faith',
+    tiles: ['h_police_enforcement', 'h_faith_network'],
+    label: 'Sanctuary Violation',
+    desc: 'Police near places of worship triggers fear, especially in immigrant communities.',
+    resiliencePenalty: 2,
+    disorderCost: 4,
+  },
+  {
+    id: 'con_big_spend_austerity',
+    tiles: ['f_large', 'h_city_workers'],
+    label: 'Fiscal Bloat',
+    desc: 'Major appropriation + city worker overtime = budget crisis optics. Media attacks incoming.',
+    resiliencePenalty: 0,
+    disorderCost: 4,
+  },
+  {
+    id: 'con_enforcement_youth',
+    tiles: ['h_police_enforcement', 'h_youth_corps'],
+    label: 'Youth Intimidation',
+    desc: 'Young people won\'t volunteer for door-to-door if police are in the same operation.',
+    resiliencePenalty: 2,
+    disorderCost: 3,
+  },
+];

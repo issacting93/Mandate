@@ -1,9 +1,18 @@
 // systems/clock.js — ClockSystem: weekly cadence, player-driven
 // The week is the unit of play. Player acts freely, then advances.
-// ~30 weeks of data-gathering → ~18 weeks of escalating disaster arc.
+// ~30 weeks of data-gathering -> ~18 weeks of escalating disaster arc.
+//
+// Dual-metre win/lose conditions (Frostpunk influence):
+// - Disorder ≥ 85 at any point → POLITICAL CRISIS (ouster/gridlock)
+// - Resilience < 20 mid-term → EVACUATION FAILURE
+// - Reserve < -$3B → FISCAL CRISIS (state takeover)
+// - At week 48: Resilience ≥ 75 → RESILIENT CITY
+//                Resilience ≥ 50 → HELD TOGETHER
+//                Resilience < 50 → BLIND RESPONSE
+//
+// Erosion and trust manipulation moved to MetreSystem via clock.weekEnd.
 
-const WEEKLY_DEFICIT = 0.375; // ~$1.5B/month ÷ 4 weeks
-const TRUST_EROSION = 1;     // per unvisited district per week
+const WEEKLY_DEFICIT = 0.375; // ~$1.5B/month / 4 weeks
 
 export class ClockSystem {
   #bus;
@@ -26,71 +35,73 @@ export class ClockSystem {
     if (this.#state.get("gameOver")) return;
 
     const week = this.#state.get("week") || 0;
-    const next = week + 1;
 
-    // Apply operating deficit
+    // Operating deficit
     this.#state.update("reserve", v => +(v - WEEKLY_DEFICIT).toFixed(2));
 
-    // Apply trust erosion for unvisited districts
-    const districts = this.#state.get("districts");
-    if (districts) {
-      for (const [id, d] of Object.entries(districts)) {
-        if (d.lastVisited !== next - 1) {
-          const path = `districts.${id}.trust`;
-          const old = this.#state.get(path) || 40;
-          this.#state.set(path, Math.max(0, old - TRUST_EROSION));
-        }
-      }
-    }
+    // Signal end of week — MetreSystem handles erosion, decay, and recompute
+    this.#bus.emit("clock.weekEnd", { week });
 
     // Advance
+    const next = week + 1;
     this.#state.set("week", next);
 
-    // Check win/lose
-    this.#recomputeCitywide();
+    // Read dual metres (updated synchronously by MetreSystem)
     const citywide = this.#state.get("citywide");
+    const disorder = this.#state.get("citywideDisorder") || 0;
     const reserve = this.#state.get("reserve");
 
+    // ── DISORDER CRISIS ─────────────────────────────────
+    // Frostpunk moment: disorder too high → political breaking point
+    if (disorder >= 85) {
+      this.#state.set("gameOver", true);
+      this.#state.set("gameResult", "political_crisis");
+      this.#bus.emit("game.lose", {
+        type: "political_crisis",
+        week: next, citywide, disorder, reserve,
+        message: "The city has turned against you. Strikes, gridlock, and a vote of no confidence end your administration before the storm arrives.",
+      });
+      return;
+    }
+
+    // ── RESILIENCE COLLAPSE ─────────────────────────────
     if (citywide < 20) {
       this.#state.set("gameOver", true);
       this.#state.set("gameResult", "evacuation_failure");
-      this.#bus.emit("game.lose", { type: "evacuation_failure", week: next, citywide, reserve });
+      this.#bus.emit("game.lose", {
+        type: "evacuation_failure",
+        week: next, citywide, disorder, reserve,
+      });
       return;
     }
+
+    // ── FISCAL CRISIS ───────────────────────────────────
     if (reserve < -3.0) {
       this.#state.set("gameOver", true);
       this.#state.set("gameResult", "fiscal_crisis");
-      this.#bus.emit("game.lose", { type: "fiscal_crisis", week: next, citywide, reserve });
+      this.#bus.emit("game.lose", {
+        type: "fiscal_crisis",
+        week: next, citywide, disorder, reserve,
+      });
       return;
     }
+
+    // ── TERM END ────────────────────────────────────────
     if (next >= 48) {
       this.#state.set("gameOver", true);
-      if (citywide >= 75) {
+      if (citywide >= 75 && disorder < 50) {
         this.#state.set("gameResult", "resilient_city");
-        this.#bus.emit("game.win", { type: "resilient_city", citywide, reserve });
+        this.#bus.emit("game.win", { type: "resilient_city", citywide, disorder, reserve });
       } else if (citywide >= 50) {
         this.#state.set("gameResult", "held_together");
-        this.#bus.emit("game.win", { type: "held_together", citywide, reserve });
+        this.#bus.emit("game.win", { type: "held_together", citywide, disorder, reserve });
       } else {
         this.#state.set("gameResult", "blind_response");
-        this.#bus.emit("game.lose", { type: "blind_response", citywide, reserve });
+        this.#bus.emit("game.lose", { type: "blind_response", citywide, disorder, reserve });
       }
       return;
     }
 
     this.#bus.emit("clock.weekStart", { week: next });
-  }
-
-  #recomputeCitywide() {
-    const districts = this.#state.get("districts");
-    if (!districts) return;
-    let totalWeighted = 0, totalPop = 0;
-    for (const d of Object.values(districts)) {
-      const trust = d.trust ?? 40;
-      const pop = d.pop ?? 1;
-      totalWeighted += trust * pop;
-      totalPop += pop;
-    }
-    this.#state.set("citywide", totalPop > 0 ? Math.round(totalWeighted / totalPop) : 40);
   }
 }

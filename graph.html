@@ -92,15 +92,19 @@
 <script>
 // ---- node types ----
 const TYPES = {
-  season:  {label:"Season",               c:"#8ea2c0"},
-  hazard:  {label:"Hazard / Disaster",    c:"#ff6b63"},
-  concern: {label:"Concern Axis",         c:"#e8c547"},
-  district:{label:"District",             c:"#2fc3e8"},
-  infra:   {label:"Infrastructure",       c:"#34d399"},
-  bloc:    {label:"Community Bloc",       c:"#ff5fa0"},
-  resource:{label:"Resource / Meter",     c:"#ffc24d"},
-  policy:  {label:"Policy / Intervention",c:"#ff9f43"},
-  outcome: {label:"Disaster Outcome",     c:"#c084fc"},
+  season:           {label:"Season",               c:"#8ea2c0"},
+  hazard:           {label:"Hazard / Disaster",    c:"#ff6b63"},
+  concern:          {label:"Concern Axis",         c:"#e8c547"},
+  district:         {label:"District",             c:"#2fc3e8"},
+  infrastructure:   {label:"Infrastructure",       c:"#34d399"},
+  infra:            {label:"Infrastructure",       c:"#34d399"}, // alias
+  bloc:             {label:"Community Bloc",       c:"#ff5fa0"},
+  resource:         {label:"Resource / Meter",     c:"#ffc24d"},
+  policy:           {label:"Policy / Intervention",c:"#ff9f43"},
+  outcome:          {label:"Disaster Outcome",     c:"#c084fc"},
+  character:        {label:"Character",            c:"#f472b6"},
+  insight_template: {label:"Insight Template",     c:"#a78bfa"},
+  tile:             {label:"Bento Tile",           c:"#38bdf8"},
 };
 
 // ---- edge types: bucket, color, forward / reverse phrasing ----
@@ -116,8 +120,20 @@ const ET = {
   costs:      {bk:"money",     c:"#ffc24d", f:"draws funds from", r:"funds drawn by"},
   builds:     {bk:"build",     c:"#ff9f43", f:"builds",           r:"built by"},
   targets:    {bk:"build",     c:"#ff9f43", f:"targets",          r:"targeted by", dash:true},
-  affects:    {bk:"community", c:"#c084fc", f:"impacts",          r:"impacted by"},
-  cares_about:{bk:"concern",   c:"#e8c547", f:"cares about",      r:"concern of", dash:true},
+  affects:       {bk:"community", c:"#c084fc", f:"impacts",          r:"impacted by"},
+  cares_about:   {bk:"concern",   c:"#e8c547", f:"cares about",      r:"concern of", dash:true},
+  // ── Knowledge layer (characters, insights) ──
+  lives_in:      {bk:"knowledge", c:"#f472b6", f:"lives in",         r:"home of"},
+  knows_about:   {bk:"knowledge", c:"#a78bfa", f:"knows about",      r:"known by"},
+  discovered_in: {bk:"knowledge", c:"#a78bfa", f:"discovered in",    r:"reveals",          dash:true},
+  categorized_as:{bk:"knowledge", c:"#e8c547", f:"categorized as",   r:"category of",      dash:true},
+  // ── Build layer (tiles, unlocks) ──
+  unlocks:       {bk:"build",     c:"#38bdf8", f:"unlocks",          r:"unlocked by"},
+  enables:       {bk:"build",     c:"#ff9f43", f:"enables",          r:"enabled by",       dash:true},
+  implements:    {bk:"build",     c:"#38bdf8", f:"implements",       r:"implemented by"},
+  prevents:      {bk:"defense",   c:"#34d399", f:"prevents",         r:"prevented by"},
+  // ── Spatial layer ──
+  adjacent_to:   {bk:"spatial",   c:"#4b5563", f:"adjacent to",      r:"adjacent to"},
 };
 const BUCKETS = {
   time:      {label:"Time",      c:"#5a6b86"},
@@ -127,6 +143,8 @@ const BUCKETS = {
   build:     {label:"Build",     c:"#ff9f43"},
   community: {label:"Community", c:"#c084fc"},
   concern:   {label:"Concerns",  c:"#e8c547"},
+  knowledge: {label:"Knowledge", c:"#a78bfa"},
+  spatial:   {label:"Spatial",   c:"#4b5563"},
 };
 
 // ---- nodes (synced with data/entries.js + data/links.js) ----
@@ -346,9 +364,9 @@ function fitView(){ resize(); const k=Math.min(VW/W,VH/H)*0.92; T.k=k; T.x=(VW-W
 window.addEventListener("resize",()=>{ resize(); });
 
 // ---- physics ----
-const filterOn={time:true,threat:true,defense:true,money:true,build:true,community:true,concern:false};
+const filterOn={time:true,threat:true,defense:true,money:true,build:true,community:true,concern:false,knowledge:false,spatial:false};
 let selected=null, hover=null;
-function visibleEdge(e){ return filterOn[ET[e.type].bk]; }
+function visibleEdge(e){ const et=ET[e.type]; return et ? filterOn[et.bk] : false; }
 function tick(){
   const REP=8200, L=96, KS=0.018, G=0.0016;
   for(let i=0;i<nodes.length;i++){ const a=nodes[i];

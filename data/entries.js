@@ -516,6 +516,74 @@ export const outcomes = {
   },
 };
 
+// ─── Characters ───────────────────────────────────────────
+export const characters = {
+  ch_delgado:   { id: "ch_delgado",   type: "character", label: "Maria Delgado",        role: "Tenant Organizer",                initials: "MD", districtId: "d_south_bronx" },
+  ch_washington: { id: "ch_washington", type: "character", label: "James Washington",     role: "Block Association President",      initials: "JW", districtId: "d_harlem" },
+  ch_kowalski:  { id: "ch_kowalski",  type: "character", label: "Diane Kowalski",       role: "Building Manager, Midtown Tower",  initials: "DK", districtId: "d_midtown" },
+  ch_vega:      { id: "ch_vega",      type: "character", label: "Ramon Vega",           role: "Retired MTA Mechanic",             initials: "RV", districtId: "d_astoria" },
+  ch_tanaka:    { id: "ch_tanaka",    type: "character", label: "Yuki Tanaka",          role: "Community Health Worker",           initials: "YT", districtId: "d_jamaica" },
+  ch_alrashid:  { id: "ch_alrashid",  type: "character", label: "Fatima Al-Rashid",     role: "Bodega Owner, Roosevelt Ave",      initials: "FA", districtId: "d_jackson_hts" },
+  ch_okonkwo:   { id: "ch_okonkwo",   type: "character", label: "Sasha Okonkwo",        role: "Mutual Aid Coordinator",           initials: "SO", districtId: "d_williamsburg" },
+  ch_williams:  { id: "ch_williams",  type: "character", label: "Pastor David Williams", role: "Greater Faith Church",             initials: "DW", districtId: "d_bed_stuy" },
+  ch_chen:      { id: "ch_chen",      type: "character", label: "Wei Chen",             role: "Pharmacy Owner, Main Street",       initials: "WC", districtId: "d_flushing" },
+  ch_ferraro:   { id: "ch_ferraro",   type: "character", label: "Tommy Ferraro",        role: "Retired FDNY Captain",              initials: "TF", districtId: "d_staten_island" },
+  ch_rizzo:     { id: "ch_rizzo",     type: "character", label: "Angela Rizzo",         role: "School Nurse, PS 31",               initials: "AR", districtId: "d_park_slope" },
+};
+
+// ─── Insight Templates ────────────────────────────────────
+// Discovered during listening sessions — each tied to a character, district, and concern.
+export const insightTemplates = {
+  // Maria Delgado — South Bronx
+  it_delgado_1:   { id: "it_delgado_1",   type: "insight_template", label: "Asthma corridor near Bruckner",               category: "HEALTH",   text: "Asthma corridor near Bruckner Expressway — 3x city average" },
+  it_delgado_2:   { id: "it_delgado_2",   type: "insight_template", label: "Isolated seniors without AC",                  category: "HOUSING",  text: "Isolated seniors in rent-stabilized buildings — no AC, no emergency contacts" },
+  it_delgado_3:   { id: "it_delgado_3",   type: "insight_template", label: "Pharmacy generator on 138th",                  category: "ASSET",    text: "Pharmacy at 138th has generator — stores insulin; community can self-organize with 3 more" },
+
+  // James Washington — Harlem
+  it_washington_1: { id: "it_washington_1", type: "insight_template", label: "High-rise walk-up blackout trap",              category: "INFRA",    text: "High-rise walk-ups during blackouts — elevator-dependent residents trapped above 6th floor" },
+  it_washington_2: { id: "it_washington_2", type: "insight_template", label: "Block association vulnerable registry",        category: "ASSET",    text: "Block association maintains vulnerable-resident registry — 14 mobility-limited, medical volunteers available" },
+
+  // Diane Kowalski — Midtown
+  it_kowalski_1:  { id: "it_kowalski_1",  type: "insight_template", label: "311 response failure in large buildings",       category: "SERVICES", text: "311 response failure in large residential buildings — 3-day heat outage, 23 elderly units affected" },
+
+  // Ramon Vega — Astoria (Fordham conversation)
+  it_vega_1:      { id: "it_vega_1",      type: "insight_template", label: "Bx12 bus cuts strand communities",              category: "INFRA",    text: "Bx12 bus cuts — 45min headways, children missing school, seniors stranded" },
+  it_vega_2:      { id: "it_vega_2",      type: "insight_template", label: "Transit-dependent seniors and cooling centers", category: "ASSET",    text: "Transit-dependent seniors can\u2019t reach cooling centers during blackouts — need local shuttle network" },
+  it_vega_3:      { id: "it_vega_3",      type: "insight_template", label: "VFW hall emergency capacity",                   category: "ASSET",    text: "VFW hall on Jerome Ave — generator, AC, 200-person capacity, offered after Sandy, never contacted" },
+
+  // Yuki Tanaka — Jamaica (Astoria conversation)
+  it_tanaka_1:    { id: "it_tanaka_1",    type: "insight_template", label: "Homebound residents can't evacuate",            category: "HEALTH",   text: "11 homebound residents can\u2019t evacuate — 8 on oxygen, elevator-dependent, no emergency contact system" },
+  it_tanaka_2:    { id: "it_tanaka_2",    type: "insight_template", label: "Health worker network scalable",                category: "ASSET",    text: "Health worker network — 1 person covers 37 homebound residents; 3 more + radios covers full zip code for $180K" },
+
+  // Fatima Al-Rashid — Jackson Heights
+  it_alrashid_1:  { id: "it_alrashid_1",  type: "insight_template", label: "Emergency alerts English-only",                category: "SERVICES", text: "Emergency alerts English-only — 14 languages on one block, residents rely on word-of-mouth" },
+  it_alrashid_2:  { id: "it_alrashid_2",  type: "insight_template", label: "Bodega emergency broadcast network",           category: "ASSET",    text: "Bodega network as informal emergency broadcast — Roosevelt Ave has 6 shops that could be official info hubs" },
+  it_alrashid_3:  { id: "it_alrashid_3",  type: "insight_template", label: "Illegal basement apartment flood risk",        category: "HOUSING",  text: "~200 illegal basement apartments on one block — flood death traps, residents fear deportation if reported" },
+
+  // Sasha Okonkwo — Williamsburg
+  it_okonkwo_1:   { id: "it_okonkwo_1",   type: "insight_template", label: "Mutual aid network since COVID",               category: "ASSET",    text: "Mutual aid network — 400 members, organized block-by-block, runs grocery/meds/wellness since COVID" },
+  it_okonkwo_2:   { id: "it_okonkwo_2",   type: "insight_template", label: "Block captain evacuation model",               category: "ASSET",    text: "Block captain model — 60 evacuations in 3 hours during Sandy, vs FEMA 3 days. Replicable structure." },
+  it_okonkwo_3:   { id: "it_okonkwo_3",   type: "insight_template", label: "Mutual aid needs city data access",            category: "INFRA",    text: "Mutual aid needs city data access — evacuation routes, shelter capacity, hospital status. Two-way channel." },
+
+  // Pastor David Williams — Bed-Stuy
+  it_williams_1:  { id: "it_williams_1",  type: "insight_template", label: "Greater Faith Church as emergency hub",        category: "ASSET",    text: "Greater Faith Church — 300 seats, kitchen, generator, 40 volunteers. Fed 200 during last blackout. Not in city registry." },
+  it_williams_2:  { id: "it_williams_2",  type: "insight_template", label: "Pharmacy desert on Crown Street",              category: "HEALTH",   text: "Pharmacy desert — Crown St pharmacy closed, nearest is 20min by bus. Insulin and inhaler supply chain broken." },
+  it_williams_3:  { id: "it_williams_3",  type: "insight_template", label: "Institution-distrustful residents",            category: "SAFETY",   text: "30 institution-distrustful residents known by name — won\u2019t go to shelters, need door-to-door outreach during crisis" },
+
+  // Wei Chen — Flushing
+  it_chen_1:      { id: "it_chen_1",      type: "insight_template", label: "Single pharmacy med supply fragility",         category: "HEALTH",   text: "Single pharmacy serves 400/day — $200K in temperature-sensitive meds, 4hr backup before total loss" },
+  it_chen_2:      { id: "it_chen_2",      type: "insight_template", label: "Pharmacy as emergency med distribution hub",   category: "ASSET",    text: "Pharmacy can be emergency med distribution hub — needs $8K generator, willing to serve as community resource" },
+
+  // Tommy Ferraro — Staten Island
+  it_ferraro_1:   { id: "it_ferraro_1",   type: "insight_template", label: "Belt Parkway flood cuts ambulance access",     category: "INFRA",    text: "Belt Parkway floods at Shore Road during nor\u2019easters — cuts off ambulance access to southern Bay Ridge" },
+  it_ferraro_2:   { id: "it_ferraro_2",   type: "insight_template", label: "CERT team of retired first responders",        category: "ASSET",    text: "CERT team — 15 retired first responders with radios and drills. Ready to deploy before official response." },
+
+  // Angela Rizzo — Park Slope
+  it_rizzo_1:     { id: "it_rizzo_1",     type: "insight_template", label: "Unsupervised children during school closures", category: "SAFETY",   text: "School closures during emergencies leave 40+ children unsupervised — empty houses, no food backup" },
+  it_rizzo_2:     { id: "it_rizzo_2",     type: "insight_template", label: "PS 31 as emergency shelter",                   category: "ASSET",    text: "PS 31 has full kitchen, nurse, gym — can shelter 200. School nurse maintains vulnerable family list (43 at-risk children)" },
+  it_rizzo_3:     { id: "it_rizzo_3",     type: "insight_template", label: "Ferry shutdown isolates Staten Island",        category: "INFRA",    text: "Ferry shutdown strands 9,000 commuters — no bus bridge protocol, Staten Island fully isolated during storms" },
+};
+
 // ─── Combined export ───────────────────────────────────────
 export const entries = {
   ...seasons,
@@ -527,4 +595,30 @@ export const entries = {
   ...resources,
   ...policies,
   ...outcomes,
+  ...characters,
+  ...insightTemplates,
+  // tileEntries added via Object.assign below (defined after export for readability)
 };
+
+// ── Tile entries (WHAT + HOW tiles from Bento Box) ───────────
+const tileEntries = {
+  tl_plow_fleet:        { id: "tl_plow_fleet",        type: "tile", label: "Snow-Removal Fleet",     tileType: "WHAT", size: [2,2], cost: 0.8 },
+  tl_generator_bank:    { id: "tl_generator_bank",    type: "tile", label: "Generator Bank",          tileType: "WHAT", size: [2,2], cost: 0.6 },
+  tl_emergency_shelter: { id: "tl_emergency_shelter", type: "tile", label: "Emergency Shelter",       tileType: "WHAT", size: [2,2], cost: 0.5 },
+  tl_medical_cache:     { id: "tl_medical_cache",     type: "tile", label: "Medical Supply Cache",    tileType: "WHAT", size: [2,1], cost: 0.4 },
+  tl_warning_system:    { id: "tl_warning_system",    type: "tile", label: "Alert System",            tileType: "WHAT", size: [1,2], cost: 0.4 },
+  tl_road_salt:         { id: "tl_road_salt",         type: "tile", label: "Salt Stockpile",          tileType: "WHAT", size: [1,1], cost: 0.3 },
+  tl_med_power_cache:   { id: "tl_med_power_cache",   type: "tile", label: "Medical Power Cache",     tileType: "WHAT", size: [1,2], cost: 0.3, mutatesFrom: "tl_generator_bank" },
+  tl_community_shelter: { id: "tl_community_shelter", type: "tile", label: "Community Shelter Hub",   tileType: "WHAT", size: [1,2], cost: 0.3, mutatesFrom: "tl_emergency_shelter" },
+  tl_multilingual:      { id: "tl_multilingual",      type: "tile", label: "Multilingual Alert Net",  tileType: "WHAT", size: [1,1], cost: 0.15, mutatesFrom: "tl_warning_system" },
+  tl_targeted_plows:    { id: "tl_targeted_plows",    type: "tile", label: "Precision Plow Routes",   tileType: "WHAT", size: [1,2], cost: 0.5, mutatesFrom: "tl_plow_fleet" },
+  tl_basement_registry: { id: "tl_basement_registry", type: "tile", label: "Basement Flood Registry", tileType: "WHAT", size: [1,1], cost: 0.1 },
+  tl_mutual_aid:        { id: "tl_mutual_aid",        type: "tile", label: "Mutual Aid Network",      tileType: "HOW",  size: [1,2], cost: 0.08 },
+  tl_local_leaders:     { id: "tl_local_leaders",     type: "tile", label: "Local Leader Liaisons",   tileType: "HOW",  size: [1,1], cost: 0.1 },
+  tl_youth_corps:       { id: "tl_youth_corps",       type: "tile", label: "Emergency Youth Corps",   tileType: "HOW",  size: [1,1], cost: 0.12 },
+  tl_city_workers:      { id: "tl_city_workers",      type: "tile", label: "City Worker Deployment",  tileType: "HOW",  size: [2,1], cost: 0.5 },
+  tl_police:            { id: "tl_police",            type: "tile", label: "Police Enforcement",      tileType: "HOW",  size: [1,1], cost: 0.3 },
+  tl_health_workers:    { id: "tl_health_workers",    type: "tile", label: "Community Health Workers", tileType: "HOW", size: [1,1], cost: 0.18 },
+  tl_faith_network:     { id: "tl_faith_network",     type: "tile", label: "Faith Community Network", tileType: "HOW",  size: [1,1], cost: 0.05 },
+};
+Object.assign(entries, tileEntries);

@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANDATE — Scenario Author</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ececea;
+  --bg-light: #f7f7f5;
+  --bg-dark: #e2e2df;
+  --red: #ff2d2d;
+  --dark: #121212;
+  --muted: #9a9a9a;
+  --secondary: #6e6e6e;
+  --panel-bg: rgba(250,250,248,0.96);
+  --panel-border: rgba(0,0,0,0.12);
+  --divider: rgba(0,0,0,0.08);
+  --green: #34d399;
+  --amber: #e8a83e;
+  --font-ui: 'Space Grotesk', sans-serif;
+  --font-data: 'Doto', monospace;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: var(--font-ui);
+  background: radial-gradient(ellipse at 50% 40%, var(--bg-light) 0%, var(--bg) 55%, var(--bg-dark) 100%);
+  color: var(--dark);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Bar ───────────────────────────────── */
+.top-bar {
+  height: 42px; display: flex; align-items: center; padding: 0 20px;
+  background: var(--dark); color: #fff; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.06em; gap: 16px; flex-shrink: 0; z-index: 100;
+}
+.top-bar .logo { font-family: var(--font-data); font-weight: 900; font-size: 14px; letter-spacing: 0.14em; color: var(--red); }
+.top-bar .sep { color: rgba(255,255,255,0.2); }
+.top-bar .tool-name { color: rgba(255,255,255,0.6); font-weight: 400; font-size: 11px; letter-spacing: 0.08em; }
+
+/* Tab bar */
+.tab-bar {
+  display: flex; gap: 0; border-bottom: 1px solid var(--divider); background: var(--panel-bg); flex-shrink: 0;
+}
+.tab {
+  padding: 10px 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.tab:hover { color: var(--dark); }
+.tab.active { color: var(--red); border-bottom-color: var(--red); }
+
+/* ── Main Layout ───────────────────────────── */
+.main { flex:1; display:flex; min-height:0; }
+.view { display:none; flex:1; flex-direction:column; min-height:0; }
+.view.active { display:flex; }
+
+/* ── Timeline View ─────────────────────────── */
+.timeline-container { flex:1; display:flex; min-height:0; }
+.timeline-scroll { flex:1; overflow-x:auto; overflow-y:auto; padding:20px; }
+.timeline {
+  display: grid;
+  grid-template-columns: 60px repeat(48, 1fr);
+  grid-template-rows: auto;
+  gap: 2px;
+  min-width: 2400px;
+}
+.tl-header {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted);
+  text-align: center; padding: 6px 2px; text-transform: uppercase;
+}
+.tl-week {
+  font-family: var(--font-data); font-size: 10px; font-weight: 700;
+  text-align: center; padding: 4px 2px; color: var(--secondary); min-width: 44px;
+  border-bottom: 1px solid var(--divider); cursor: pointer; position: relative;
+}
+.tl-week:hover { background: rgba(255,45,45,0.06); }
+.tl-week.has-event { background: rgba(255,45,45,0.08); }
+.tl-week.phase-distant { border-top: 2px solid var(--muted); }
+.tl-week.phase-escalation { border-top: 2px solid var(--amber); }
+.tl-week.phase-crisis { border-top: 2px solid var(--red); }
+.tl-week.phase-aftermath { border-top: 2px solid var(--green); }
+.tl-phase-label {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 8px 4px; text-align: center; writing-mode: horizontal-tb;
+}
+.tl-event-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--red);
+  margin: 3px auto 0; cursor: pointer;
+}
+.tl-event-dot:hover { transform: scale(1.3); }
+.tl-event-dot.pool { background: var(--amber); }
+
+/* Phase rows */
+.tl-row-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--secondary);
+  padding: 8px 4px; text-transform: uppercase; display: flex; align-items: center;
+}
+
+/* Event list sidebar */
+.event-sidebar {
+  width: 360px; border-left: 1px solid var(--panel-border); background: var(--panel-bg);
+  overflow-y: auto; padding: 16px; flex-shrink: 0;
+}
+.event-card {
+  border: 1px solid var(--panel-border); border-radius: 6px; padding: 12px;
+  margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s;
+  background: #fff;
+}
+.event-card:hover { border-color: var(--red); }
+.event-card.selected { border-color: var(--red); box-shadow: 0 0 0 1px var(--red); }
+.event-card-id { font-family: var(--font-data); font-size: 9px; color: var(--muted); letter-spacing: 0.06em; }
+.event-card-title { font-size: 13px; font-weight: 600; margin: 4px 0; }
+.event-card-meta { font-size: 10px; color: var(--secondary); display: flex; gap: 8px; flex-wrap: wrap; }
+.event-card-meta .tag {
+  background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 3px;
+  font-weight: 600; font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.tag.phase-distant { color: var(--muted); }
+.tag.phase-escalation { color: var(--amber); }
+.tag.phase-crisis { color: var(--red); }
+.tag.phase-aftermath { color: var(--green); }
+
+/* ── Editor View ───────────────────────────── */
+.editor { flex:1; display:flex; min-height:0; }
+.editor-form {
+  flex:1; overflow-y:auto; padding: 24px; max-width: 720px;
+}
+.editor-preview {
+  width: 340px; border-left: 1px solid var(--panel-border); background: var(--panel-bg);
+  overflow-y: auto; padding: 16px; flex-shrink: 0;
+}
+
+.field-group { margin-bottom: 20px; }
+.field-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px; display: block;
+}
+.field-input, .field-select, .field-textarea {
+  width: 100%; border: 1px solid var(--panel-border); border-radius: 4px;
+  padding: 8px 10px; font-family: var(--font-ui); font-size: 13px;
+  background: #fff; color: var(--dark); outline: none; transition: border-color 0.15s;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--red); }
+.field-textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+/* Condition/Effect builder */
+.builder-section { margin-top: 16px; }
+.builder-list { display: flex; flex-direction: column; gap: 8px; }
+.builder-item {
+  display: flex; gap: 6px; align-items: flex-start; padding: 8px;
+  border: 1px solid var(--divider); border-radius: 4px; background: rgba(255,255,255,0.6);
+  flex-wrap: wrap;
+}
+.builder-item select, .builder-item input {
+  border: 1px solid var(--panel-border); border-radius: 3px; padding: 4px 6px;
+  font-family: var(--font-ui); font-size: 11px; background: #fff;
+}
+.builder-item select { min-width: 100px; }
+.builder-item input { min-width: 60px; }
+.builder-item .remove-btn {
+  background: none; border: none; color: var(--red); cursor: pointer;
+  font-size: 14px; font-weight: 700; padding: 2px 6px; line-height: 1; margin-left: auto;
+}
+.add-btn {
+  border: 1px dashed var(--panel-border); background: none; color: var(--secondary);
+  padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;
+  font-weight: 600; letter-spacing: 0.04em; margin-top: 6px; display: inline-block;
+}
+.add-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ── Trust Dashboard ───────────────────────── */
+.trust-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px; padding: 20px; overflow-y: auto;
+}
+.trust-card {
+  border: 1px solid var(--panel-border); border-radius: 6px; padding: 14px;
+  background: #fff;
+}
+.trust-card-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.trust-card-name { font-size: 13px; font-weight: 600; }
+.trust-card-net {
+  font-family: var(--font-data); font-size: 18px; font-weight: 900;
+}
+.trust-card-base {
+  font-size: 10px; color: var(--muted); margin-bottom: 8px;
+}
+.mod-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 0; border-bottom: 1px solid var(--divider); font-size: 11px;
+}
+.mod-row:last-child { border-bottom: none; }
+.mod-source { color: var(--secondary); font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.mod-label { flex: 1; margin: 0 8px; color: var(--dark); }
+.mod-value { font-family: var(--font-data); font-weight: 700; min-width: 40px; text-align: right; }
+.mod-value.positive { color: var(--green); }
+.mod-value.negative { color: var(--red); }
+.mod-decay { font-size: 9px; color: var(--muted); min-width: 50px; text-align: right; }
+
+/* Disorder bar */
+.disorder-bar { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.disorder-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.disorder-label { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 3px; display: flex; justify-content: space-between; }
+
+/* ── Bento Box ──────────────────────────────── */
+.bento-container { flex:1; display:flex; min-height:0; }
+.bento-grid-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+.bento-grid {
+  display: grid; grid-template-columns: repeat(5, 64px); grid-template-rows: repeat(5, 64px);
+  gap: 2px; background: rgba(0,0,0,0.06); padding: 2px; border-radius: 6px;
+}
+.bento-cell {
+  width: 64px; height: 64px; background: #fff; border: 1px solid var(--divider);
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.bento-cell:hover { border-color: var(--red); }
+.bento-cell.occupied { cursor: default; }
+.bento-cell.type-WHERE { background: rgba(52,211,153,0.15); border-color: var(--green); }
+.bento-cell.type-WHAT { background: rgba(255,45,45,0.08); border-color: var(--red); }
+.bento-cell.type-HOW { background: rgba(124,140,248,0.12); border-color: #7c8cf8; }
+.bento-cell.type-FUNDING { background: rgba(232,168,62,0.1); border-color: var(--amber); }
+.bento-cell.synergy { box-shadow: 0 0 0 2px var(--green); }
+.bento-cell.conflict { box-shadow: 0 0 0 2px var(--red); }
+.bento-sidebar {
+  width: 340px; border-left: 1px solid var(--panel-border); background: var(--panel-bg);
+  overflow-y: auto; padding: 16px; flex-shrink: 0;
+}
+.bento-tile-card {
+  border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px 10px;
+  margin-bottom: 6px; cursor: grab; background: #fff; font-size: 11px;
+  transition: border-color 0.15s;
+}
+.bento-tile-card:hover { border-color: var(--red); }
+.bento-tile-card.selected { border-color: var(--red); box-shadow: 0 0 0 1px var(--red); }
+.bento-tile-card .tile-type {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 2px; display: inline-block; margin-bottom: 3px;
+}
+.tile-type.WHERE { background: rgba(52,211,153,0.2); color: #059669; }
+.tile-type.WHAT { background: rgba(255,45,45,0.1); color: var(--red); }
+.tile-type.HOW { background: rgba(124,140,248,0.15); color: #5b6abf; }
+.tile-type.FUNDING { background: rgba(232,168,62,0.15); color: #b8860b; }
+.bento-tile-card .tile-name { font-weight: 600; font-size: 12px; }
+.bento-tile-card .tile-meta { font-size: 10px; color: var(--secondary); margin-top: 2px; }
+.bento-tile-card .tile-size { font-family: var(--font-data); font-size: 9px; color: var(--muted); }
+.bento-tile-card.mutated { border-left: 3px solid var(--green); }
+.bento-eval {
+  margin-top: 12px; padding: 10px; border: 1px solid var(--divider); border-radius: 5px;
+  background: rgba(255,255,255,0.6); font-size: 11px;
+}
+.bento-eval-row { display: flex; justify-content: space-between; padding: 2px 0; }
+.bento-eval-label { color: var(--secondary); }
+.bento-eval-val { font-family: var(--font-data); font-weight: 700; }
+
+/* Simulation controls */
+.sim-bar {
+  display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+  border-bottom: 1px solid var(--divider); background: var(--panel-bg); flex-shrink: 0;
+}
+.sim-bar label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.sim-bar input[type="range"] { width: 200px; }
+.sim-bar .week-display { font-family: var(--font-data); font-size: 16px; font-weight: 900; min-width: 40px; }
+.sim-btn {
+  padding: 6px 16px; border: 1px solid var(--panel-border); border-radius: 4px;
+  background: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 11px;
+  font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.sim-btn:hover { border-color: var(--red); color: var(--red); }
+.sim-btn.primary { background: var(--dark); color: #fff; border-color: var(--dark); }
+.sim-btn.primary:hover { background: var(--red); border-color: var(--red); }
+.sim-stats {
+  display: flex; gap: 16px; margin-left: auto; font-size: 11px;
+}
+.sim-stat-label { color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.sim-stat-val { font-family: var(--font-data); font-weight: 700; font-size: 14px; }
+
+/* ── Validation View ───────────────────────── */
+.validation-container { flex:1; overflow-y:auto; padding:20px; max-width:800px; }
+.val-section { margin-bottom: 24px; }
+.val-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.val-badge {
+  font-family: var(--font-data); font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px; color: #fff;
+}
+.val-badge.pass { background: var(--green); }
+.val-badge.fail { background: var(--red); }
+.val-badge.warn { background: var(--amber); }
+.val-error {
+  padding: 8px 12px; border-left: 3px solid var(--red); background: rgba(255,45,45,0.04);
+  margin-bottom: 4px; font-size: 12px; font-family: monospace; color: var(--dark);
+}
+.val-pass {
+  padding: 8px 12px; border-left: 3px solid var(--green); background: rgba(52,211,153,0.04);
+  margin-bottom: 4px; font-size: 12px; color: var(--secondary);
+}
+
+/* ── Export View ────────────────────────────── */
+.export-container { flex:1; display:flex; flex-direction:column; padding:20px; gap:12px; }
+.export-textarea {
+  flex: 1; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+  border: 1px solid var(--panel-border); border-radius: 6px; padding: 16px;
+  background: #fff; resize: none; tab-size: 2; line-height: 1.5;
+}
+.export-actions { display: flex; gap: 8px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <span class="logo">MANDATE</span>
+  <span class="sep">|</span>
+  <span class="tool-name">Scenario Author</span>
+  <span style="margin-left:auto; font-size:10px; color:rgba(255,255,255,0.4);">
+    <span id="eventCount">0</span> events
+  </span>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab active" data-view="timeline">Timeline</button>
+  <button class="tab" data-view="editor">Editor</button>
+  <button class="tab" data-view="trust">Dual Metres</button>
+  <button class="tab" data-view="bento">Bento Box</button>
+  <button class="tab" data-view="validation">Validation</button>
+  <button class="tab" data-view="export">Export</button>
+</div>
+
+<!-- Views -->
+<div class="main">
+
+  <!-- ── Timeline ──────────────────────────── -->
+  <div class="view active" id="view-timeline">
+    <div class="timeline-container">
+      <div class="timeline-scroll">
+        <div class="timeline" id="timelineGrid"></div>
+      </div>
+      <div class="event-sidebar" id="eventSidebar">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Events</span>
+          <button class="add-btn" onclick="createNewEvent()">+ New Event</button>
+        </div>
+        <div id="eventList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Editor ────────────────────────────── -->
+  <div class="view" id="view-editor">
+    <div class="editor">
+      <div class="editor-form" id="editorForm">
+        <div style="color:var(--muted);font-size:12px;padding:40px;text-align:center;">
+          Select an event from the Timeline to edit, or create a new one.
+        </div>
+      </div>
+      <div class="editor-preview" id="editorPreview">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Live Preview</div>
+        <pre id="previewJSON" style="font-size:10px;line-height:1.5;white-space:pre-wrap;word-break:break-all;font-family:'SF Mono',monospace;color:var(--secondary);"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Trust Dashboard ───────────────────── -->
+  <div class="view" id="view-trust">
+    <div class="sim-bar">
+      <label>Week</label>
+      <span class="week-display" id="simWeek">1</span>
+      <input type="range" id="simSlider" min="1" max="48" value="1">
+      <button class="sim-btn" onclick="simStep(-1)">&larr;</button>
+      <button class="sim-btn" onclick="simStep(1)">&rarr;</button>
+      <button class="sim-btn primary" onclick="simRun()">Simulate</button>
+      <button class="sim-btn" onclick="simReset()">Reset</button>
+      <div class="sim-stats">
+        <div><div class="sim-stat-label">Resilience</div><div class="sim-stat-val" id="simCitywide">--</div></div>
+        <div><div class="sim-stat-label">Disorder</div><div class="sim-stat-val" id="simDisorder" style="color:var(--green);">--</div></div>
+        <div><div class="sim-stat-label">Reserve</div><div class="sim-stat-val" id="simReserve">--</div></div>
+        <div><div class="sim-stat-label">Events</div><div class="sim-stat-val" id="simEventsFired">0</div></div>
+      </div>
+    </div>
+    <div class="trust-grid" id="trustGrid"></div>
+  </div>
+
+  <!-- ── Bento Box ────────────────────────── -->
+  <div class="view" id="view-bento">
+    <div class="bento-container">
+      <div class="bento-grid-area">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">
+          Policy Grid (5x5) — click a cell to place selected tile
+        </div>
+        <div class="bento-grid" id="bentoGrid"></div>
+        <div class="bento-eval" id="bentoEval"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="sim-btn" onclick="bentoClear()">Clear Grid</button>
+        </div>
+        <div id="bentoSynConflicts" style="margin-top:12px;max-width:420px;"></div>
+      </div>
+      <div class="bento-sidebar">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Available Tiles</div>
+        <div style="font-size:10px;color:var(--secondary);margin-bottom:10px;">Select a tile, then click a grid cell to place it. Mutated tiles (green border) are insight-unlocked efficient variants.</div>
+        <div id="bentoTileList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Validation ────────────────────────── -->
+  <div class="view" id="view-validation">
+    <div class="validation-container" id="validationResults">
+      <div style="color:var(--muted);font-size:12px;padding:40px;text-align:center;">
+        Click "Run Validation" to check all content.
+      </div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--divider);flex-shrink:0;">
+      <button class="sim-btn primary" onclick="runValidation()">Run Validation</button>
+    </div>
+  </div>
+
+  <!-- ── Export ─────────────────────────────── -->
+  <div class="view" id="view-export">
+    <div class="export-container">
+      <div style="display:flex;gap:12px;flex-shrink:0;">
+        <button class="sim-btn" onclick="exportJSON()">Export JSON</button>
+        <button class="sim-btn" onclick="exportJS()">Export JS Module</button>
+        <button class="sim-btn" onclick="copyExport()">Copy to Clipboard</button>
+        <label class="sim-btn" style="cursor:pointer;">
+          Import JSON
+          <input type="file" accept=".json" style="display:none;" onchange="importJSON(event)">
+        </label>
+      </div>
+      <textarea class="export-textarea" id="exportArea" readonly></textarea>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { SchemaValidator, SCHEMAS } from '../systems/schema.js';
+
+// ── State ──────────────────────────────────────────────────────
+
+const validator = new SchemaValidator();
+let events = [];
+let selectedEventId = null;
+
+// District reference data (from entries.js structure)
+const DISTRICTS = {
+  d_south_bronx: { label: 'South Bronx', boro: 'The Bronx', bloc: 'working', pop: 3, baseResilience: 48 },
+  d_riverdale: { label: 'Riverdale', boro: 'The Bronx', bloc: 'realestate', pop: 2, baseResilience: 52 },
+  d_washington_hts: { label: 'Washington Heights', boro: 'Manhattan', bloc: 'working', pop: 2, baseResilience: 55 },
+  d_harlem: { label: 'Harlem', boro: 'Manhattan', bloc: 'progressives', pop: 3, baseResilience: 57 },
+  d_upper_west: { label: 'Upper West Side', boro: 'Manhattan', bloc: 'progressives', pop: 2, baseResilience: 54 },
+  d_upper_east: { label: 'Upper East Side', boro: 'Manhattan', bloc: 'finance', pop: 2, baseResilience: 50 },
+  d_midtown: { label: 'Midtown', boro: 'Manhattan', bloc: 'realestate', pop: 2, baseResilience: 49 },
+  d_les: { label: 'Lower East Side', boro: 'Manhattan', bloc: 'progressives', pop: 2, baseResilience: 58 },
+  d_fidi: { label: 'Financial District', boro: 'Manhattan', bloc: 'finance', pop: 2, baseResilience: 50 },
+  d_astoria: { label: 'Astoria', boro: 'Queens', bloc: 'labor', pop: 2, baseResilience: 55 },
+  d_jackson_hts: { label: 'Jackson Heights', boro: 'Queens', bloc: 'working', pop: 3, baseResilience: 56 },
+  d_flushing: { label: 'Flushing', boro: 'Queens', bloc: 'working', pop: 3, baseResilience: 52 },
+  d_jamaica: { label: 'Jamaica', boro: 'Queens', bloc: 'labor', pop: 3, baseResilience: 53 },
+  d_williamsburg: { label: 'Williamsburg', boro: 'Brooklyn', bloc: 'progressives', pop: 2, baseResilience: 57 },
+  d_bed_stuy: { label: 'Bed-Stuy', boro: 'Brooklyn', bloc: 'working', pop: 3, baseResilience: 54 },
+  d_park_slope: { label: 'Park Slope', boro: 'Brooklyn', bloc: 'progressives', pop: 2, baseResilience: 59 },
+  d_brownsville: { label: 'Brownsville / East NY', boro: 'Brooklyn', bloc: 'working', pop: 3, baseResilience: 47 },
+  d_bay_ridge: { label: 'Bay Ridge', boro: 'Brooklyn', bloc: 'working', pop: 2, baseResilience: 49 },
+  d_staten_island: { label: 'Staten Island', boro: 'Staten Island', bloc: 'labor', pop: 2, baseResilience: 46 },
+};
+const DISTRICT_IDS = Object.keys(DISTRICTS);
+
+const CONDITION_TYPES = [
+  'week', 'weekRange', 'weekAfter', 'weekBefore',
+  'trustBelow', 'trustAbove',
+  'reserveBelow', 'reserveAbove',
+  'insightCount', 'insightCategory', 'patternExists',
+  'flag', 'notFlag',
+  'districtVisited', 'districtNotVisited', 'visitedCount',
+  'policyActive',
+  'AND', 'OR', 'NOT',
+];
+
+const EFFECT_TYPES = [
+  'trust', 'trustScope', 'addModifier',
+  'reserve', 'flag', 'removeFlag',
+  'feed_item', 'knowledge', 'queueEvent',
+];
+
+const PHASES = ['distant', 'escalation', 'crisis', 'aftermath'];
+const CATEGORIES = ['HEALTH', 'HOUSING', 'INFRA', 'SERVICES', 'SAFETY', 'ASSET'];
+const SCOPES = ['all', 'lowest_trust', 'highest_trust', 'all_below', 'all_above', 'bloc', 'visited', 'unvisited'];
+
+// ── Try loading existing scenario data ─────────────────────────
+try {
+  const mod = await import('../data/scenarios.js');
+  if (mod.SCENARIO_EVENTS) {
+    events = JSON.parse(JSON.stringify(mod.SCENARIO_EVENTS));
+  }
+} catch (e) {
+  console.warn('Could not load existing scenarios:', e.message);
+}
+
+// ── Tab Navigation ─────────────────────────────────────────────
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`view-${tab.dataset.view}`).classList.add('active');
+    if (tab.dataset.view === 'trust') renderTrustDashboard();
+    if (tab.dataset.view === 'bento') renderBento();
+    if (tab.dataset.view === 'export') exportJSON();
+  });
+});
+
+// ── Timeline Rendering ─────────────────────────────────────────
+
+function getPhaseForWeek(w) {
+  if (w <= 20) return 'distant';
+  if (w <= 35) return 'escalation';
+  if (w <= 44) return 'crisis';
+  return 'aftermath';
+}
+
+function renderTimeline() {
+  const grid = document.getElementById('timelineGrid');
+  const eventsByWeek = new Map();
+  for (const evt of events) {
+    const weeks = getEventWeeks(evt);
+    for (const w of weeks) {
+      if (!eventsByWeek.has(w)) eventsByWeek.set(w, []);
+      eventsByWeek.get(w).push(evt);
+    }
+  }
+
+  let html = '<div class="tl-header"></div>';
+  for (let w = 1; w <= 48; w++) {
+    const phase = getPhaseForWeek(w);
+    const hasEvt = eventsByWeek.has(w);
+    const evts = eventsByWeek.get(w) || [];
+    html += `<div class="tl-week phase-${phase} ${hasEvt ? 'has-event' : ''}" data-week="${w}" onclick="selectWeek(${w})">
+      ${w}
+      ${evts.map(e => `<div class="tl-event-dot ${e.pool ? 'pool' : ''}" title="${esc(e.headline)}" onclick="event.stopPropagation();selectEvent('${e.id}')"></div>`).join('')}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  renderEventList();
+  document.getElementById('eventCount').textContent = events.length;
+}
+
+function getEventWeeks(evt) {
+  const weeks = [];
+  for (const c of (evt.conditions || [])) {
+    if (c.type === 'week') weeks.push(c.value);
+    if (c.type === 'weekRange') {
+      for (let w = c.min || 1; w <= (c.max || 48); w++) weeks.push(w);
+    }
+    if (c.type === 'weekAfter') {
+      for (let w = c.value + 1; w <= 48; w++) weeks.push(w);
+    }
+    if (c.type === 'weekBefore') {
+      for (let w = 1; w < c.value; w++) weeks.push(w);
+    }
+  }
+  if (weeks.length === 0) weeks.push(0); // no temporal condition
+  return weeks;
+}
+
+function renderEventList() {
+  const list = document.getElementById('eventList');
+  list.innerHTML = events.map(evt => {
+    const phase = evt.phase || guessPhase(evt);
+    return `<div class="event-card ${evt.id === selectedEventId ? 'selected' : ''}" onclick="selectEvent('${evt.id}')">
+      <div class="event-card-id">${evt.id}</div>
+      <div class="event-card-title">${esc(evt.headline)}</div>
+      <div class="event-card-meta">
+        <span class="tag phase-${phase}">${phase}</span>
+        ${evt.pool ? `<span class="tag">pool: ${evt.pool}</span>` : ''}
+        <span class="tag">${(evt.conditions || []).length} cond</span>
+        <span class="tag">${(evt.effects || []).length} eff</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function guessPhase(evt) {
+  const weeks = getEventWeeks(evt);
+  if (weeks.length === 0 || weeks[0] === 0) return 'distant';
+  const avg = weeks.reduce((a, b) => a + b, 0) / weeks.length;
+  return getPhaseForWeek(avg);
+}
+
+// ── Event Selection & Editing ──────────────────────────────────
+
+window.selectEvent = function(id) {
+  selectedEventId = id;
+  renderEventList();
+  renderEditor();
+  // Switch to editor tab
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelector('[data-view="editor"]').classList.add('active');
+  document.getElementById('view-editor').classList.add('active');
+};
+
+window.selectWeek = function(week) {
+  // If week has events, select the first one. Otherwise create one at this week.
+  const evtsAtWeek = events.filter(e => getEventWeeks(e).includes(week));
+  if (evtsAtWeek.length > 0) {
+    selectEvent(evtsAtWeek[0].id);
+  }
+};
+
+window.createNewEvent = function() {
+  const id = `evt_new_${Date.now()}`;
+  const evt = {
+    id,
+    headline: 'New Event',
+    narrative: '',
+    phase: 'distant',
+    conditions: [{ type: 'week', value: 1 }],
+    effects: [],
+  };
+  events.push(evt);
+  selectEvent(id);
+  renderTimeline();
+};
+
+function renderEditor() {
+  const form = document.getElementById('editorForm');
+  const evt = events.find(e => e.id === selectedEventId);
+  if (!evt) {
+    form.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:40px;text-align:center;">Select an event to edit.</div>';
+    return;
+  }
+
+  form.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Editing Event</span>
+      <button class="sim-btn" style="color:var(--red);border-color:var(--red);" onclick="deleteEvent('${evt.id}')">Delete</button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Event ID</label>
+      <input class="field-input" value="${esc(evt.id)}" onchange="updateField('${evt.id}','id',this.value)">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Headline</label>
+      <input class="field-input" value="${esc(evt.headline)}" onchange="updateField('${evt.id}','headline',this.value)">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Narrative</label>
+      <textarea class="field-textarea" onchange="updateField('${evt.id}','narrative',this.value)">${esc(evt.narrative || '')}</textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <div class="field-group" style="flex:1;">
+        <label class="field-label">Phase</label>
+        <select class="field-select" onchange="updateField('${evt.id}','phase',this.value)">
+          ${PHASES.map(p => `<option ${evt.phase === p ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-group" style="flex:1;">
+        <label class="field-label">Pool (optional)</label>
+        <input class="field-input" value="${esc(evt.pool || '')}" placeholder="e.g., mid_disruptions"
+          onchange="updateField('${evt.id}','pool',this.value||undefined)">
+      </div>
+      <div class="field-group" style="flex:1;">
+        <label class="field-label">Priority</label>
+        <input class="field-input" type="number" value="${evt.priority || 0}"
+          onchange="updateField('${evt.id}','priority',+this.value)">
+      </div>
+    </div>
+
+    <div class="builder-section">
+      <label class="field-label">Conditions</label>
+      <div class="builder-list" id="condList">${renderConditions(evt)}</div>
+      <button class="add-btn" onclick="addCondition('${evt.id}')">+ Add Condition</button>
+    </div>
+
+    <div class="builder-section">
+      <label class="field-label">Effects</label>
+      <div class="builder-list" id="effList">${renderEffects(evt)}</div>
+      <button class="add-btn" onclick="addEffect('${evt.id}')">+ Add Effect</button>
+    </div>
+
+    <div class="builder-section">
+      <label class="field-label">Event Chains (optional)</label>
+      <div class="builder-list" id="chainList">${renderChains(evt)}</div>
+      <button class="add-btn" onclick="addChain('${evt.id}')">+ Add Chain</button>
+    </div>
+  `;
+
+  updatePreview();
+}
+
+// ── Condition Builder ──────────────────────────────────────────
+
+function renderConditions(evt) {
+  return (evt.conditions || []).map((c, i) => {
+    const fields = getConditionFields(c);
+    return `<div class="builder-item">
+      <select onchange="updateCondition('${evt.id}',${i},'type',this.value)">
+        ${CONDITION_TYPES.map(t => `<option ${c.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+      ${fields}
+      <button class="remove-btn" onclick="removeCondition('${evt.id}',${i})">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+function getConditionFields(c) {
+  const parts = [];
+  switch (c.type) {
+    case 'week':
+      parts.push(`<input type="number" value="${c.value || 1}" min="1" max="48" placeholder="week" onchange="updateCondProp(this,'value',+this.value)">`);
+      break;
+    case 'weekRange':
+      parts.push(`<input type="number" value="${c.min || 1}" min="1" max="48" placeholder="min" style="width:50px" onchange="updateCondProp(this,'min',+this.value)">`);
+      parts.push(`<span style="font-size:10px;color:var(--muted);">to</span>`);
+      parts.push(`<input type="number" value="${c.max || 48}" min="1" max="48" placeholder="max" style="width:50px" onchange="updateCondProp(this,'max',+this.value)">`);
+      break;
+    case 'weekAfter': case 'weekBefore':
+      parts.push(`<input type="number" value="${c.value || 1}" min="1" max="48" placeholder="week" onchange="updateCondProp(this,'value',+this.value)">`);
+      break;
+    case 'trustBelow': case 'trustAbove':
+      parts.push(`<select onchange="updateCondProp(this,'scope',this.value)">
+        <option ${c.scope==='citywide'?'selected':''}>citywide</option>
+        <option ${c.scope==='any'?'selected':''}>any</option>
+        <option ${c.scope==='all'?'selected':''}>all</option>
+        <option ${c.scope==='district'?'selected':''}>district</option>
+      </select>`);
+      parts.push(`<input type="number" value="${c.value || 40}" min="0" max="100" placeholder="value" onchange="updateCondProp(this,'value',+this.value)">`);
+      if (c.scope === 'district') {
+        parts.push(`<select onchange="updateCondProp(this,'district',this.value)">
+          ${DISTRICT_IDS.map(id => `<option value="${id}" ${c.district===id?'selected':''}>${DISTRICTS[id].label}</option>`).join('')}
+        </select>`);
+      }
+      break;
+    case 'reserveBelow': case 'reserveAbove':
+      parts.push(`<input type="number" step="0.1" value="${c.value || 0}" placeholder="$B" onchange="updateCondProp(this,'value',+this.value)">`);
+      break;
+    case 'flag': case 'notFlag':
+      parts.push(`<input value="${c.value || ''}" placeholder="flag_name" onchange="updateCondProp(this,'value',this.value)">`);
+      break;
+    case 'insightCount': case 'visitedCount':
+      parts.push(`<input type="number" value="${c.value || 1}" min="1" placeholder="count" onchange="updateCondProp(this,'value',+this.value)">`);
+      break;
+    case 'insightCategory':
+      parts.push(`<select onchange="updateCondProp(this,'category',this.value)">
+        ${CATEGORIES.map(cat => `<option ${c.category===cat?'selected':''}>${cat}</option>`).join('')}
+      </select>`);
+      parts.push(`<input type="number" value="${c.count || 1}" min="1" placeholder="count" style="width:50px" onchange="updateCondProp(this,'count',+this.value)">`);
+      break;
+    case 'patternExists':
+      parts.push(`<select onchange="updateCondProp(this,'category',this.value)">
+        ${CATEGORIES.map(cat => `<option ${c.category===cat?'selected':''}>${cat}</option>`).join('')}
+      </select>`);
+      break;
+    case 'districtVisited': case 'districtNotVisited':
+      parts.push(`<select onchange="updateCondProp(this,'district',this.value)">
+        ${DISTRICT_IDS.map(id => `<option value="${id}" ${c.district===id?'selected':''}>${DISTRICTS[id].label}</option>`).join('')}
+      </select>`);
+      break;
+    case 'policyActive':
+      parts.push(`<input value="${c.value || ''}" placeholder="policy_id" onchange="updateCondProp(this,'value',this.value)">`);
+      break;
+    case 'AND': case 'OR':
+      parts.push(`<span style="font-size:10px;color:var(--muted);font-style:italic;">(nested conditions in JSON)</span>`);
+      break;
+    case 'NOT':
+      parts.push(`<span style="font-size:10px;color:var(--muted);font-style:italic;">(nested condition in JSON)</span>`);
+      break;
+  }
+  return parts.join('');
+}
+
+// ── Effect Builder ─────────────────────────────────────────────
+
+function renderEffects(evt) {
+  return (evt.effects || []).map((eff, i) => {
+    const fields = getEffectFields(eff);
+    return `<div class="builder-item">
+      <select onchange="updateEffect('${evt.id}',${i},'type',this.value)">
+        ${EFFECT_TYPES.map(t => `<option ${eff.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+      ${fields}
+      <button class="remove-btn" onclick="removeEffect('${evt.id}',${i})">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+function getEffectFields(eff) {
+  const parts = [];
+  switch (eff.type) {
+    case 'trust':
+      parts.push(`<select onchange="updateEffProp(this,'district',this.value)">
+        ${DISTRICT_IDS.map(id => `<option value="${id}" ${eff.district===id?'selected':''}>${DISTRICTS[id].label}</option>`).join('')}
+      </select>`);
+      parts.push(`<input type="number" step="1" value="${eff.delta || 0}" placeholder="delta" style="width:60px" onchange="updateEffProp(this,'delta',+this.value)">`);
+      break;
+    case 'trustScope':
+      parts.push(`<select onchange="updateEffProp(this,'scope',this.value)">
+        ${SCOPES.map(s => `<option ${eff.scope===s?'selected':''}>${s}</option>`).join('')}
+      </select>`);
+      parts.push(`<input type="number" step="1" value="${eff.delta || 0}" placeholder="delta" style="width:60px" onchange="updateEffProp(this,'delta',+this.value)">`);
+      if (eff.scope === 'all_below' || eff.scope === 'all_above') {
+        parts.push(`<input type="number" value="${eff.threshold || 40}" placeholder="threshold" style="width:60px" onchange="updateEffProp(this,'threshold',+this.value)">`);
+      }
+      if (eff.scope === 'bloc') {
+        parts.push(`<select onchange="updateEffProp(this,'bloc',this.value)">
+          ${['working','finance','realestate','progressives','labor'].map(b => `<option ${eff.bloc===b?'selected':''}>${b}</option>`).join('')}
+        </select>`);
+      }
+      break;
+    case 'reserve':
+      parts.push(`<input type="number" step="0.1" value="${eff.delta || 0}" placeholder="$B delta" onchange="updateEffProp(this,'delta',+this.value)">`);
+      break;
+    case 'flag': case 'removeFlag':
+      parts.push(`<input value="${eff.value || ''}" placeholder="flag_name" onchange="updateEffProp(this,'value',this.value)">`);
+      break;
+    case 'feed_item':
+      parts.push(`<select onchange="updateEffProp(this,'feedType',this.value)">
+        ${['news','chatter','reaction','dm'].map(t => `<option ${eff.feedType===t?'selected':''}>${t}</option>`).join('')}
+      </select>`);
+      parts.push(`<input value="${esc(eff.text || '')}" placeholder="Feed text" style="flex:1;min-width:200px;" onchange="updateEffProp(this,'text',this.value)">`);
+      break;
+    case 'knowledge':
+      parts.push(`<select onchange="updateEffProp(this,'district',this.value)">
+        ${DISTRICT_IDS.map(id => `<option value="${id}" ${eff.district===id?'selected':''}>${DISTRICTS[id].label}</option>`).join('')}
+      </select>`);
+      parts.push(`<input type="number" step="1" value="${eff.delta || 0}" placeholder="delta" style="width:60px" onchange="updateEffProp(this,'delta',+this.value)">`);
+      break;
+    case 'queueEvent':
+      parts.push(`<input value="${eff.eventId || ''}" placeholder="event_id" onchange="updateEffProp(this,'eventId',this.value)">`);
+      parts.push(`<input type="number" value="${eff.delay || 1}" min="1" placeholder="weeks" style="width:60px" onchange="updateEffProp(this,'delay',+this.value)">`);
+      break;
+    case 'addModifier':
+      parts.push(`<select onchange="updateEffProp(this,'district',this.value)">
+        ${DISTRICT_IDS.map(id => `<option value="${id}" ${eff.district===id?'selected':''}>${DISTRICTS[id].label}</option>`).join('')}
+      </select>`);
+      parts.push(`<span style="font-size:10px;color:var(--muted);">modifier in JSON</span>`);
+      break;
+  }
+  return parts.join('');
+}
+
+// ── Chain Builder ──────────────────────────────────────────────
+
+function renderChains(evt) {
+  return (evt.chains || []).map((ch, i) => {
+    return `<div class="builder-item">
+      <input value="${esc(ch.eventId || '')}" placeholder="event_id" onchange="updateChain('${evt.id}',${i},'eventId',this.value)">
+      <span style="font-size:10px;color:var(--muted);">after</span>
+      <input type="number" value="${ch.delay || 1}" min="1" placeholder="weeks" style="width:60px"
+        onchange="updateChain('${evt.id}',${i},'delay',+this.value)">
+      <span style="font-size:10px;color:var(--muted);">weeks</span>
+      <button class="remove-btn" onclick="removeChain('${evt.id}',${i})">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Update Handlers ────────────────────────────────────────────
+
+window.updateField = function(evtId, field, value) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt) return;
+  if (field === 'id') {
+    // Update selectedEventId if renaming
+    evt.id = value;
+    selectedEventId = value;
+  } else {
+    evt[field] = value;
+  }
+  renderTimeline();
+  updatePreview();
+};
+
+window.updateCondition = function(evtId, idx, field, value) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt || !evt.conditions[idx]) return;
+  if (field === 'type') {
+    // Reset condition to just the type
+    evt.conditions[idx] = { type: value };
+  } else {
+    evt.conditions[idx][field] = value;
+  }
+  renderEditor();
+  renderTimeline();
+};
+
+window.updateCondProp = function(input, prop, value) {
+  // Walk up to find the builder-item, get its index
+  const item = input.closest('.builder-item');
+  const list = item.parentElement;
+  const idx = Array.from(list.children).indexOf(item);
+  const evt = events.find(e => e.id === selectedEventId);
+  if (evt && evt.conditions[idx]) {
+    evt.conditions[idx][prop] = value;
+    updatePreview();
+  }
+};
+
+window.addCondition = function(evtId) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt) return;
+  if (!evt.conditions) evt.conditions = [];
+  evt.conditions.push({ type: 'week', value: 1 });
+  renderEditor();
+};
+
+window.removeCondition = function(evtId, idx) {
+  const evt = events.find(e => e.id === evtId);
+  if (evt) evt.conditions.splice(idx, 1);
+  renderEditor();
+  renderTimeline();
+};
+
+window.updateEffect = function(evtId, idx, field, value) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt || !evt.effects[idx]) return;
+  if (field === 'type') {
+    evt.effects[idx] = { type: value };
+  } else {
+    evt.effects[idx][field] = value;
+  }
+  renderEditor();
+};
+
+window.updateEffProp = function(input, prop, value) {
+  const item = input.closest('.builder-item');
+  const list = item.parentElement;
+  const idx = Array.from(list.children).indexOf(item);
+  const evt = events.find(e => e.id === selectedEventId);
+  if (evt && evt.effects[idx]) {
+    evt.effects[idx][prop] = value;
+    updatePreview();
+  }
+};
+
+window.addEffect = function(evtId) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt) return;
+  if (!evt.effects) evt.effects = [];
+  evt.effects.push({ type: 'feed_item', text: '', feedType: 'news' });
+  renderEditor();
+};
+
+window.removeEffect = function(evtId, idx) {
+  const evt = events.find(e => e.id === evtId);
+  if (evt) evt.effects.splice(idx, 1);
+  renderEditor();
+};
+
+window.updateChain = function(evtId, idx, field, value) {
+  const evt = events.find(e => e.id === evtId);
+  if (evt && evt.chains && evt.chains[idx]) {
+    evt.chains[idx][field] = value;
+    updatePreview();
+  }
+};
+
+window.addChain = function(evtId) {
+  const evt = events.find(e => e.id === evtId);
+  if (!evt) return;
+  if (!evt.chains) evt.chains = [];
+  evt.chains.push({ eventId: '', delay: 1 });
+  renderEditor();
+};
+
+window.removeChain = function(evtId, idx) {
+  const evt = events.find(e => e.id === evtId);
+  if (evt && evt.chains) evt.chains.splice(idx, 1);
+  renderEditor();
+};
+
+window.deleteEvent = function(evtId) {
+  events = events.filter(e => e.id !== evtId);
+  selectedEventId = null;
+  renderTimeline();
+  renderEditor();
+};
+
+function updatePreview() {
+  const pre = document.getElementById('previewJSON');
+  const evt = events.find(e => e.id === selectedEventId);
+  if (pre && evt) {
+    pre.textContent = JSON.stringify(evt, null, 2);
+  }
+}
+
+// ── Trust Dashboard ────────────────────────────────────────────
+
+let simState = null;
+
+function initSimState() {
+  const districts = {};
+  for (const [id, d] of Object.entries(DISTRICTS)) {
+    districts[id] = {
+      trust: d.baseResilience,
+      disorder: d.baseDisorder || 15,
+      resilienceModifiers: [],
+      disorderModifiers: [],
+      lastVisited: null,
+    };
+  }
+  return {
+    week: 1,
+    reserve: 5.0,
+    flags: [],
+    insights: [],
+    patterns: [],
+    policies: [],
+    districts,
+    eventsFired: new Set(),
+  };
+}
+
+window.simReset = function() {
+  simState = initSimState();
+  document.getElementById('simSlider').value = 1;
+  renderTrustDashboard();
+};
+
+window.simStep = function(dir) {
+  if (!simState) simState = initSimState();
+  const target = Math.max(1, Math.min(48, simState.week + dir));
+  if (dir > 0) {
+    simAdvanceTo(target);
+  } else {
+    // Reset and replay to target
+    simState = initSimState();
+    simAdvanceTo(target);
+  }
+  document.getElementById('simSlider').value = simState.week;
+  renderTrustDashboard();
+};
+
+window.simRun = function() {
+  if (!simState) simState = initSimState();
+  const target = parseInt(document.getElementById('simSlider').value);
+  simState = initSimState();
+  simAdvanceTo(target);
+  renderTrustDashboard();
+};
+
+document.getElementById('simSlider').addEventListener('input', function() {
+  document.getElementById('simWeek').textContent = this.value;
+});
+document.getElementById('simSlider').addEventListener('change', function() {
+  simState = initSimState();
+  simAdvanceTo(parseInt(this.value));
+  renderTrustDashboard();
+});
+
+function simAdvanceTo(targetWeek) {
+  while (simState.week < targetWeek) {
+    // Apply weekly erosion (no visits in simulation)
+    for (const [id, d] of Object.entries(simState.districts)) {
+      // Resilience erosion
+      d.resilienceModifiers.push({
+        id: `sim_erosion_${simState.week}_${id}`,
+        source: 'erosion', label: `Unvisited week ${simState.week}`,
+        value: -1, decay: 0, week: simState.week, expiresWeek: simState.week + 12,
+      });
+      // Disorder from neglect
+      d.disorderModifiers.push({
+        id: `sim_neglect_${simState.week}_${id}`,
+        source: 'neglect', label: `No contact week ${simState.week}`,
+        value: 0.5, decay: -0.05, week: simState.week, expiresWeek: simState.week + 16,
+      });
+    }
+
+    // Operating deficit
+    simState.reserve = +(simState.reserve - 0.375).toFixed(2);
+
+    // Check scenario events
+    for (const evt of events) {
+      if (simState.eventsFired.has(evt.id) && !evt.repeatable) continue;
+      if (simCheckConditions(evt.conditions, simState)) {
+        simState.eventsFired.add(evt.id);
+        simApplyEffects(evt.effects, simState);
+      }
+    }
+
+    // Tick modifiers (decay + expire) for both stacks
+    for (const [id, d] of Object.entries(simState.districts)) {
+      const tickMods = (mods) => mods.filter(m => {
+        if (m.expiresWeek != null && simState.week >= m.expiresWeek) return false;
+        if (m.decay) { m.value += m.decay; if (Math.abs(m.value) < 0.05) return false; }
+        return true;
+      });
+      d.resilienceModifiers = tickMods(d.resilienceModifiers);
+      d.disorderModifiers = tickMods(d.disorderModifiers);
+
+      // Recompute both metres
+      const baseR = DISTRICTS[id]?.baseResilience || 50;
+      const baseD = DISTRICTS[id]?.baseDisorder || 15;
+      d.trust = Math.max(0, Math.min(100, Math.round(baseR + d.resilienceModifiers.reduce((s, m) => s + m.value, 0))));
+      d.disorder = Math.max(0, Math.min(100, Math.round(baseD + d.disorderModifiers.reduce((s, m) => s + m.value, 0))));
+    }
+
+    simState.week++;
+  }
+}
+
+function simCheckConditions(conditions, state) {
+  if (!conditions || conditions.length === 0) return true;
+  return conditions.every(c => {
+    switch (c.type) {
+      case 'week': return state.week === c.value;
+      case 'weekRange': return state.week >= (c.min || 0) && state.week <= (c.max || 48);
+      case 'weekAfter': return state.week > c.value;
+      case 'weekBefore': return state.week < c.value;
+      case 'flag': return state.flags.includes(c.value);
+      case 'notFlag': return !state.flags.includes(c.value);
+      case 'reserveBelow': return state.reserve < c.value;
+      case 'reserveAbove': return state.reserve >= c.value;
+      case 'trustBelow': {
+        if (c.scope === 'any') return Object.values(state.districts).some(d => d.trust < c.value);
+        if (c.scope === 'all') return Object.values(state.districts).every(d => d.trust < c.value);
+        if (c.district) return (state.districts[c.district]?.trust || 0) < c.value;
+        // citywide
+        let tw = 0, tp = 0;
+        for (const [id, d] of Object.entries(state.districts)) {
+          const pop = DISTRICTS[id]?.pop || 1;
+          tw += d.trust * pop; tp += pop;
+        }
+        return (tp > 0 ? tw / tp : 40) < c.value;
+      }
+      default: return true;
+    }
+  });
+}
+
+function simApplyEffects(effects, state) {
+  if (!effects) return;
+  for (const eff of effects) {
+    switch (eff.type) {
+      case 'trust':
+        if (state.districts[eff.district]) {
+          state.districts[eff.district].modifiers.push({
+            id: `sim_${Date.now()}_${Math.random()}`,
+            source: 'scenario',
+            label: 'Scenario event',
+            value: eff.delta || 0,
+            decay: 0,
+            week: state.week,
+          });
+        }
+        break;
+      case 'reserve':
+        state.reserve = +(state.reserve + (eff.delta || 0)).toFixed(2);
+        break;
+      case 'flag':
+        if (!state.flags.includes(eff.value)) state.flags.push(eff.value);
+        break;
+      case 'removeFlag':
+        state.flags = state.flags.filter(f => f !== eff.value);
+        break;
+    }
+  }
+}
+
+function renderTrustDashboard() {
+  if (!simState) simState = initSimState();
+
+  document.getElementById('simWeek').textContent = simState.week;
+
+  // Compute citywide aggregates
+  let tw = 0, td = 0, tp = 0;
+  for (const [id, d] of Object.entries(simState.districts)) {
+    const pop = DISTRICTS[id]?.pop || 1;
+    tw += d.trust * pop; td += (d.disorder || 0) * pop; tp += pop;
+  }
+  const citywideR = tp > 0 ? Math.round(tw / tp) : 40;
+  const citywideD = tp > 0 ? Math.round(td / tp) : 15;
+
+  document.getElementById('simCitywide').textContent = citywideR + '%';
+  document.getElementById('simCitywide').style.color = citywideR >= 50 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('simReserve').textContent = '$' + simState.reserve.toFixed(1) + 'B';
+  document.getElementById('simReserve').style.color = simState.reserve >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('simEventsFired').textContent = simState.eventsFired.size;
+  const disorderEl = document.getElementById('simDisorder');
+  if (disorderEl) {
+    disorderEl.textContent = citywideD + '%';
+    disorderEl.style.color = citywideD >= 60 ? 'var(--red)' : citywideD >= 35 ? 'var(--amber)' : 'var(--green)';
+  }
+
+  const grid = document.getElementById('trustGrid');
+  grid.innerHTML = Object.entries(simState.districts)
+    .sort(([, a], [, b]) => a.trust - b.trust)
+    .map(([id, d]) => {
+      const info = DISTRICTS[id];
+      const baseR = info?.baseResilience || 50;
+      const baseD = info?.baseDisorder || 15;
+      const rColor = d.trust >= 60 ? 'var(--green)' : d.trust >= 40 ? 'var(--dark)' : 'var(--red)';
+      const dColor = (d.disorder || 0) >= 60 ? 'var(--red)' : (d.disorder || 0) >= 35 ? 'var(--amber)' : 'var(--green)';
+      const disorderPct = Math.min(100, d.disorder || 0);
+
+      // Resilience modifiers
+      const rMods = (d.resilienceModifiers || []).slice(-6).map(m => `
+        <div class="mod-row">
+          <span class="mod-source">${esc(m.source)}</span>
+          <span class="mod-label">${esc(m.label)}</span>
+          <span class="mod-value ${m.value >= 0 ? 'positive' : 'negative'}">${m.value >= 0 ? '+' : ''}${m.value.toFixed(1)}</span>
+        </div>`).join('');
+
+      // Disorder modifiers
+      const dMods = (d.disorderModifiers || []).slice(-4).map(m => `
+        <div class="mod-row">
+          <span class="mod-source">${esc(m.source)}</span>
+          <span class="mod-label">${esc(m.label)}</span>
+          <span class="mod-value ${m.value >= 0 ? 'negative' : 'positive'}">${m.value >= 0 ? '+' : ''}${m.value.toFixed(1)}</span>
+        </div>`).join('');
+
+      return `<div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">${info?.label || id}</span>
+          <span class="trust-card-net" style="color:${rColor}">${d.trust}</span>
+        </div>
+        <div class="trust-card-base">Base R: ${baseR} | ${info?.boro} | ${info?.bloc}</div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.06em;color:var(--muted);margin:6px 0 3px;">RESILIENCE (${(d.resilienceModifiers||[]).length} mods)</div>
+        ${rMods || '<div style="font-size:10px;color:var(--muted);padding:2px;">No modifiers</div>'}
+        <div class="disorder-bar"><div class="disorder-fill" style="width:${disorderPct}%;background:${dColor};"></div></div>
+        <div class="disorder-label">
+          <span style="color:${dColor};">DISORDER ${d.disorder || 0}</span>
+          <span style="color:var(--muted);">base ${baseD} | ${(d.disorderModifiers||[]).length} mods</span>
+        </div>
+        ${dMods}
+      </div>`;
+    }).join('');
+}
+
+// ── Validation ─────────────────────────────────────────────────
+
+window.runValidation = function() {
+  const container = document.getElementById('validationResults');
+  let html = '';
+
+  // 1. Schema validation for each event
+  const schemaResult = validator.validateAll(events, 'scenario');
+  html += `<div class="val-section">
+    <div class="val-section-title">
+      Schema Validation
+      <span class="val-badge ${schemaResult.valid ? 'pass' : 'fail'}">${schemaResult.valid ? 'PASS' : `${schemaResult.results.length} ERRORS`}</span>
+    </div>`;
+  if (schemaResult.valid) {
+    html += `<div class="val-pass">${events.length} events validated successfully.</div>`;
+  } else {
+    for (const r of schemaResult.results) {
+      html += `<div class="val-error"><strong>${r.id}</strong>: ${r.errors.join('; ')}</div>`;
+    }
+  }
+  html += '</div>';
+
+  // 2. Reference validation
+  const refResult = validator.validateReferences(events, DISTRICT_IDS, []);
+  html += `<div class="val-section">
+    <div class="val-section-title">
+      Reference Validation
+      <span class="val-badge ${refResult.valid ? 'pass' : 'fail'}">${refResult.valid ? 'PASS' : `${refResult.errors.length} ERRORS`}</span>
+    </div>`;
+  if (refResult.valid) {
+    html += `<div class="val-pass">All district and event references are valid.</div>`;
+  } else {
+    for (const err of refResult.errors) {
+      html += `<div class="val-error">${err}</div>`;
+    }
+  }
+  html += '</div>';
+
+  // 3. Coverage analysis
+  const coveredWeeks = new Set();
+  for (const evt of events) {
+    for (const w of getEventWeeks(evt)) coveredWeeks.add(w);
+  }
+  const uncoveredWeeks = [];
+  for (let w = 1; w <= 48; w++) {
+    if (!coveredWeeks.has(w)) uncoveredWeeks.push(w);
+  }
+  const coverage = Math.round((coveredWeeks.size / 48) * 100);
+
+  html += `<div class="val-section">
+    <div class="val-section-title">
+      Timeline Coverage
+      <span class="val-badge ${coverage >= 50 ? 'pass' : 'warn'}">${coverage}%</span>
+    </div>
+    <div class="${coverage >= 50 ? 'val-pass' : 'val-error'}">
+      ${coveredWeeks.size}/48 weeks have events.
+      ${uncoveredWeeks.length > 0 ? `Gaps: weeks ${uncoveredWeeks.join(', ')}` : 'Full coverage.'}
+    </div>
+  </div>`;
+
+  // 4. Balance analysis
+  let totalReserveDelta = 0;
+  let totalTrustEffects = 0;
+  for (const evt of events) {
+    for (const eff of (evt.effects || [])) {
+      if (eff.type === 'reserve') totalReserveDelta += (eff.delta || 0);
+      if (eff.type === 'trust') totalTrustEffects += (eff.delta || 0);
+    }
+  }
+
+  html += `<div class="val-section">
+    <div class="val-section-title">Balance Summary</div>
+    <div class="val-pass">
+      Total reserve impact from scenarios: ${totalReserveDelta >= 0 ? '+' : ''}$${totalReserveDelta.toFixed(1)}B<br>
+      Total direct trust effects: ${totalTrustEffects >= 0 ? '+' : ''}${totalTrustEffects}<br>
+      Events with pools: ${events.filter(e => e.pool).length}<br>
+      Events with chains: ${events.filter(e => e.chains?.length).length}<br>
+      Phases: ${PHASES.map(p => `${p}: ${events.filter(e => (e.phase || guessPhase(e)) === p).length}`).join(', ')}
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+};
+
+// ── Export/Import ──────────────────────────────────────────────
+
+window.exportJSON = function() {
+  document.getElementById('exportArea').value = JSON.stringify(events, null, 2);
+};
+
+window.exportJS = function() {
+  const json = JSON.stringify(events, null, 2);
+  const js = `// data/scenarios.js — Generated by Mandate Scenario Author
+// ${events.length} events | ${new Date().toISOString().split('T')[0]}
+
+export const SCENARIO_EVENTS = ${json};
+`;
+  document.getElementById('exportArea').value = js;
+};
+
+window.copyExport = function() {
+  const area = document.getElementById('exportArea');
+  area.select();
+  document.execCommand('copy');
+  // Brief flash
+  area.style.borderColor = 'var(--green)';
+  setTimeout(() => area.style.borderColor = '', 500);
+};
+
+window.importJSON = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        events = data;
+      } else if (data.SCENARIO_EVENTS) {
+        events = data.SCENARIO_EVENTS;
+      }
+      selectedEventId = null;
+      renderTimeline();
+      renderEditor();
+    } catch (err) {
+      alert('Failed to parse JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+};
+
+// ── Bento Box ─────────────────────────────────────────────────
+
+let bentoTiles = [];
+let bentoSynergies = [];
+let bentoConflicts = [];
+let selectedTileId = null;
+let bentoGrid = Array.from({length: 5}, () => Array(5).fill(null)); // [row][col] = { tileId, placementId } or null
+let bentoPlacements = new Map();
+let bentoPlacementId = 0;
+
+// Load tile data
+try {
+  const tileMod = await import('../data/tiles.js');
+  if (tileMod.TILES) bentoTiles = tileMod.TILES;
+  if (tileMod.SYNERGIES) bentoSynergies = tileMod.SYNERGIES;
+  if (tileMod.CONFLICTS) bentoConflicts = tileMod.CONFLICTS;
+} catch (e) {
+  console.warn('Could not load tiles:', e.message);
+}
+
+function renderBento() {
+  renderBentoGrid();
+  renderBentoTiles();
+  renderBentoEval();
+}
+
+function renderBentoGrid() {
+  const grid = document.getElementById('bentoGrid');
+  let html = '';
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      const cell = bentoGrid[r][c];
+      if (cell) {
+        const tile = bentoTiles.find(t => t.id === cell.tileId);
+        const typeClass = tile ? `type-${tile.type}` : '';
+        // Only render the label in the top-left cell of a multi-cell tile
+        const isOrigin = cell.isOrigin;
+        html += `<div class="bento-cell occupied ${typeClass}" data-r="${r}" data-c="${c}" onclick="bentoRemoveAt(${r},${c})">
+          ${isOrigin ? `<span style="font-size:7px;font-weight:600;text-align:center;line-height:1.2;">${esc(tile?.label || '')}</span>` : ''}
+        </div>`;
+      } else {
+        html += `<div class="bento-cell" data-r="${r}" data-c="${c}" onclick="bentoPlaceAt(${r},${c})"></div>`;
+      }
+    }
+  }
+  grid.innerHTML = html;
+}
+
+function renderBentoTiles() {
+  const list = document.getElementById('bentoTileList');
+  list.innerHTML = bentoTiles.map(t => {
+    const isMutation = !!t.mutatesFrom;
+    const selected = t.id === selectedTileId;
+    return `<div class="bento-tile-card ${selected ? 'selected' : ''} ${isMutation ? 'mutated' : ''}" onclick="selectTile('${t.id}')">
+      <span class="tile-type ${t.type}">${t.type}</span>
+      <span class="tile-size">${t.size[0]}x${t.size[1]}</span>
+      <div class="tile-name">${esc(t.label)}</div>
+      <div class="tile-meta">
+        $${t.cost}B
+        ${t.resilience ? ` | R +${t.resilience}` : ''}
+        ${t.disorder ? ` | D ${t.disorder > 0 ? '+' : ''}${t.disorder}` : ''}
+        ${isMutation ? ' | MUTATED' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderBentoEval() {
+  const el = document.getElementById('bentoEval');
+  const placements = [...bentoPlacements.values()];
+  let totalCost = 0, totalR = 0, totalD = 0, cellsUsed = 0;
+  const activeSyn = [], activeCon = [];
+
+  for (const p of placements) {
+    totalCost += p.tile.cost || 0;
+    totalR += p.tile.resilience || 0;
+    totalD += p.tile.disorder || 0;
+  }
+
+  // Count cells
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (bentoGrid[r][c]) cellsUsed++;
+
+  // Check adjacency synergies/conflicts
+  for (const p of placements) {
+    const adj = getAdjacentTileIds(p);
+    for (const adjId of adj) {
+      for (const syn of bentoSynergies) {
+        const allIds = [...syn.tiles, ...(syn.alsoMatches || [])];
+        if (allIds.includes(p.tile.id) && allIds.includes(adjId) && p.tile.id !== adjId) {
+          if (!activeSyn.some(s => s.id === syn.id)) {
+            activeSyn.push(syn);
+            totalR += syn.resilienceBonus || 0;
+            totalD -= syn.disorderReduction || 0;
+          }
+        }
+      }
+      for (const con of bentoConflicts) {
+        if ((con.tiles.includes(p.tile.id) && con.tiles.includes(adjId))) {
+          if (!activeCon.some(c => c.id === con.id)) {
+            activeCon.push(con);
+            totalR -= con.resiliencePenalty || 0;
+            totalD += con.disorderCost || 0;
+          }
+        }
+      }
+    }
+  }
+
+  el.innerHTML = `
+    <div class="bento-eval-row"><span class="bento-eval-label">Cells used</span><span class="bento-eval-val">${cellsUsed}/25</span></div>
+    <div class="bento-eval-row"><span class="bento-eval-label">Total cost</span><span class="bento-eval-val">$${totalCost.toFixed(2)}B</span></div>
+    <div class="bento-eval-row"><span class="bento-eval-label">Resilience</span><span class="bento-eval-val" style="color:var(--green);">+${Math.max(0,totalR)}</span></div>
+    <div class="bento-eval-row"><span class="bento-eval-label">Disorder</span><span class="bento-eval-val" style="color:${totalD > 0 ? 'var(--red)' : 'var(--green)'};">${totalD > 0 ? '+' : ''}${totalD}</span></div>
+    <div class="bento-eval-row"><span class="bento-eval-label">Synergies</span><span class="bento-eval-val" style="color:var(--green);">${activeSyn.length}</span></div>
+    <div class="bento-eval-row"><span class="bento-eval-label">Conflicts</span><span class="bento-eval-val" style="color:${activeCon.length ? 'var(--red)' : 'var(--green)'};">${activeCon.length}</span></div>
+  `;
+
+  const scEl = document.getElementById('bentoSynConflicts');
+  let scHtml = '';
+  for (const syn of activeSyn) {
+    scHtml += `<div style="padding:6px 10px;border-left:3px solid var(--green);background:rgba(52,211,153,0.06);margin-bottom:4px;font-size:11px;">
+      <strong>${esc(syn.label)}</strong>: ${esc(syn.desc)} <span style="color:var(--green);font-weight:700;">R+${syn.resilienceBonus}</span>
+    </div>`;
+  }
+  for (const con of activeCon) {
+    scHtml += `<div style="padding:6px 10px;border-left:3px solid var(--red);background:rgba(255,45,45,0.06);margin-bottom:4px;font-size:11px;">
+      <strong>${esc(con.label)}</strong>: ${esc(con.desc)} <span style="color:var(--red);font-weight:700;">D+${con.disorderCost}</span>
+    </div>`;
+  }
+  scEl.innerHTML = scHtml;
+}
+
+function getAdjacentTileIds(placement) {
+  const ids = new Set();
+  const [w, h] = placement.tile.size;
+  for (let r = placement.row; r < placement.row + h; r++) {
+    for (let c = placement.col; c < placement.col + w; c++) {
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const nr = r+dr, nc = c+dc;
+        if (nr<0||nr>=5||nc<0||nc>=5) continue;
+        const cell = bentoGrid[nr][nc];
+        if (cell && cell.placementId !== placement.id) {
+          const adj = bentoPlacements.get(cell.placementId);
+          if (adj) ids.add(adj.tile.id);
+        }
+      }
+    }
+  }
+  return [...ids];
+}
+
+window.selectTile = function(tileId) {
+  selectedTileId = selectedTileId === tileId ? null : tileId;
+  renderBentoTiles();
+};
+
+window.bentoPlaceAt = function(row, col) {
+  if (!selectedTileId) return;
+  const tile = bentoTiles.find(t => t.id === selectedTileId);
+  if (!tile) return;
+  const [w, h] = tile.size;
+  // Check bounds and emptiness
+  if (col + w > 5 || row + h > 5) return;
+  for (let r = row; r < row + h; r++) {
+    for (let c = col; c < col + w; c++) {
+      if (bentoGrid[r][c]) return;
+    }
+  }
+  // Place
+  const pid = `bp_${++bentoPlacementId}`;
+  for (let r = row; r < row + h; r++) {
+    for (let c = col; c < col + w; c++) {
+      bentoGrid[r][c] = { tileId: tile.id, placementId: pid, isOrigin: (r === row && c === col) };
+    }
+  }
+  bentoPlacements.set(pid, { tile, col, row, id: pid });
+  renderBento();
+};
+
+window.bentoRemoveAt = function(row, col) {
+  const cell = bentoGrid[row]?.[col];
+  if (!cell) return;
+  const p = bentoPlacements.get(cell.placementId);
+  if (!p) return;
+  const [w, h] = p.tile.size;
+  for (let r = p.row; r < p.row + h; r++) {
+    for (let c = p.col; c < p.col + w; c++) {
+      bentoGrid[r][c] = null;
+    }
+  }
+  bentoPlacements.delete(cell.placementId);
+  renderBento();
+};
+
+window.bentoClear = function() {
+  bentoGrid = Array.from({length: 5}, () => Array(5).fill(null));
+  bentoPlacements.clear();
+  renderBento();
+};
+
+// ── Utilities ──────────────────────────────────────────────────
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────
+renderTimeline();
+
+</script>
+</body>
+</html>

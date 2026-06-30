@@ -156,4 +156,217 @@ export const links = [
     }
     return edges;
   })(),
+
+  // ─── Character → District (lives_in) ──────────────────────
+  { source: "ch_delgado",    target: "d_south_bronx",   type: "lives_in" },
+  { source: "ch_washington",  target: "d_harlem",        type: "lives_in" },
+  { source: "ch_kowalski",   target: "d_midtown",       type: "lives_in" },
+  { source: "ch_vega",       target: "d_astoria",       type: "lives_in" },
+  { source: "ch_tanaka",     target: "d_jamaica",       type: "lives_in" },
+  { source: "ch_alrashid",   target: "d_jackson_hts",   type: "lives_in" },
+  { source: "ch_okonkwo",    target: "d_williamsburg",  type: "lives_in" },
+  { source: "ch_williams",   target: "d_bed_stuy",      type: "lives_in" },
+  { source: "ch_chen",       target: "d_flushing",      type: "lives_in" },
+  { source: "ch_ferraro",    target: "d_staten_island", type: "lives_in" },
+  { source: "ch_rizzo",      target: "d_park_slope",    type: "lives_in" },
+
+  // ─── Insight Template links ───────────────────────────────
+  // 3 link types per insight: knows_about, discovered_in, categorized_as
+  // Category mapping: HEALTH→c_health, HOUSING→c_housing, INFRA→c_infra,
+  //   SERVICES→c_services, SAFETY→c_safety, ASSET→c_safety (closest match)
+
+  // Maria Delgado — South Bronx
+  { source: "ch_delgado",    target: "it_delgado_1",    type: "knows_about" },
+  { source: "it_delgado_1",  target: "d_south_bronx",   type: "discovered_in" },
+  { source: "it_delgado_1",  target: "c_health",        type: "categorized_as" },
+
+  { source: "ch_delgado",    target: "it_delgado_2",    type: "knows_about" },
+  { source: "it_delgado_2",  target: "d_south_bronx",   type: "discovered_in" },
+  { source: "it_delgado_2",  target: "c_housing",       type: "categorized_as" },
+
+  { source: "ch_delgado",    target: "it_delgado_3",    type: "knows_about" },
+  { source: "it_delgado_3",  target: "d_south_bronx",   type: "discovered_in" },
+  { source: "it_delgado_3",  target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  // James Washington — Harlem
+  { source: "ch_washington",  target: "it_washington_1", type: "knows_about" },
+  { source: "it_washington_1", target: "d_harlem",       type: "discovered_in" },
+  { source: "it_washington_1", target: "c_infra",        type: "categorized_as" },
+
+  { source: "ch_washington",  target: "it_washington_2", type: "knows_about" },
+  { source: "it_washington_2", target: "d_harlem",       type: "discovered_in" },
+  { source: "it_washington_2", target: "c_safety",       type: "categorized_as" },  // ASSET → c_safety
+
+  // Diane Kowalski — Midtown
+  { source: "ch_kowalski",   target: "it_kowalski_1",   type: "knows_about" },
+  { source: "it_kowalski_1", target: "d_midtown",       type: "discovered_in" },
+  { source: "it_kowalski_1", target: "c_services",      type: "categorized_as" },
+
+  // Ramon Vega — Astoria
+  { source: "ch_vega",       target: "it_vega_1",       type: "knows_about" },
+  { source: "it_vega_1",     target: "d_astoria",       type: "discovered_in" },
+  { source: "it_vega_1",     target: "c_infra",         type: "categorized_as" },
+
+  { source: "ch_vega",       target: "it_vega_2",       type: "knows_about" },
+  { source: "it_vega_2",     target: "d_astoria",       type: "discovered_in" },
+  { source: "it_vega_2",     target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_vega",       target: "it_vega_3",       type: "knows_about" },
+  { source: "it_vega_3",     target: "d_astoria",       type: "discovered_in" },
+  { source: "it_vega_3",     target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  // Yuki Tanaka — Jamaica
+  { source: "ch_tanaka",     target: "it_tanaka_1",     type: "knows_about" },
+  { source: "it_tanaka_1",   target: "d_jamaica",       type: "discovered_in" },
+  { source: "it_tanaka_1",   target: "c_health",        type: "categorized_as" },
+
+  { source: "ch_tanaka",     target: "it_tanaka_2",     type: "knows_about" },
+  { source: "it_tanaka_2",   target: "d_jamaica",       type: "discovered_in" },
+  { source: "it_tanaka_2",   target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  // Fatima Al-Rashid — Jackson Heights
+  { source: "ch_alrashid",   target: "it_alrashid_1",   type: "knows_about" },
+  { source: "it_alrashid_1", target: "d_jackson_hts",   type: "discovered_in" },
+  { source: "it_alrashid_1", target: "c_services",      type: "categorized_as" },
+
+  { source: "ch_alrashid",   target: "it_alrashid_2",   type: "knows_about" },
+  { source: "it_alrashid_2", target: "d_jackson_hts",   type: "discovered_in" },
+  { source: "it_alrashid_2", target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_alrashid",   target: "it_alrashid_3",   type: "knows_about" },
+  { source: "it_alrashid_3", target: "d_jackson_hts",   type: "discovered_in" },
+  { source: "it_alrashid_3", target: "c_housing",       type: "categorized_as" },
+
+  // Sasha Okonkwo — Williamsburg
+  { source: "ch_okonkwo",    target: "it_okonkwo_1",    type: "knows_about" },
+  { source: "it_okonkwo_1",  target: "d_williamsburg",  type: "discovered_in" },
+  { source: "it_okonkwo_1",  target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_okonkwo",    target: "it_okonkwo_2",    type: "knows_about" },
+  { source: "it_okonkwo_2",  target: "d_williamsburg",  type: "discovered_in" },
+  { source: "it_okonkwo_2",  target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_okonkwo",    target: "it_okonkwo_3",    type: "knows_about" },
+  { source: "it_okonkwo_3",  target: "d_williamsburg",  type: "discovered_in" },
+  { source: "it_okonkwo_3",  target: "c_infra",         type: "categorized_as" },
+
+  // Pastor David Williams — Bed-Stuy
+  { source: "ch_williams",   target: "it_williams_1",   type: "knows_about" },
+  { source: "it_williams_1", target: "d_bed_stuy",      type: "discovered_in" },
+  { source: "it_williams_1", target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_williams",   target: "it_williams_2",   type: "knows_about" },
+  { source: "it_williams_2", target: "d_bed_stuy",      type: "discovered_in" },
+  { source: "it_williams_2", target: "c_health",        type: "categorized_as" },
+
+  { source: "ch_williams",   target: "it_williams_3",   type: "knows_about" },
+  { source: "it_williams_3", target: "d_bed_stuy",      type: "discovered_in" },
+  { source: "it_williams_3", target: "c_safety",        type: "categorized_as" },
+
+  // Wei Chen — Flushing
+  { source: "ch_chen",       target: "it_chen_1",       type: "knows_about" },
+  { source: "it_chen_1",     target: "d_flushing",      type: "discovered_in" },
+  { source: "it_chen_1",     target: "c_health",        type: "categorized_as" },
+
+  { source: "ch_chen",       target: "it_chen_2",       type: "knows_about" },
+  { source: "it_chen_2",     target: "d_flushing",      type: "discovered_in" },
+  { source: "it_chen_2",     target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  // Tommy Ferraro — Staten Island
+  { source: "ch_ferraro",    target: "it_ferraro_1",    type: "knows_about" },
+  { source: "it_ferraro_1",  target: "d_staten_island", type: "discovered_in" },
+  { source: "it_ferraro_1",  target: "c_infra",         type: "categorized_as" },
+
+  { source: "ch_ferraro",    target: "it_ferraro_2",    type: "knows_about" },
+  { source: "it_ferraro_2",  target: "d_staten_island", type: "discovered_in" },
+  { source: "it_ferraro_2",  target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  // Angela Rizzo — Park Slope
+  { source: "ch_rizzo",      target: "it_rizzo_1",      type: "knows_about" },
+  { source: "it_rizzo_1",    target: "d_park_slope",    type: "discovered_in" },
+  { source: "it_rizzo_1",    target: "c_safety",        type: "categorized_as" },
+
+  { source: "ch_rizzo",      target: "it_rizzo_2",      type: "knows_about" },
+  { source: "it_rizzo_2",    target: "d_park_slope",    type: "discovered_in" },
+  { source: "it_rizzo_2",    target: "c_safety",        type: "categorized_as" },  // ASSET → c_safety
+
+  { source: "ch_rizzo",      target: "it_rizzo_3",      type: "knows_about" },
+  { source: "it_rizzo_3",    target: "d_park_slope",    type: "discovered_in" },
+  { source: "it_rizzo_3",    target: "c_infra",         type: "categorized_as" },
+
+  // ── Phase 3: Tile → Infrastructure (implements) ─────────────
+  { source: "tl_plow_fleet",        target: "p_plows",    type: "implements" },
+  { source: "tl_targeted_plows",    target: "p_plows",    type: "implements" },
+  { source: "tl_road_salt",         target: "p_salt",     type: "implements" },
+  { source: "tl_generator_bank",    target: "p_grid",     type: "implements" },
+  { source: "tl_med_power_cache",   target: "p_grid",     type: "implements" },
+  { source: "tl_emergency_shelter", target: "p_shelter",  type: "implements" },
+  { source: "tl_community_shelter", target: "p_shelter",  type: "implements" },
+  { source: "tl_medical_cache",     target: "p_shelter",  type: "implements" },
+  { source: "tl_warning_system",    target: "p_warning",  type: "implements" },
+  { source: "tl_multilingual",      target: "p_warning",  type: "implements" },
+
+  // ── Phase 3: Infrastructure → Outcome (prevents) ────────────
+  { source: "p_plows",    target: "o_transit_shutdown", type: "prevents" },
+  { source: "p_salt",     target: "o_transit_shutdown", type: "prevents" },
+  { source: "p_grid",     target: "o_blackout",         type: "prevents" },
+  { source: "p_shelter",  target: "o_casualties",       type: "prevents" },
+  { source: "p_warning",  target: "o_casualties",       type: "prevents" },
+  { source: "p_outreach", target: "o_casualties",       type: "prevents" },
+
+  // ── Phase 4: District adjacency (for trust diffusion) ───────
+  { source: "d_riverdale",      target: "d_washington_hts", type: "adjacent_to" },
+  { source: "d_washington_hts", target: "d_riverdale",      type: "adjacent_to" },
+  { source: "d_south_bronx",    target: "d_washington_hts", type: "adjacent_to" },
+  { source: "d_washington_hts", target: "d_south_bronx",    type: "adjacent_to" },
+  { source: "d_south_bronx",    target: "d_harlem",         type: "adjacent_to" },
+  { source: "d_harlem",         target: "d_south_bronx",    type: "adjacent_to" },
+  { source: "d_washington_hts", target: "d_harlem",         type: "adjacent_to" },
+  { source: "d_harlem",         target: "d_washington_hts", type: "adjacent_to" },
+  { source: "d_harlem",         target: "d_upper_west",     type: "adjacent_to" },
+  { source: "d_upper_west",     target: "d_harlem",         type: "adjacent_to" },
+  { source: "d_harlem",         target: "d_upper_east",     type: "adjacent_to" },
+  { source: "d_upper_east",     target: "d_harlem",         type: "adjacent_to" },
+  { source: "d_upper_west",     target: "d_upper_east",     type: "adjacent_to" },
+  { source: "d_upper_east",     target: "d_upper_west",     type: "adjacent_to" },
+  { source: "d_upper_west",     target: "d_midtown",        type: "adjacent_to" },
+  { source: "d_midtown",        target: "d_upper_west",     type: "adjacent_to" },
+  { source: "d_upper_east",     target: "d_midtown",        type: "adjacent_to" },
+  { source: "d_midtown",        target: "d_upper_east",     type: "adjacent_to" },
+  { source: "d_midtown",        target: "d_les",            type: "adjacent_to" },
+  { source: "d_les",            target: "d_midtown",        type: "adjacent_to" },
+  { source: "d_les",            target: "d_fidi",           type: "adjacent_to" },
+  { source: "d_fidi",           target: "d_les",            type: "adjacent_to" },
+  { source: "d_upper_east",     target: "d_astoria",        type: "adjacent_to" },
+  { source: "d_astoria",        target: "d_upper_east",     type: "adjacent_to" },
+  { source: "d_astoria",        target: "d_jackson_hts",    type: "adjacent_to" },
+  { source: "d_jackson_hts",    target: "d_astoria",        type: "adjacent_to" },
+  { source: "d_jackson_hts",    target: "d_flushing",       type: "adjacent_to" },
+  { source: "d_flushing",       target: "d_jackson_hts",    type: "adjacent_to" },
+  { source: "d_jackson_hts",    target: "d_jamaica",        type: "adjacent_to" },
+  { source: "d_jamaica",        target: "d_jackson_hts",    type: "adjacent_to" },
+  { source: "d_flushing",       target: "d_jamaica",        type: "adjacent_to" },
+  { source: "d_jamaica",        target: "d_flushing",       type: "adjacent_to" },
+  { source: "d_astoria",        target: "d_williamsburg",   type: "adjacent_to" },
+  { source: "d_williamsburg",   target: "d_astoria",        type: "adjacent_to" },
+  { source: "d_les",            target: "d_williamsburg",   type: "adjacent_to" },
+  { source: "d_williamsburg",   target: "d_les",            type: "adjacent_to" },
+  { source: "d_fidi",           target: "d_williamsburg",   type: "adjacent_to" },
+  { source: "d_williamsburg",   target: "d_fidi",           type: "adjacent_to" },
+  { source: "d_williamsburg",   target: "d_bed_stuy",       type: "adjacent_to" },
+  { source: "d_bed_stuy",       target: "d_williamsburg",   type: "adjacent_to" },
+  { source: "d_bed_stuy",       target: "d_park_slope",     type: "adjacent_to" },
+  { source: "d_park_slope",     target: "d_bed_stuy",       type: "adjacent_to" },
+  { source: "d_bed_stuy",       target: "d_brownsville",    type: "adjacent_to" },
+  { source: "d_brownsville",    target: "d_bed_stuy",       type: "adjacent_to" },
+  { source: "d_jamaica",        target: "d_brownsville",    type: "adjacent_to" },
+  { source: "d_brownsville",    target: "d_jamaica",        type: "adjacent_to" },
+  { source: "d_park_slope",     target: "d_bay_ridge",      type: "adjacent_to" },
+  { source: "d_bay_ridge",      target: "d_park_slope",     type: "adjacent_to" },
+  { source: "d_fidi",           target: "d_bay_ridge",      type: "adjacent_to" },
+  { source: "d_bay_ridge",      target: "d_fidi",           type: "adjacent_to" },
+  { source: "d_fidi",           target: "d_staten_island",  type: "adjacent_to" },
+  { source: "d_staten_island",  target: "d_fidi",           type: "adjacent_to" },
+  { source: "d_bay_ridge",      target: "d_staten_island",  type: "adjacent_to" },
+  { source: "d_staten_island",  target: "d_bay_ridge",      type: "adjacent_to" },
 ];
