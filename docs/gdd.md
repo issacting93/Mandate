@@ -2,9 +2,24 @@
 
 *A civic resilience simulation about governing New York City through Human-Centered Design.*
 
-**Status:** Playable prototype (web) + native macOS port (Swift/SwiftUI, ~80% feature parity) · full 48-week loop, blizzard disaster arc, LLM-scored posts, 10 conversation scripts, cinematic endings
+**Status:** Playtest-verified Svelte 5 + Vite app · MapLibre 3D map with snow shader, fog, building frost · 16 components, 12 game systems, 117-node content graph (332 links) · dual-metre system (Resilience + Disorder) · Bento Box policy builder · 11 conversation scripts · playtest logger + in-game systems graph · full 48-week loop, blizzard disaster arc, LLM-scored posts, cinematic endings
 **Platforms:** Web (desktop-first, touch-aware) · macOS (SwiftUI, App Store target)
-**Doc version:** 0.6 — adds Swift port, roguelike direction, candidates, bento box policy builder
+**Doc version:** 0.8 — **Disco-inspired conversation system; DepartmentSystem as the game's spine; patterns absorb the Thought-Cabinet role; bento box and roguelike reshuffle routed through departments**
+
+---
+
+> ## What changed in 0.8 (read this first)
+>
+> Version 0.8 resolves the conversation system and, in doing so, completes a system the doc had only gestured at: **departments**. The change is structural, not cosmetic. Summary of the load-bearing decisions:
+>
+> 1. **Conversations are now Disco Elysium–inspired.** Your funded **departments are your "skills"** — they *interject* during conversations, surfacing follow-up threads (and the insights behind them) that a player without that lens would never see. See §5.5.
+> 2. **There is now a real DepartmentSystem (§5.5a).** Departments are funded from the same reserve that pays for policies and the operating deficit — so funding a lens to *hear better* competes with saving cash to *respond*. This is a new third draw on the scarce-resource economy.
+> 3. **Insight checks replace opaque "listening scoring."** Rare insights (community assets, named vulnerable residents) sit behind a check: `department funding + die vs. insight difficulty`. **Failure opens content** (you learn *why* the character is guarded) rather than blocking it. The one hard rule, in both LLM and fallback modes: **jumping to a solution mid-listening is always a soft failure.**
+> 4. **No separate Thought Cabinet. Patterns absorb its role.** A discovered **pattern** now (a) takes a few weeks to *crystallize* (cook-time), (b) once crystallized, reshapes *citywide* perception by making its lens interject harder everywhere, and (c) can be *abandoned* at a cost. Departments are the **active** lens; patterns are the **earned** lens. See §5.3b.
+> 5. **The bento box is now gated by departments (§5.7).** Insight no longer unlocks a parallel menu of policy cards. Instead, funded departments determine which efficient tiles you can draw, and crystallized patterns mutate them. One spine: departments → what you hear (conversations) AND what you can build (bento).
+> 6. **The roguelike reshuffle gains a second axis (§5.13):** which **department lens** a run rewards, alongside which fragility each (constant) character surfaces.
+>
+> **The spine in one line:** *Departments are the lens you fund → the lens shapes what you hear and what you can build → ground-truth understanding crystallizes into patterns that permanently sharpen the lens.*
 
 ---
 
@@ -19,7 +34,7 @@ This is a pedagogical simulation of Human-Centered Design (HCD) applied to emerg
 ### The pitch in one sentence
 > A civic resilience game where you prepare NYC for disaster by going to the ground, learning who's vulnerable and why, and building the community trust that saves lives when the crisis hits.
 
-**Future direction: roguelike replayability.** Each playthrough currently follows a single blizzard arc, but the design supports reshuffling the disaster type, political landscape, and available characters between runs. See SS5.12--5.13 for the candidates and roguelike structure that would make each term feel like a new city. Inspired by *Blue Prince* (Dogubomb) -- a roguelike where the mansion rearranges itself between runs, rewarding meta-knowledge over memorization.
+**Future direction: roguelike replayability.** Each playthrough currently follows a single blizzard arc, but the design supports reshuffling the disaster type, political landscape, available characters, and rewarded department lens between runs. See §§5.12–5.13. Inspired by *Blue Prince* (Dogubomb) — a roguelike where the mansion rearranges itself between runs, rewarding meta-knowledge over memorization.
 
 ---
 
@@ -27,453 +42,280 @@ This is a pedagogical simulation of Human-Centered Design (HCD) applied to emerg
 
 These are the non-negotiables. Every feature is judged against them.
 
-1. **Listening before deciding.** The verbs are *go*, *listen*, *learn*, *respond*. You cannot prepare a city from behind a desk. The fantasy is a leader who builds resilience by showing up, not a technocrat optimizing from above. Intervention follows understanding — never the reverse. This is HCD's *Empathize* phase made into gameplay.
+1. **Listening before deciding.** The verbs are *go*, *listen*, *learn*, *respond*. You cannot prepare a city from behind a desk. Intervention follows understanding — never the reverse. This is HCD's *Empathize* phase made into gameplay. **The conversation system enforces this literally: promising a fix before you've understood is a mechanical failure (§5.5).**
 
-2. **Knowledge is earned, not given.** You start each term not knowing who's vulnerable or why. Fragilities are revealed through conversations on the ground. A district you've never visited is a district you'll fail when the crisis hits. The map reflects what you know and don't know: vulnerability mapping as core interface.
+2. **Knowledge is earned, not given.** You start each term not knowing who's vulnerable or why. Fragilities are revealed through conversations on the ground. A district you've never visited is a district you'll fail when the crisis hits. **What you can even perceive is gated by which departments you've funded — knowledge is earned twice over: by showing up, and by having built the lens to hear.**
 
-3. **Spatial Trade-offs (The Blue Prince Influence).** Policy is not just a budget line; it's a spatial puzzle of priorities. Constructing an intervention requires dragging and dropping limited components into a constrained grid. Synergies reward careful planning, while conflicting tiles punish broad, generic approaches. Every policy enacted is a physical manifestation of triage—you can *see* what you compromised to get it done.
+3. **Spatial Trade-offs (The Blue Prince Influence).** Policy is a spatial puzzle of priorities, not a budget line. Constructing an intervention means dragging limited components into a constrained grid. **The tiles you can draw are gated by your departments and sharpened by your patterns** (§5.7) — so listening translates directly into spatial advantage.
 
-4. **Unrelenting Pressure (The Frostpunk Influence).** You are managing a city on the edge. The impending disaster is a ticking clock, and every week brings new emergencies, eroding trust, and decaying knowledge. Survival requires brutal moral trade-offs. You cannot save everyone. Every law you sign to stabilize one faction may incite panic or fury in another. The balance between Hope (Resilience) and Disorder (Discontent) is a constant knife's edge.
+4. **Unrelenting Pressure (The Frostpunk Influence).** The pressure never stops. The disaster is a ticking clock; every week brings new emergencies, eroding trust, and decaying knowledge. **Every dollar is contested three ways — fund a department to hear better, bank reserve to respond, or spend on a policy now.** The balance between Resilience (Hope) and Disorder (Discontent) is a constant knife's edge.
 
-5. **Authentically New York, earnest and specific.** The people you meet are recognizable NYC characters — treated as subject matter experts on their own survival. The city is stubborn, resourceful, and deeply specific. The tone is gritty, desperate, yet hopeful.
+5. **Authentically New York, earnest and specific.** The people you meet are recognizable NYC characters — subject matter experts on their own survival. **Characters stay specific and hand-authored even under the roguelike reshuffle; what varies is which fragility they surface, not who they are (§5.13).**
 
 ---
 
 ## 3. Player fantasy & tone
 
-The player is not a technocrat or a populist. They are a person with limited hours in the day trying to understand a city of eight million people, one conversation at a time, before the disaster hits. The emotional arc of a good run is *"I went to the right places, I listened, I learned who was vulnerable and why, and when the crisis came, nobody died because I knew where to deploy."* The emotional arc of a bad run is *"I never left City Hall — the storm hit a neighborhood I didn't know existed, and people were trapped because I sent resources to the wrong place."*
+The player is not a technocrat or a populist. They are a person with limited hours in the day trying to understand a city of eight million people, one conversation at a time, before the disaster hits. The emotional arc of a good run is *"I went to the right places, I listened, I learned who was vulnerable and why, and when the crisis came, nobody died because I knew where to deploy."* The bad run is *"I never left City Hall — the storm hit a neighborhood I didn't know existed, and people were trapped because I sent resources to the wrong place."*
 
 Tone: **earnest, gritty, and hopeful.** Not cynical, not comic. Characters are resourceful experts on their own survival — the bodega owner who knows which buildings lose power first, the retired nurse who tracks which seniors live alone, the block association president who already has a mutual-aid plan. The player's job is to defer to their lived experience and translate it into institutional response.
 
-Tone references: Frostpunk (moral weight, escalating pressure, the cost of not knowing), *Night in the Woods* (community conversations that reveal systemic problems), *80 Days* (travel-and-talk as core loop, time pressure on routes), and the urgent clarity of real emergency management briefings. The visual world borrows the MTA's design language — transit-map clarity, line bullets — as a native NYC vocabulary.
+**A note on the Disco influence and tone.** We borrow Disco Elysium's *conversation mechanics* — interjecting lenses, checks where failure opens content — but not its interiority. Disco's skill-voices dramatize one man's fracturing psyche. Mandate's department-voices dramatize an *institution's* selective attention: what a government chooses to fund is what it's able to notice. The voices are not unhinged inner monologue; they are the perspective of a Public Health analyst, a Housing caseworker, an Emergency Management planner — competent people whispering the thing you'd miss. (See §5.5 for the one place we deliberately keep Disco's "a lens can be wrong" idea, and where we don't.)
+
+Tone references: Frostpunk (moral weight, escalating pressure, the cost of not knowing), Disco Elysium (conversation-as-mechanic, perception gated by what you've invested in), *Night in the Woods* (community conversations that reveal systemic problems), *80 Days* (travel-and-talk as core loop, time pressure on routes). The visual world borrows the MTA's design language.
 
 ---
 
 ## 4. Core loop
 
+*(Unchanged in structure from 0.7 — Week 0 onboarding, the three-view shell, hex menu, label→schedule→execute. The new conversation mechanics slot into the existing engagement execution; the only loop-level addition is a department-funding decision, which lives in the Calendar/planning surface and is described in §5.5a, not a new view.)*
+
 ### 4.0 Week 0 — "Your First Day" (onboarding)
 
-The game teaches its own loop by letting the player fail the old way first. No tutorial popups, no "click here" — just a scripted first day that ends with the player understanding why listening matters.
+The game teaches its own loop by letting the player fail the old way first. No tutorial popups — a scripted first day that ends with the player understanding why listening matters.
 
-**Beat 1 — The Briefing.** You're sworn in. One screen — a newspaper front page, a camera flash, the oath. Then your Chief of Staff sits you at the desk with the mayoral briefing: citywide stats, budget numbers, abstract problem categories. It all looks manageable from up here. The map is visible behind the briefing but **entirely dim** — every district is gray, unknown. You know nothing specific about anywhere.
+**Beat 1 — The Briefing.** You're sworn in. Newspaper front page, camera flash, the oath. Your Chief of Staff sits you at the desk with the mayoral briefing: citywide stats, budget numbers, abstract problem categories. It all looks manageable from up here. The map behind the briefing is **entirely dim** — every district gray, unknown.
 
-**Beat 2 — The Desk.** Your staff puts a policy in front of you — something generic like a citywide housing initiative. Big budget line. The game lets you sign it. If you do, it resolves: mild trust gain everywhere, strong trust gain nowhere, significant money spent. The map barely changes. Your staff moves on: *"Ready for the next one?"* This is the trap — the game is showing you what governing-from-a-desk feels like, and it's not enough.
+**Beat 2 — The Desk.** Staff puts a generic citywide housing policy in front of you. Big budget line. The game lets you sign it: mild trust everywhere, strong trust nowhere, significant money spent. The map barely changes. *"Ready for the next one?"* This is the trap.
 
-**Beat 3 — The Interruption.** Before the next policy lands, your scheduler interrupts: *"Mayor — community board meeting tonight in East Harlem. They've been asking for months. Or we can skip it, there's plenty on the desk."* The game steers you toward going (the desk option grays out, or the scheduler is insistent). This is the first real moment: desk or ground.
+**Beat 3 — The Interruption.** Your scheduler interrupts: *"Mayor — community board meeting tonight in East Harlem. They've been asking for months. Or we can skip it, there's plenty on the desk."* The game steers you toward going. Desk or ground.
 
-**Beat 4 — The First Conversation.** You arrive in East Harlem. The district node lights up on the map — one bright dot against 18 dim ones. You meet someone: a tenant organizer, maybe. The conversation plays out — 3–4 exchanges. She tells you the heat's been out in her building for the third winter. The landlord won't fix it. Code enforcement hasn't shown up. She names the street. She's tired. You choose how to respond — and your choices affect how much she opens up. You earn your first **insight**: *"Heat failures in rent-stabilized buildings — East Harlem, high severity."*
+**Beat 4 — The First Conversation.** East Harlem lights up — one bright dot against 18 dim ones. You meet Maria, a tenant organizer. The conversation plays out. **One department lens (Public Health, pre-funded for the tutorial) interjects once** — a single highlighted follow-up that teaches the mechanic by example: *"[PUBLIC HEALTH] Third winter of cold exposure — ask who's elderly in that building."* You take it or type your own. You earn your first **insight**, and if you took the interjection, your first **check insight** (Mrs. Gutierrez, 4th floor, oxygen-dependent). She names the street. She's tired.
 
-**Beat 5 — The Contrast.** Back at City Hall. The game shows your notebook — one insight in it. Then it shows the generic housing policy you signed earlier, side by side. The policy cost $800M and moved trust +2 everywhere. It didn't touch this problem. The game doesn't lecture — it just lets you see the gap. Then, quietly: *"That's day one. You have 47 weeks left. Here's what you know about your city."* The map: one bright node. Eighteen dim ones.
+**Beat 5 — The Contrast.** Back at City Hall. Your notebook: one or two insights. Beside it, the generic housing policy you signed — $800M, +2 trust everywhere, touched none of this. The game doesn't lecture; it shows the gap. *"That's day one. 47 weeks left. Here's what you know about your city."* One bright node. Eighteen dim.
 
-**Beat 6 — Week 1 begins.** The three views unlock. The Calendar appears with 3 empty slots. The Social view opens with a feed already murmuring — vague complaints from districts you haven't visited, a few welcome messages, the city going about its business without you. The Map shows one bright node and 18 dim ones. No guardrails. *Where do you want to go?*
+**Beat 6 — Week 1 begins.** The three views unlock. Calendar shows 3 empty slots **and the department-funding panel (§5.5a), with one department funded and the rest dark** — the same "earn your perception" lesson the map teaches spatially. Social opens with a murmuring feed. *Where do you want to go?*
 
 **What Week 0 teaches without tutorials:**
-- The map starts dark — understanding is earned
-- Generic policies work but weakly — the desk is always an option, just never the best one
-- One conversation changes everything — a specific human need reframes abstract policy
-- The notebook matters — introduced with one entry, not fifty
-- Time is yours — after the scripted day, all three views open and the game begins
-- The Social feed is already talking — the city doesn't wait for you to start listening
+- The map starts dark — understanding is earned.
+- Generic policies work but weakly — the desk is always an option, never the best one.
+- One conversation changes everything — and a *lens* changed what you could hear in it.
+- The notebook matters — introduced with one entry, not fifty.
+- Departments start dark too — perception is something you fund.
+- The Social feed is already talking — the city doesn't wait for you.
 
----
-
-One **week** is the unit of play. Each week has **3–4 time slots**. A term is ~48 weeks.
-
-The game has three views — **Map**, **Calendar**, **Social** — always accessible via a tab bar. The hex menu on the Map is the primary interaction point: it drives labeling, which drives scheduling, which drives the week. Here is the complete user flow.
-
-### The hex menu (the game's central interaction)
-
-The hex menu uses the animated Phaser-style interaction from `index.html`:
-
-- **Click a district node** → a selection ring pulses on the node. Five hexagonal buttons **expand outward** from the node center with staggered delays and `back.out` easing, connected by colored lines. Each hex has its own color:
-  - **VISIT** (green) — tag for a Mayor Visit
-  - **LISTEN** (cyan) — tag for a Listening Session
-  - **MSG** (pink) — jump to Social view with a draft post pre-filled about this district
-  - **INFO** (gold) — open the district detail panel (trust, knowledge, concerns, infrastructure)
-  - **CLOSE** (gray) — dismiss the menu
-- **Hover a hex** → it scales up, fill inverts to the action color, label goes dark. The interaction is tactile and alive.
-- **Click VISIT or LISTEN** → the district gets **labeled**. The hex menu collapses back to center (`quad.in` easing). The district node now shows a persistent colored badge (a dashed ring with a V or L dot in the action's color). A toast confirms ("South Bronx → VISIT") and the node flashes the action color for 600ms. The label flows into the Calendar queue automatically.
-- **Click MSG** → the hex menu collapses, the view **transitions to Social** with a draft post pre-filled: the district name and its top concern (if known). This is the fastest path from "I see a problem on the map" to "I'm talking about it publicly."
-- **Click INFO** → the right panel slides in with district detail. The hex menu stays open — INFO doesn't dismiss it.
-- **Click a labeled district again** → the hex menu reopens. The previously selected action's hex is filled (active state). Click it again to **clear the label**, or click a different action to **relabel**.
-- **Click empty map / CLOSE** → hex menu collapses back to center, selection ring fades.
-
-Labels are **free and unlimited**. You can label every district on the map if you want. The constraint comes in the Calendar, where you only have 3–4 slots.
-
-### View transitions
-
-The three views share a persistent **status bar** at the top (trust, reserve, week clock) and a persistent **minimap strip** below it. The minimap shows the full district graph at small scale — labeled districts show their colored badges, crises pulse, knowledge brightness is visible. Tapping a district on the minimap jumps to the Map view with that district selected.
-
-**Map → Calendar:** Tap the `C` tab, or — when you've labeled at least one district — a floating **"Plan your week →"** prompt appears at the bottom of the Map. The transition slides the map upward into the minimap strip, and the Calendar slides in from below. Your labels are already there in the queue.
-
-**Map → Social:** Tap the `S` tab, or click POST in the hex menu. The POST path pre-fills a draft. The tab path opens the feed. Transition slides the map up into the minimap; Social slides in.
-
-**Calendar → Map:** Tap the `M` tab, or tap any district in the label queue — jumps to Map with that district selected and hex menu open. This lets you re-examine a district before committing a slot to it.
-
-**Calendar → "Go":** When you've filled at least one slot and hit **"Go"**, the view transitions to Map. The first scheduled engagement begins: the map zooms/pans to the target district, the conversation panel overlays the map. After each conversation ends, if there's another slot, the map pans to the next district. After all engagements complete, the player is back on the Map with fresh insights and badges cleared from completed engagements.
-
-**Calendar → "End Week":** Available after "Go" has been pressed (or if you choose to skip engagements). Shows a confirmation overlay: what will happen (knowledge decay, trust erosion, operating costs, unscheduled labels carry over). Confirm advances the clock.
-
-**Social → Map:** Tap the `M` tab, or tap a district name mentioned in a feed post or DM — jumps to Map with that district selected.
-
-### Map view (understand + label)
-
-The full-bleed map canvas. Nineteen district nodes on the transit-style graph, with pan and scroll-to-zoom.
-
-- **Knowledge brightness** is the default visual: nodes range from full opacity (recently visited) to ~14% opacity (never visited / stale). This is the primary signal — dim districts should worry you.
-- **Labeled districts** show colored hex badges next to the node (green V for Visit, cyan L for Listen). Multiple districts can be labeled simultaneously. The map becomes a planning surface — you can see your intentions laid out spatially.
-- **View mode tabs** at the bottom switch how nodes render: Trust (red/gray/green), Knowledge (dim/bright), Coalition (bloc colors), Needs (category chips on visited nodes).
-- **Left panel:** objective card, infrastructure checklist, map legend.
-- **Right panel:** district detail (appears on INFO or selection) — name, borough, bloc, trust (large number), knowledge bar, concern quote, infrastructure status.
-- **Events and crises** appear as pulsing nodes, red badges, or a news ticker at the top.
-
-### Calendar view (prioritize + commit)
-
-Two zones side by side:
-
-**Left — the label queue.** Every district you've tagged on the Map, shown as cards. Each card shows: district name, action type (colored hex icon), **assigned character** (name + role, chosen from the district's character pool), trust level, knowledge freshness, top concern (if known, or "Unknown — never visited"). Cards are ordered by when you labeled them but can be reordered by drag. Tapping a card's district name jumps to Map with that district selected (for re-examination).
-
-**Right — time slots.** 3–4 horizontal blocks. Drag cards from the queue into slots, or tap a card then tap a slot to assign. Filled slots show the district name and action icon. Empty slots show a dashed outline and "Open." Slots can be cleared by dragging the card back out.
-
-**Below the slots:**
-- **Borough coverage strip** — which boroughs you're hitting this week, which you're not. Visual at a glance.
-- **Commitments / events** — "Maria expects you back" (from DMs), upcoming crises, scheduled events.
-- **"Go" button** — plays out scheduled engagements. Transitions to Map for conversations.
-- **"End Week" button** — appears after Go, or if you choose to skip. Advances the clock.
-
-**Queue overflow** is the game's core tension made visible. 6 labels, 3 slots. The unscheduled cards sit below the fold, grayed slightly, with a count: *"3 unscheduled — will carry to next week."*
-
-### Social view (communicate + listen)
-
-Two panes:
-
-**Left — your posts.** A compose box at the top (claim, tone selector, optional policy attachment). Published posts below in reverse-chronological order. Each post shows its engagement metrics: likes, shares, replies, ratio indicator. Grounded posts glow with strong engagement. Hollow posts show low numbers or a visible ratio. Contradictory posts show callout replies pinned to the top.
-
-**Right — the feed.** A scrolling timeline of city chatter:
-- **District chatter** — vague for unvisited places ("People in Queens are frustrated"), specific for visited ones ("The L train broke down again in Bushwick today"). Reading the feed is how you pick up early signals about where to go next.
-- **Reactions to your posts** — engagement, quote-posts, criticism.
-- **Breaking news and events** — crises, funding announcements, weather.
-- **DMs** — notification badges on character threads. Tap to open an inline chat. Characters reference your previous conversations. You can reply (maintains trust) but can't learn new insights without visiting in person.
-
-**Social → Map bridges:** District names in feed posts and DMs are tappable — they jump to Map with that district selected, hex menu ready. This lets the feed drive your planning: you read about a problem in Bushwick, tap the name, label it for a visit, and it flows into your Calendar.
+*(Hex menu, view transitions, and the three view descriptions are unchanged from 0.7 and omitted here for length — see the 0.7 §4 text, which remains current. The only edit: the Calendar's planning surface now also hosts the department-funding panel described in §5.5a.)*
 
 ---
 
 ## 5. Systems & mechanics
 
 ### 5.1 Community resilience (the central resource)
-
-Each of the 19 districts has a **resilience** value (0–100). Resilience is not approval — it's the neighborhood's confidence that their needs are understood and that collective action works. High resilience means neighbors check on each other when the power goes out, the block association has a plan, and people trust the city enough to report emergencies in real time. Low resilience means isolation, distrust, and silence when it matters most.
-
-Resilience is built through a chain: **show up → listen → understand → act → communicate authentically**. Skip a step and the chain breaks. Act without understanding and resilience erodes. Understand but never act and resilience stagnates. The player is always managing this chain across many districts simultaneously, with not enough time. When the disaster hits, resilience is the difference between coordinated response and chaos.
-
-(In the codebase and state model, resilience is still stored as `trust` for simplicity. The UI displays it as "Community Resilience" or "Resilience.")
-
-The five constituency blocs still exist as lenses on the data — they represent shared identities and concerns that cross district lines — but the primary unit of relationship is the **district**, not the bloc.
-
-| Bloc | Identity | Typical concerns | Color |
-|---|---|---|---|
-| Working Families | Outer-borough, immigrant, wage-earning | Rent, transit, school quality, safety | Cyan |
-| Business & Finance | Midtown, FiDi, employers | Taxes, regulation, order, talent pipeline | Indigo |
-| Real Estate | Developers, landlords, co-op boards | Permits, zoning, property values | Red |
-| Progressives | Activists, younger renters, organizers | Climate, equity, police reform, housing | Pink |
-| Labor Unions | MTA, teachers, FDNY/NYPD, trades | Jobs, wages, benefits, headcount | Amber |
+*(Unchanged from 0.7.)* Each of the 19 districts has a **resilience** value (0–100) — not approval, but the neighborhood's confidence that their needs are understood and that collective action works. Built through the chain **show up → listen → understand → act → communicate authentically**. Stored as `trust` in code; displayed as "Resilience." The five constituency blocs (Working Families, Business & Finance, Real Estate, Progressives, Labor) remain as cross-district lenses on the data.
 
 ### 5.2 The map (one of three views)
-
-Nineteen NYC districts across all five boroughs, positioned roughly geographically, wired together by a transit-style network graph. Each district carries: dominant bloc, trust level, population weight, and — crucially — a **knowledge state** that reflects how well the mayor currently understands what's happening there.
-
-The map is the first of three views (see §4 and §8 for full UX). It has **four view modes**:
-- **Vulnerability** (default) — bright (recently visited, well-understood) to dim (unknown, stale). This is vulnerability mapping: dim districts are the ones where you don't know who's fragile. The primary view.
-- **Resilience** — color-coded by community resilience levels. Red = low, vulnerable to crisis. Dark = high, community is self-organizing.
-- **Coalition** — color by dominant bloc (the social structure lens).
-- **Needs** — icons showing discovered insights and community assets (only visible for districts you've visited).
-
-The map's job: **vulnerability-made-visible**. The dim districts are the ones that should terrify you — not because they're angry, but because when the crisis hits, you won't know where to deploy. The map also serves as a persistent minimap strip in the Calendar and Social views, keeping the spatial context always present.
+*(Unchanged from 0.7.)* Nineteen districts, transit-style graph, four view modes (Vulnerability, Resilience, Coalition, Needs). Knowledge brightness is the default and primary signal: dim districts are where you don't know who's fragile.
 
 ### 5.3 Insights (the knowledge system)
 
-**Insights** are the atoms of understanding. They are specific, concrete, named problems that people in a district are dealing with right now. They are *not* visible until the mayor visits or holds a listening session.
+**Insights** are the atoms of understanding — specific, concrete, named problems people are dealing with right now. Not visible until you visit or hold a listening session. Each has a district, category, severity, freshness (decays over time), and an optional cross-district link.
 
-Each insight has:
-- A **district** it belongs to
-- A **category** (housing, transit, safety, jobs, environment, services, cost-of-living)
-- A **severity** (how much it matters to the people experiencing it)
-- A **freshness** (decays over time — neighborhoods change, and old intel goes stale)
-- An optional **cross-district link** (the same problem shows up in multiple places — discovering this is a key "aha" moment)
+**0.8 adds an insight *tier*, determined by how it was surfaced in conversation (§5.5):**
 
-Examples:
-- *East Harlem*: "Landlords aren't fixing heat. Third winter in a row." (housing, high severity)
-- *Sunset Park*: "The grocery store on 5th closed. Nearest one is a 20-minute bus ride." (services, medium severity)
-- *Jamaica, Queens*: "Every time it rains hard, the underpass on Archer Ave floods. Buses reroute for hours." (transit/infrastructure, medium severity)
+| Tier | How surfaced | Cost to get | Typical content |
+|---|---|---|---|
+| **Surface** | Stated by the character unprompted | Free — anyone who shows up gets these | "Heat's been out since November." |
+| **Lens** | A funded **department** interjected and you followed the thread | Requires the relevant department funded | The rent-stabilization legal angle; the cold-exposure health risk |
+| **Check** | Behind a roll: `department funding + die vs. difficulty` | Requires the lens *and* a passed (or interestingly-failed) check | **Community assets** and named vulnerable residents — the highest-value disaster intel |
 
-When insights from multiple districts reveal the same underlying problem, the player discovers a **pattern** — this is HCD's systems thinking in action. Moving from "this building has no heat" to "rent-stabilized buildings citywide have a systemic maintenance failure." Patterns unlock the highest-value interventions: structural fixes instead of band-aids.
+This is not a new currency — it's a **difficulty gradient on the insight pipeline you already had.** It naturally gates your most decisive disaster intel (assets, §5.3a) behind the deepest listening, which is pillar #2 made mechanical.
+
+When insights from multiple districts reveal the same underlying problem, the player discovers a **pattern** (§5.3b).
 
 ### 5.3a Community assets (the hidden resilience)
+*(Unchanged from 0.7, with one clarification.)* Community assets are a special insight category: existing neighborhood capacity the mayor didn't build and can't buy, only *discover* — the pharmacy generator storing insulin, the retired nurse checking on seniors, the mosque with AC and a heat-emergency plan. Known assets activate automatically during the disaster; unknown assets are wasted; discovered-and-amplified assets double their protective radius.
 
-**Community assets** are a special category of insight — they represent existing neighborhood capacity that the mayor didn't build and can't buy, only *discover*. They are the game's way of encoding HCD's core claim: the people closest to the problem are closest to the solution.
+**0.8 clarification:** community assets are almost always **Check-tier insights (§5.3)**. They sit behind a department-gated roll, and listening sessions (which surface collective knowledge) give the best odds. This is deliberate: the single most outcome-determining intel in the game is the hardest to hear, and you can only hear it if you funded the lens *and* did the deep listening.
 
-Examples:
-- *"The pharmacy on 138th has a backup generator and stores insulin for the block."* → During a blackout, this block's medically vulnerable residents survive without city intervention — if the mayor knows to route resources elsewhere instead of duplicating effort here.
-- *"Mrs. Chen is a retired nurse. She checks on every senior in the building every morning."* → During a blizzard, this building's elderly population is monitored without city outreach workers — freeing them for buildings without a Mrs. Chen.
-- *"The mosque on Atlantic Ave has AC capacity for 200 and the imam already has a heat-emergency plan."* → During a heatwave, this is a cooling center the city didn't have to build.
+### 5.3b Patterns — the earned lens (this is our Thought Cabinet)
 
-**How assets change outcomes:**
+> **Design decision (0.8):** We do **not** build a separate Thought Cabinet. Disco's Thought Cabinet does three jobs — slow-cook commitment, a passive shift in how future dialogue reads, and a soft identity system. Patterns already do the first; departments already do the third. So we give **patterns** the two Thought-Cabinet properties they were missing — cook-time and a citywide perceptual effect — plus a costly de-commit. One spine, no parallel track. The thematic win: convictions feel *institutional and earned-from-the-ground*, not like one person's private psyche.
 
-Assets are discovered primarily through **Listening Sessions** (the community meeting format surfaces collective knowledge that individuals don't volunteer in one-on-one visits). When the disaster hits:
+A **pattern** is a cross-district conviction about how the city actually works — "Systemic Housing Neglect," "Transit Deserts in the Outer Boroughs," "Aging Grid Fragility." Patterns are discovered, not chosen, when enough insights from different districts point the same way (default: 3 insights, same category, different districts).
 
-- **Known assets activate automatically.** The game's crisis resolution checks which community assets the player discovered in each district. Known assets reduce casualty risk and resource cost in their district — the neighborhood self-organizes around capacity the city now knows exists.
-- **Unknown assets are wasted.** The pharmacy generator still exists whether or not the mayor knows about it. But without coordination, the insulin storage doesn't connect to the people who need it. The system represents this: undiscovered assets don't fire during the crisis.
-- **Assets can be amplified by interventions.** If the player discovers the pharmacy generator AND pre-positions additional medical supplies there (an informed intervention), the asset's protective radius doubles. This is the highest-efficiency move in the game: city resources multiplied by community capacity.
+**Patterns now behave like Thoughts:**
 
-This is pillar #2 in its purest form. The city's resilience already exists in fragments across neighborhoods. Your job isn't to build it from scratch — it's to find it, connect it, and amplify it.
+1. **Cook-time.** A newly discovered pattern is *forming*, not active. It crystallizes over **~3 weeks** of game time. During cooking it shows in the notebook as in-progress, with a faint hint of what it might unlock — but no effect yet. (This is Disco's "internalizing a thought," and the delayed, slightly-uncertain payoff is the point.)
+2. **Citywide perceptual effect on crystallization.** Once crystallized, the pattern's lens **interjects harder everywhere.** "Systemic Housing Neglect" makes the Housing department's interjections fire more often and at lower funding thresholds in *every* conversation citywide — you now *can't stop* seeing housing fragility, because you understand it as systemic. This is the mechanical heart of the Thought-Cabinet borrow: a conviction changes perception, permanently, until you let it go.
+3. **It unlocks/mutates building capacity** — see §5.7. (Replaces the old "pattern unlocks a policy card.")
+4. **Costly de-commit.** You can **abandon** a crystallized pattern. This is the one genuinely good Thought-Cabinet idea our old pattern system lacked: commitment is reversible but *costs* something (a chunk of reserve and a few weeks of a "re-cooking" penalty where neither the old nor a new pattern of that category is active). Why you'd do it: a run's real story turns out to be a flood, not housing — you committed your perception to the wrong systemic read, and now you pay to re-aim. This makes the roguelike reshuffle (§5.13) bite: the pattern you'd internalize on instinct from last run may be the wrong lens this run.
+
+**Departments vs. patterns, stated plainly:**
+- **Departments** are the **active** lens — what you fund *this term* to hear, adjustable week to week.
+- **Patterns** are the **earned** lens — what the ground has *taught* you, slow to gain, costly to drop, citywide in effect.
 
 ### 5.4 Engagements (the time system)
+*(Unchanged from 0.7.)* 3–4 time slots/week. Label on the Map, schedule on the Calendar, overflow is the core tension made visible. Mayor Visit (deep, one person), The Mayor is Listening (broad, 2–3 people, best for community assets), Intervention planning. Posting is free of slot cost but requires insight to land.
 
-The mayor has **3–4 time slots per week**. Engagements are planned in two steps: **label** on the Map (hex menu tags a district with an intent) and **schedule** on the Calendar (drag labels into time slots). You can label more districts than you have slots — the overflow is the game's core tension made visible. Each scheduled engagement costs one slot:
+### 5.5 Conversations (the interaction layer) — *Disco Elysium–inspired*
 
-| Engagement | HCD Method | What happens | Knowledge gain | Resilience gain | Tradeoff |
-|---|---|---|---|---|---|
-| **Mayor Visit** | Empathy Interview / Contextual Inquiry | You meet a specific person in their district. The LLM plays the character; you type freely. The depth of your listening determines what gets revealed. | High — 1–3 specific insights, deep understanding of vulnerabilities | Moderate — "the mayor came here" | Narrow: one district, one person's perspective |
-| **The Mayor is Listening** | Participatory Action Research | Open session at a location. The LLM runs a community meeting with 2–3 characters. You hear complaints *and* discover community assets (a retired nurse, a block association with radios, a church with AC). | Medium — broader but shallower, 2–4 insights across the district. Primary way to discover **community assets** that unlock crisis response options | Low–moderate — less personal | Wide but noisy: you don't control who comes or what they say |
-| **Intervention planning** | Ideate / Prototype | Dedicate time to designing or refining an emergency intervention based on gathered insights. | None (uses existing insights) | None until enacted | Necessary to unlock targeted interventions |
+When you visit a district or hold a listening session, you have a **real conversation** with a named character, powered by the local LLM (scripted fallback below). The conversation is where insight is mined — and 0.8 reshapes it around three Disco-derived mechanics, each mapped onto a system you already have.
 
-Note: posting on social media does **not** cost a time slot — you can post any time. But good posts require insights, which require visits, which cost slots. Situational awareness is free; having real intelligence to share is not.
+#### 5.5.1 Departments interject (skills as voices)
 
-The core tension: you need to listen to prepare well, but listening takes time away from preparing. And while you're in the Bronx, Brooklyn isn't waiting.
+In Disco, your skills are voices that butt in — Empathy tells you the man is about to cry, Logic catches the contradiction — and *which skills you've invested in changes what you perceive in the same scene.* In Mandate, **your funded departments are those voices.**
 
-### 5.5 Conversations (the interaction layer)
+As a character speaks, your funded departments evaluate the line and may **interject** — surfacing a follow-up thread the player would otherwise miss. An interjection renders as a special, visually-marked dialogue option (Doto monospace, department color, bracketed source tag) sitting alongside the free-text input:
 
-When you visit a district or hold a listening session, you don't just receive a card — you have a **real conversation** with a named character, powered by the local LLM.
+> Maria: *"Heat's been out since November. Third winter. Landlord won't return calls."*
+>
+> — `[HOUSING]` *"Rent-stabilized? Then he's in violation — ask if she's filed with HPD."*
+> — `[PUBLIC HEALTH]` *"Third winter of cold exposure. Ask who in the building is elderly or sick."*
+> — *(or type your own response)*
 
-**How meetings work:**
+Two players with different department funding see **different interjections** in the identical conversation. The Housing player pulls the legal/enforcement thread; the Public Health player pulls the vulnerable-resident thread (which leads toward a Check-tier community asset). This is the core of why listening can't be optimized blind: *the right follow-ups are offered to you by the lenses you chose to build.*
 
-When you label a district on the Map and drag it into a Calendar slot, the game assigns a **character** — someone with a name, role, and knowledge domain. The Calendar slot shows the person, not just the place: *"Maria Delgado — Tenant Organizer, East Harlem"*. This is who you're meeting this week.
+Crucially, **interjections are pre-vetted good listening.** Each one is, by construction, specific, on-topic, a genuine follow-up, and never a jump-to-solution. So taking an interjection is mechanically *safe* listening; free-typing is *riskier* (you might hit a thread no department covers — a real reward — or you might stumble, see §5.5.3). This is how we make "active listening quality" legible instead of an opaque LLM score: good listening is literally the set of options your lenses surface, plus the one rule below.
 
-When GO fires, the conversation panel opens and the **LLM plays the character**. The system prompt includes the character's profile, their district's concerns, what you already know (your insight history), and the current game state (week number, approaching disaster, trust level). The character speaks in their own voice — Maria is direct and tired; Tommy Ferraro is gruff and practical; Pastor Williams is measured and community-minded.
+#### 5.5.2 Checks where failure opens content
 
-**The player types freely.** No multiple-choice menus. You ask what you want, respond how you want. The LLM evaluates your responses for:
+Following a thread — especially toward a Check-tier insight (§5.3) — triggers a **check**:
 
-- **Active listening quality** — did you ask follow-up questions, show empathy, let them talk? Or did you jump to solutions, deflect, or talk about yourself? The depth of your listening determines what gets revealed.
-- **Relevance** — did you ask about things this character actually knows about? Maria knows about heat failures and tenant organizing, not transit infrastructure. Asking the right person about the right topic yields deeper insights.
-- **Follow-through** — on repeat visits, did you act on what they told you last time? Characters remember. "You said you'd look into the heat. Did anything change?"
+```
+roll = department_funding_level + die(1..6)
+pass if roll >= insight.difficulty
+```
 
-**What conversations reveal:**
+- **Pass:** the character gives up the rare insight — the named vulnerable senior, the pharmacy generator, the block phone tree.
+- **Fail — and this is the Disco rule — opens content, never blocks it.** On a failed push, the character *closes that specific thread* but reveals **why**: *"I've told three of you people this. Nothing changed."* That line is itself a (Surface-tier) insight about the district's trust history — and a hook that a *previous administration already knew this and did nothing*, which colors later events. You always learn *something*; failure surfaces *different* knowledge.
 
-A good conversation yields **insights** — specific, concrete vulnerability data:
-- *"The pharmacy on 138th needs a backup generator — they store insulin for the whole block."* (community asset)
-- *"Every time it rains hard, the underpass on Archer Ave floods. Buses reroute for hours."* (infrastructure vulnerability)
-- *"There are at least fifteen seniors in my building who live alone. Nobody checks on them."* (population vulnerability)
+Department funding raises your check odds, which is the second reason funding a lens matters: it doesn't just *open* threads (5.5.1), it makes you *succeed* on them.
 
-A surface-level conversation — where you talk more than you listen, or jump to promises — yields less. The character may shut down: *"Look, I appreciate you coming, but I've heard this before."*
+**Retry rules (borrowed from Disco's white/red distinction):**
+- Most checks are **white** — retryable on a later visit, or after you raise the relevant department's funding (you come back with more weight behind the lens).
+- A few high-stakes checks are **red** — one shot per term. Fail the red check with a guarded character and that asset stays hidden until next run. Red checks are reserved for the most decisive community assets, to make deep listening feel genuinely consequential.
 
-**After the conversation, the LLM returns structured data:**
+#### 5.5.3 The one hard rule: don't solve, listen
+
+In both LLM and fallback modes, **promising a fix or proposing a solution before the character has fully opened up is a soft failure.** Depth drops, threads close, and the character deflates: *"...Right. Sure. We'll see."* This is the HCD lesson encoded as the single non-negotiable conversational fail-state — and, not coincidentally, the Mayor-who-promises-everyone-everything is a recognizable, slightly funny civic archetype. It's the one place we hard-code listening quality rather than leaving it to lens-interjections.
+
+#### 5.5.4 Can a lens be wrong?
+
+Disco's low-level skills *lie* — Inland Empire says something unhinged; a weak skill gives a confidently wrong read. We adopt a **narrow, legible** version: a department funded **below a competence threshold** can occasionally surface a **plausible-but-misleading interjection** — a thread that *sounds* right and leads to a low-value or dead-end insight, costing you the exchange. This models real institutional thin-staffing (an under-resourced department gives bad reads) and rewards funding lenses to competence rather than spreading dollars thin. **We deliberately cap it:** above the competence threshold, lenses are reliable. We will not make the player distrust *funded* departments — that would muddy the pedagogy. Wrong reads are a symptom of *underfunding*, surfaced honestly. *(Tunable; defaults in §5.5.7. Flagged in §11 for playtest — if it frustrates more than it teaches, it gets cut.)*
+
+#### 5.5.5 What a single conversation looks like, end to end
+
+1. **Opening.** Character states their surface concern in voice (LLM from profile + this run's live fragility, §5.13). → a **Surface insight**.
+2. **Interjections fire.** 1–3 department lenses offer follow-up threads (§5.5.1), alongside free-text input.
+3. **You probe.** Take an interjection (safe, lens-gated) or type your own (risky, can reach uncovered threads).
+4. **Checks resolve.** Pushing toward rare intel rolls `funding + die` (§5.5.2). Pass → Check insight. Fail → why-they're-guarded insight + closed thread.
+5. **The no-solution rule polices your *mode*** (§5.5.3) throughout.
+6. **Close.** Character reacts to the whole exchange; insights animate to the notebook; knowledge brightens; the character becomes available for DMs.
+
+#### 5.5.6 LLM integration & the structured return
+
+The LLM plays the character; the player types freely. **Departments and checks are computed deterministically by the game, not by the LLM** — the engine decides which lenses interject (from funding state + the line's topic tags), rolls the checks, and applies the no-solution rule. The LLM's jobs are narrower and more reliable: (a) speak the character in voice, (b) phrase the interjection threads naturally when taken, (c) deliver the pass/fail dialogue. This split is deliberate — it keeps the *mechanically load-bearing* parts (what you can perceive, what you roll, whether you solved-too-early) out of the LLM's hands, which directly addresses the "LLM quality floor" risk (§11): the model handles *prose*, the engine handles *rules*.
+
+After the conversation, the engine assembles the structured result (the LLM contributes the prose fields):
 
 ```json
 {
   "insights": [
-    { "category": "HEALTH", "text": "Insulin storage at corner pharmacy requires backup power", "severity": 0.8 },
-    { "category": "ASSET", "text": "Block association has a mutual-aid phone tree for 200 residents", "severity": 0.6 }
+    { "tier": "surface", "category": "HOUSING", "text": "Heat out since November, landlord unresponsive", "severity": 0.6 },
+    { "tier": "lens", "source_dept": "public_health", "category": "HEALTH", "text": "Cold-exposure risk concentrated in elderly tenants", "severity": 0.7 },
+    { "tier": "check", "source_dept": "public_health", "check": { "difficulty": 7, "roll": 8, "passed": true, "type": "white" },
+      "category": "ASSET", "text": "Mrs. Gutierrez, 4F — oxygen-dependent, lives alone", "severity": 0.9 }
   ],
   "trustDelta": 4,
   "depth": 7,
-  "characterReaction": "She seemed cautious at first, but opened up when you asked about her neighbors.",
-  "followUpHook": "Maria mentioned Mrs. Gutierrez on the 4th floor — oxygen-dependent, lives alone."
+  "soloViolation": false,
+  "characterReaction": "Guarded at first; opened up when you asked about her neighbors instead of promising repairs.",
+  "followUpHook": "She mentioned a phone tree the block association runs — worth a listening session."
 }
 ```
 
-This feeds directly into the game state: insights are recorded, trust updates, knowledge brightens on the map, and the character becomes available for DMs between visits.
+#### 5.5.7 Fallback behavior (no LLM)
 
-**The symmetry:** The LLM serves two roles that mirror each other:
-- **Inbound (conversations):** You talk *to* people. The LLM evaluates your listening → insights + trust.
-- **Outbound (posts):** You talk *about* the city. The LLM evaluates your knowledge → resonance + trust.
+The Disco mechanics are **fully present in fallback mode**, because the load-bearing parts are deterministic. With Ollama unavailable, the character speaks from **scripted dialogue trees**; interjections, checks, and the no-solution rule operate identically (they were always engine-side). The only thing lost is generative prose variety — the *mechanics* are unchanged. This is a meaningful robustness win over 0.7, where fallback was a visibly poorer experience.
 
-Both reward the same thing: genuine engagement with what real people actually said. The player who listens well in conversations has the material to write grounded posts. The player who doesn't listen has nothing to say.
+**Default tunables (all flagged for the balance harness):** competence threshold for reliable lenses = funding level 2 of 4; below-competence misleading-interjection chance = 15%; white-check retry allowed after +1 funding or next visit; red checks = 1/term, reserved for top-severity assets; pattern cook-time = 3 weeks; pattern de-commit cost = reserve hit + 3-week re-cook.
 
-**Fallback behavior:** When Ollama is unavailable, conversations fall back to the scripted dialogue trees (3–5 exchanges with multiple-choice responses and a depth meter). These are hand-authored per character and serve as the baseline experience. The LLM path is richer but the game is fully playable without it.
+#### 5.5.8 Listening sessions
 
-**Listening sessions** work similarly but with a twist: instead of one character, you hear from 2–3 people in sequence, each speaking briefly. The LLM receives all their profiles and generates a community-meeting dynamic — people build on what others say, disagree, surface concerns that a private conversation wouldn't. Listening sessions reveal **breadth** (more insights, shallower depth) and are the primary way to discover **community assets** ("the mosque has AC for 200 people," "the retired nurse on our block checks on seniors every morning").
+Unchanged in purpose (2–3 characters, breadth over depth, primary source of community assets), now with the department layer: **multiple lenses can interject across multiple speakers**, and the cross-talk is where the best Check-tier asset rolls appear (one resident mentions the nurse; your Public Health lens pushes; the check lands). The §11 risk of incoherent multi-character LLM scenes is mitigated the same way as 5.5.6 — the *structure* (who speaks, which lens interjects, what rolls) is engine-driven; the LLM only voices it.
+
+#### 5.5.9 The inbound/outbound symmetry (preserved)
+
+The LLM still serves two mirrored roles: **inbound** (conversations → insights) and **outbound** (posts → resonance, §5.6). The player who listened well has grounded material to post; the player who didn't has nothing to say. 0.8 sharpens the inbound side without touching the outbound side.
+
+### 5.5a DepartmentSystem (new — the game's spine)
+
+Departments existed in 0.7 only as a word ("lenses"). 0.8 makes them a first-class system, because the conversation rework requires funding state, and because departments turn out to be the hub tying conversations, insights, patterns, the bento box, and the roguelike reshuffle together.
+
+**The departments (first-release set — 6, mapped to NYC agencies):**
+
+| Department | NYC analog | Interjects on (topic tags) | Gates bento tiles (§5.7) |
+|---|---|---|---|
+| **Housing** | HPD | rent, heat, eviction, code, overcrowding | Shelter, warming-center, code-enforcement tiles |
+| **Public Health** | DOHMH | elderly, chronic illness, medication, isolation | Medical-cache, clinic, outreach-team tiles |
+| **Emergency Mgmt** | NYCEM | flooding, power, evacuation, comms | Generator, evac-route, comms-hub tiles |
+| **Transportation** | DOT/MTA liaison | transit, access, road, plows | Plow, access-route, transit-priority tiles |
+| **Social Services** | HRA/DFTA | food, childcare, benefits, mutual aid | Liaison/mutual-aid HOW tiles, food-distribution tiles |
+| **Sanitation/Infra** | DSNY/DEP | salt, debris, water, grid | Salt-stockpile, grid-hardening, debris tiles |
+
+**Funding.** Each department has a funding level **0–4**. Funding is bought from **reserve** — the *same* reserve drained by the operating deficit (§5.8) and by enacted policies. This is the new economic tension 0.8 introduces:
+
+> Every dollar has three competing homes: **fund a lens** (hear the crisis coming), **bank reserve** (afford to respond when it does), or **enact a policy now** (act on what you already know). You cannot max all three. A player who over-funds perception arrives at the blizzard broke; a player who hoards reserve arrives deaf.
+
+**What funding level does:**
+- **0** — dark. The lens never interjects. You are blind in that domain.
+- **1** — interjects on the strongest-signal lines only; checks get +1; below competence (misleading-interjection risk active).
+- **2** — **competence threshold.** Reliable interjections; checks +2; misleading-interjection risk off.
+- **3–4** — interjects readily; checks +3/+4; unlocks the department's efficient bento tiles (§5.7); crystallized patterns of that category push effective level higher still (§5.3b).
+
+**Wiring (events):** see §10.3. In brief: DepartmentSystem owns funding state, answers "which lenses interject on this line and at what check bonus" for ConversationSystem, and answers "which tiles can this player draw" for the bento builder. It imports nothing; it communicates over the bus.
 
 ### 5.6 Social media (the communication system)
+*(Unchanged from 0.7.)* Outbound posts scored by the LLM against discovered insights (RESONATING / NOTICED / HOLLOW); inbound feed graded vague→specific by district knowledge; DMs for relationship maintenance. The player who listened has grounded material; the player who didn't gets ratio'd. *(One small future hook: a crystallized pattern could let you post at the **systemic** level — "this is a citywide pattern, not one building" — and resonate across every affected district at once. Flagged, not yet built.)*
 
-The Social view is the player's primary communication tool — both outbound (posts) and inbound (feed, DMs). It replaces the old "campaign framing" system with something that feels native and legible.
+### 5.7 Emergency interventions (now gated by departments) — *Bento Box*
 
-**Posts** are the outbound mechanic. The player writes free-form text in the compose bar — no manual grounding chip selection. The writing itself is the mechanic: what you say reveals whether you actually listened.
+> **Design decision (0.8):** 0.7 had two unreconciled "spend understanding to act" mechanics — insight-gated **policy cards** (§10.5) and the spatial **bento box**. We cut the card system entirely. The bento box is the *only* policy interface, and **what you can build flows through departments, not a parallel insight-unlock tree.** One hub.
 
-Posts are scored by an **LLM (Ollama, default model `llama3.2`)** that evaluates the player's text against all discovered insights. The LLM receives the full insight context and returns:
-- **Per-district scores (0–10)** — how well the post resonates with each district's concerns
-- **Resident reaction quotes** — named residents respond to the post in-character
-- **Trust deltas** — applied per district based on scores
+Interventions are constructed by placing component **tiles** into a fixed **5×5 grid** (your political capital and budget). The three influences resolve cleanly:
 
-The scoring drives visible, diegetic feedback:
-- A **resonating** post (high LLM scores) gets likes, shares, and supportive resident quotes in the feed. Trust jumps in the districts whose concerns you addressed.
-- A **noticed** post (moderate scores) gets mild engagement. Some districts respond, others don't.
-- A **hollow** post (low scores, no insight alignment) gets low engagement or gets ratio'd. Minimal trust gain.
+- **Which tiles you can draw is gated by department funding (§5.5a).** Generic tiles (bulky, inefficient) are always available. A department at level **3+** unlocks its **efficient** tiles — the Public Health lens that helped you *hear* about the insulin-dependent senior is the same lens that lets you draw the compact "Medical Cache" tile to *help* her. Listening and building run through one system.
+- **Crystallized patterns mutate tiles (§5.3b).** A live "Aging Grid Fragility" pattern shrinks your bulky 2×2 "Citywide Generator" into a 1×2 "Medical Power Cache," freeing grid space. Patterns are how *systemic understanding* (not just per-district insight) pays off spatially.
+- **Adjacency synergies and conflicts (Blue Prince).** "Medical Cache" next to "Backup Generator" → "Cold-Storage Clinic" (amplified trust, halved casualties). "Police Enforcement" next to "Community Mutual Aid" → friction (lower score, anger on the feed). The 5×5 constraint spatializes triage: adding an outreach team to a fourth borough means physically removing the medical cache from the first.
 
-Post cards in the feed show per-district score breakdowns and an overall rating badge (RESONATING / NOTICED / HOLLOW).
+This makes the spine legible end to end: **fund Public Health → hear the vulnerable-senior thread in conversation → draw the efficient Medical Cache tile → pack it adjacent to a Generator for the Cold-Storage Clinic synergy → that block survives the blackout.** Every step is the same lens paying off again.
 
-**Fallback behavior:** When Ollama is unavailable (offline, no model loaded), the system falls back to keyword matching against insight text — simpler but functional. The model is configurable via the `OLLAMA_MODEL` constant in `index.html`.
+*(Grid-size and synergy-communication questions remain open — §11.)*
 
-**The feed** is the inbound mechanic — your real-time situational awareness system. It surfaces:
-- Reactions to your posts (the grounding score made visible as engagement)
-- District chatter — vague for unvisited districts ("people in Queens are frustrated"), specific for visited ones ("the L train broke down again today in Bushwick"). During a crisis, this becomes your 311 system — but only districts that trust you will report
-- Breaking news and events, including disaster warnings
-- Emerging vulnerabilities you haven't assessed yet (early warning if you're paying attention)
-- Community asset reports from visited districts ("the bodega on 5th has a backup generator and is offering to store insulin")
-
-**DMs / Chat** are relationship maintenance. Characters you've met in person can message you. Their DMs reference your previous conversations and whether things changed. You can reply — but DMs don't generate new insights. They maintain or erode existing trust. To learn something new, you have to go back in person.
-
-The social view makes the communication pillar tangible: you can see your message land (or not), watch the feed shift as you act (or don't), and feel the difference between speaking from knowledge and speaking from nothing.
-
-### 5.7 Emergency interventions (shaped by understanding)
-
-Interventions are not pre-packaged cards. They are spatial puzzles drafted from the insights you've gathered. The Frostpunk pressure dictates that you must act, but the Blue Prince mechanics dictate *how* you act. 
-
-- **Drafting the Hand:** When you begin drafting an intervention, you draw from a pool of available policy tiles. Generic tiles are always available but are bulky and inefficient.
-- **Informed Mutations:** Insights do not just unlock new tiles; they mutate existing ones. If you learn that the South Bronx needs generators specifically for medical refrigeration, your bulky 2x2 "Citywide Generator" tile mutates into a highly efficient 1x2 "Medical Power Cache" tile, freeing up valuable space in your budget grid.
-
-This is pillar #1 in mechanical form: listening translates directly into spatial advantage. HCD's principle that the people closest to the problem are closest to the solution is encoded into the efficiency of your tools.
-
-#### 5.7a Bento Box Policy Builder (The Blue Prince Influence)
-
-Instead of selecting pre-made policy cards, the player **constructs** policies by placing drafted component tiles into a fixed 5x5 grid — a bento box representing your political capital and budget.
-
-**Tile types:**
-- **WHERE** tiles — Target a borough or district. Placing one scopes the intervention geographically.
-- **WHAT** tiles — Infrastructure type: plows, generators, shelters, outreach teams, medical caches.
-- **HOW (Liaison)** tiles — Community integration: local leaders, youth corps, mutual aid groups.
-- **FUNDING** blocks — Basic filler blocks that represent pure monetary injection.
-
-**Spatial Rules & Synergies:**
-- **Adjacency is Power:** Like *Blue Prince*, the position of a tile determines its effect. Placing a "Medical Cache" tile adjacent to a "Backup Generator" creates a "Cold-Storage Clinic" synergy, amplifying trust gains and halving casualty rates in the targeted district.
-- **Friction and Conflicts:** You cannot place conflicting components near each other. Putting a "Police Enforcement" HOW tile next to a "Community Mutual Aid" WHAT tile generates systemic friction, reducing the overall score of the policy and sparking anger on the social feed.
-- **The Constraint:** The 5x5 grid makes budget trade-offs tangible. You can *see* that adding an outreach team to a fourth borough means physically removing the medical cache from the first. You cannot fit everything. The Bento Box forces you to decide who gets saved and who gets neglected, spatializing the triage.
-
-### 5.8 The cost of governing (The Frostpunk Influence)
-
-The pressure never stops. The game is a survival simulator where the city itself is the organism you are trying to keep alive. The mechanics enforce a constant sense of impending doom:
-
-- **The Dual Metre (Hope vs. Disorder):** Replacing simple "Trust," your administration is judged on two axes. Resilience (Hope) must be kept high, and Disorder (Discontent) must be kept low. Let Disorder max out, and you will face a political breaking point—strikes, gridlock, or ouster—long before the disaster even arrives.
-- **Brutal Moral Trade-offs:** Every major policy comes with a severe cost. You can declare "Eminent Domain Shelters" to instantly secure high-capacity warming centers, but it will permanently spike Disorder among the Real Estate bloc and trigger legal protests that consume your calendar slots next week.
-- **Knowledge decay:** Insights go stale. What you learned four weeks ago may not be current. Districts drift, new problems emerge, old ones shift.
-- **Trust erosion:** Districts you haven't visited or acted on slowly lose trust. Silence reads as neglect.
-- **Operating deficit:** The city spends ~$1.5B/month just to run. Reserve erodes unless you generate revenue or make hard cuts.
-
-Together these create the knife's-edge: you can never rest, you can never save everyone, and every decision is a compromise between survival and stability.
+### 5.8 The cost of governing (Frostpunk)
+*(Updated for the three-way economy.)* Dual metre (Resilience/Hope must stay high, Disorder/Discontent must stay low; max Disorder = political breaking point before the disaster even arrives). Brutal moral trade-offs on major policies. Knowledge decay. Trust erosion for neglected districts. Operating deficit (~$1.5B/month). **New in 0.8: department funding is a standing draw on reserve** — the three-way contest (perceive / bank / act) is now the central budget decision, replacing 0.7's simpler reserve-vs-policy tension.
 
 ### 5.9 Disasters & events (the primary antagonist)
-
-Disasters are not random 30% interruptions — they are the **final exam**. Much like the approaching storm in Frostpunk, the entire 48-week term follows a single, terrifying, escalating crisis arc: a major winter nor'easter that the player can see coming from week 4 onward. The left panel shows a countdown ("BLIZZARD ARRIVING IN X WEEKS") and a preparation checklist that tracks districts visited, insights gathered, patterns found, and citywide resilience. 
-
-**Cascading Failures:** When the disaster strikes, it doesn't just lower a stat; it triggers a chain reaction of failures. A power grid collapse leads to heating failure, which leads to mass casualties. Your policies act as circuit breakers to stop these cascades.
-
-**Multiple disaster types (roguelike direction):** The blizzard is the first fully scripted arc, but the concern graph and scenario system are designed to support additional disaster types for roguelike run variation:
-- **Hurricane** — storm surge flooding in coastal districts (Red Hook, Rockaways, Staten Island). Concern axis shifts toward infrastructure and transit. Shorter warning window.
-- **Heat wave** — prolonged extreme heat. Health and services become the dominant axes. Community assets like AC-equipped mosques and pharmacy generators become critical. Longer timeline (48 weeks), but the crisis is slower and more diffuse.
-- **Pandemic** — health emergency across all boroughs. Every district is affected; the question is which ones have the community trust to coordinate testing and vaccination. Trust and knowledge matter more than infrastructure.
-- **Infrastructure collapse** — cascading failure (power grid, water main, transit). Concentrated in aging-infrastructure districts. Shorter timeline (~30 weeks), higher urgency.
-
-Each disaster type reshuffles which concern axes matter most, which districts are most vulnerable, and which community assets are life-or-death. The same 19-district graph, the same conversation system, the same trust mechanics — but the final exam tests different preparation. See S5.13 for full roguelike structure.
-
-#### The blizzard arc (10 scripted events)
-
-**Distant signals (weeks 1–20):**
-
-| Week | Event | What happens |
-|---|---|---|
-| 4 | **Long-Range Winter Outlook** | NWS flags elevated blizzard risk. Feed item. Nobody's paying attention yet. |
-| 10 | **Infrastructure Report Card** | Comptroller audit: aging plows, depleted salt reserves. "We are not ready." |
-| ~14–18 | **Summer Heat Stress** | A heat wave sends 200 to ERs — a preview. Districts you've visited handle it better (cooling centers pre-positioned from your field data). |
-
-**Escalation (weeks 20–35):**
-
-| Week | Event | What happens |
-|---|---|---|
-| 22 | **Models Converge** | 70% chance of major nor'easter. Infrastructure work window narrowing. |
-| ~28–32 | **Early Snow Squall** | 3 inches in Queens. Flushing streets unplowed for 18 hours. Trust −3 Flushing, −2 Jackson Heights. |
-| ~30–34 | **Salt Prices Spike** | Nationwide shortage. −$0.3B reserve hit. Cities that didn't stockpile early are scrambling. |
-
-**Crisis (weeks 36–48):**
-
-| Week | Event | What happens |
-|---|---|---|
-| 36 | **BLIZZARD WATCH** | NWS issues watch for all five boroughs. Cinematic overlay. Last chance for emergency measures. |
-| ~37–40 | **Sanitation Union Demands Storm Pay** | Union demands guaranteed overtime. −$0.5B reserve. |
-| 42 | **BLIZZARD WARNING** | Two feet of snow, 50mph gusts forecast. Cinematic overlay. Flag: `blizzard_imminent`. "Did you prepare?" |
-| 44 | **THE BLIZZARD** | It hits. Cinematic overlay. Power outages in outer boroughs. Transit shut down. Visited districts activate community networks. Unvisited districts call 911. Flag: `blizzard_struck`. |
-
-Major events (watch, warning, strike) trigger **cinematic Frostpunk-style dark overlays** with the event headline and an "I SEE" dismiss button — the game pauses to make you feel the weight.
-
-#### The three phases of disaster
-
-**Before (~weeks 1–35):** Your insights reveal pre-existing conditions — which basements flood, which communities lack AC, which seniors live alone, which pharmacies have backup generators. The map's Knowledge view is vulnerability mapping. Every conversation is reconnaissance. The preparation checklist in the left panel is your score: are you ready?
-
-**During (~weeks 36–44):** When the blizzard hits, the game doesn't just ask for money. It asks: *"Do you know where to deploy?"* If you listened, you know the pharmacy on 138th needs generator fuel for insulin storage. If you didn't visit, you route resources blind. The feed floods with emergency reports — specific and actionable from districts that trust you, silent from districts you neglected. Community assets you discovered activate automatically. Assets you never found are wasted.
-
-**After (~weeks 44–48):** Recovery isn't press releases — it's following up. Did Maria get her heat fixed before the next cold snap? The DM system becomes your check-in mechanism. Districts where you did the work recover faster. Districts you neglected are still in crisis. The final resilience score determines your ending.
-
-#### Smaller events
-
-Between the main arc events, the game fires smaller disruptions:
-- **Reveal** hidden vulnerabilities in districts you haven't visited (the news tells you, but resilience is already damaged because you weren't there first)
-- **Validate** your preparation (you pre-positioned generators and the blackout was contained — visited districts credit you)
-- **Disrupt** your plans (a crisis in one borough pulls you away from another)
+*(Unchanged from 0.7.)* The disaster is the final exam, not a random interruption. The 48-week blizzard arc (10 scripted events, cinematic overlays, weeks 4–44) is the first fully built scenario; hurricane / heat wave / pandemic / infrastructure-collapse are designed for roguelike variation. **0.8 note:** which disaster a run draws becomes one of two reshuffle axes (§5.13), the other being which department lens the run rewards. Cascading failures; policies as circuit breakers; the three phases (Before = reconnaissance, During = "do you know where to deploy?", After = follow-up).
 
 ### 5.10 Win / lose
-
-| Outcome | Trigger |
-|---|---|
-| **The Resilient City** | Finish with citywide resilience ≥ 75% — zero preventable casualties. Community trust is high enough that neighborhoods self-organize during the crisis. You earned it. |
-| **Held Together** | Survive the term with citywide resilience ≥ 50% — losses occurred but the system bent without breaking. |
-| **The Blind Response** | Finish < 50% resilience — preventable casualties in districts you never visited. Resources misallocated because you didn't know who was vulnerable. |
-| **Evacuation Failure** | Citywide resilience drops below 20% mid-term — a disaster hits a neighborhood you've never visited, people are trapped because you didn't know their mobility constraints. |
-| **Fiscal Crisis** (state takeover) | Reserve falls below −$3.0B |
+*(Unchanged from 0.7.)* The Resilient City (≥75%), Held Together (≥50%), The Blind Response (<50%), Evacuation Failure (<20% mid-term), Fiscal Crisis (reserve < −$3.0B). **0.8 note:** Fiscal Crisis is now easier to walk into via over-funding departments — intentional; perception has a price.
 
 ### 5.11 Difficulty & balance
-
-The previous simulator validated the old loop's balance. The new loop requires a new balance model centered on:
-
-- **Coverage pressure:** can a player who visits randomly survive the disaster? (Should be hard but possible — ~25%)
-- **Listening pressure:** does a player who visits strategically but never acts on what they learn survive? (Should fail — knowledge without intervention stalls resilience)
-- **Blind-response penalty:** does a player who never visits but sets good generic interventions survive? (Should be very hard — ~15%. One-size-fits-all disaster kits don't save the insulin-dependent senior.)
-- **Optimal play:** strategic visiting + informed interventions + grounded communication (~80% survival rate)
-
-The balance harness should be rebuilt to model these new dynamics as a first-class dev tool.
+*(Extended.)* The 0.7 axes hold (coverage pressure, listening pressure, blind-response penalty, optimal play ~80%). 0.8 adds:
+- **Perception pressure:** a player who over-funds departments to hear everything but banks no reserve should fail at the disaster (deaf-but-broke is as bad as blind). Target: over-funding perception ≥3 departments to level 3+ before week 30 risks Fiscal Crisis.
+- **Lens-match pressure (roguelike):** a player who funds last run's winning lens without re-listening this run should underperform — the rewarded lens reshuffled (§5.13).
+- **Check-economy:** Check-tier assets should be gettable with ~2 well-funded relevant departments + deep listening, not require maxing all six.
 
 ### 5.12 Candidates & political opposition (future)
+*(Unchanged from 0.7.)* 2–3 rival candidates per run, reactive in the feed, approval-vs-resilience as a second axis. *(0.8 hook: a candidate could attack your department-funding mix — "the Mayor poured millions into 'listening' while reserves ran dry" — turning the perceive/bank/act tension into political content. Flagged.)*
 
-The current game has no political opponents — the player governs unopposed, and the only tension is between preparation and neglect. **Candidates** add a second axis: doing what's right for the city vs. what wins the election.
+### 5.13 Roguelike structure (future) — *now two reshuffle axes*
 
-**How it works:**
-- Each run features **2–3 rival candidates**, each aligned with different bloc coalitions and running on different platforms. One might champion outer-borough transit; another might push Manhattan-first business recovery.
-- Candidates **react to your moves in the social feed**. When you post about infrastructure in the South Bronx, a finance-aligned candidate might post: *"While the Mayor tours the outer boroughs, Midtown businesses are closing."* When you enact a progressive policy, the real-estate candidate attacks your fiscal record.
-- Your policies shift **bloc support** between you and your opponents. An approval rating tracks your standing alongside the resilience score. You can have high resilience and low approval (you did the right thing but it wasn't popular) or the reverse.
-- Candidates can **exploit your public posts**. A grounded post about a vulnerability you discovered can be twisted: *"The Mayor admits the city isn't ready."* A hollow post gets fact-checked: *"The Mayor claims progress in Bushwick — has he ever been there?"*
-- The core tension: **do what's right for the city, or do what wins the election?** A player who prioritizes vulnerable outer-borough districts may lose approval with the finance and real-estate blocs. A player who campaigns for popularity may win re-election but leave the city unprepared.
+Inspired by *Blue Prince*: the rooms rearrange, but the rules don't. The 0.8 conversation rework gives the reshuffle a cleaner, stronger shape by separating **what's constant** from **what varies** more sharply than 0.7 did.
 
-**Candidate AI:** Each candidate has a profile (name, platform, bloc alignment, rhetorical style) and a simple reactive model: they respond to the player's posts and policies with counter-messages that appear in the feed. The LLM generates candidate reactions from their profile + the player's recent actions. Candidates don't visit districts or gather insights — they operate purely in the media layer.
+**What stays constant (the rules, and the people):**
+- **Characters stay specific and hand-authored.** Maria is always Maria, in her own voice. *We do not procedurally swap the cast* — that was the 0.7 plan and it fights pillar #5 (specificity). Knowing "go to Maria" is fine; it shouldn't tell you what she'll surface.
+- The conversation rules, the department system, the spine.
 
-**Status:** Design concept. Not yet prototyped. See S11 for open design questions.
+**What reshuffles (two primary axes + supporting):**
+1. **Which fragility each character surfaces.** Same Maria — but this run her building's live crisis is heat; next run it's a flood-prone basement; next run a broken elevator stranding shut-in seniors. *Same person, same voice, different thing to discover by listening.* This defeats memorization without sacrificing specificity, because the **insight** is what varies, not the **character**.
+2. **Which department lens the run rewards.** A blizzard run rewards Emergency Mgmt + Sanitation/Infra + Public Health; a heat-wave run rewards Public Health + Social Services; a pandemic rewards Public Health + Social Services + Housing (overcrowding). So between runs, the *same character* surfaces a *different fragility*, **and** the *departments worth funding to perceive it* shift. A returning player who reflexively funds last run's lens, or who re-commits last run's pattern (§5.3b), is aiming an old lens at a new city — and pays the de-commit cost to re-aim.
+3. *(Supporting, from 0.7:)* disaster type, district concern weights, starting bloc hostility, timeline pressure.
 
-### 5.13 Roguelike structure (future)
+**What persists across runs:** meta-knowledge (the *rules* — that lenses gate perception, that listening sessions surface assets, that solving-too-early fails); a cosmetic legacy score; unlocked disaster types. **No mechanical carryover** — no permanent funding, no kept patterns. Each run you re-fund, re-listen, re-learn the city. That's the point: HCD's empathy phase made mechanically un-skippable.
 
-Inspired by *Blue Prince* (Dogubomb), where each run through the mansion reshuffles the room layout so that memorizing a path never works — only understanding the *system* carries over. Mandate applies the same principle to civic governance: each term is a new city, and the player's advantage comes from meta-knowledge about *how* to govern, not from remembering which district needs what.
-
-**What reshuffles between runs:**
-- **Disaster type** — blizzard, hurricane, heat wave, pandemic, or infrastructure collapse (see S5.9). Each changes which concern axes matter and which districts are most exposed.
-- **District concern scores** — the concern weights (health, transit, housing, etc.) shift. A district that was transit-critical in one run might be health-critical in the next.
-- **Available characters** — some NPCs rotate in and out. The bodega owner in Jackson Heights might be replaced by a school principal. Core characters (1 per district) are always present; secondary characters (2–4 per district) are drawn from a pool.
-- **Political landscape** — starting bloc hostility varies. In one run, the labor bloc starts hostile; in another, they're your allies. Candidates (S5.12) have different platforms each run.
-- **Timeline pressure** — some disasters give the full 48 weeks; others compress to 30. Pandemics might start at week 1 with no warning phase. Infrastructure collapses give 30 weeks with an abrupt onset.
-
-**What persists across runs:**
-- **Meta-knowledge** — the player learns that listening sessions reveal community assets, that trust erodes without follow-through, that pattern interventions are more efficient than generic ones. This system understanding is the real progression.
-- **Legacy score** — a cumulative measure of how many runs you've completed, how many lives you've saved, how many districts you've served. Cosmetic, not mechanical — no persistent upgrades that make future runs easier.
-- **Unlocked disaster types** — the first run is always a blizzard (the tutorial disaster). Subsequent runs draw from the full pool.
-
-**Why roguelike:** The game's core lesson — that you have to listen before you can act — is most powerful when it can't be shortcut by memorization. If the player knows that Maria in East Harlem always needs heat fixed, the listening becomes performative. When the characters, concerns, and disasters shift, the player has to *actually listen* every time. The roguelike structure makes HCD's empathy phase mechanically necessary, not just narratively encouraged.
-
-**Status:** Design concept. The concern graph and scenario system already support variable disaster types and concern weights. Character rotation and run persistence are not yet built. See S11 for open design questions.
+**Why these two axes are the right ones:** they're orthogonal (fragility varies *what's true*; lens-reward varies *how to perceive it*), they're both expressed through systems you already built (insights and departments), and together they make the *Blue Prince* promise literal — the player who's done five runs understands the **system** deeply but genuinely **cannot predict the city**.
 
 ---
 
@@ -481,743 +323,283 @@ Inspired by *Blue Prince* (Dogubomb), where each run through the mansion reshuff
 
 | Content type | Built | First-release target | Notes |
 |---|---|---|---|
-| Districts | 19 | 19 | Complete with concerns, blocs, vulnerability tags, positions |
-| Characters with scripted conversations | 10 | 19 (1 per district minimum) | 10 districts done (both web + Swift). LLM generates dynamic conversations from character profiles, reducing the need for hand-authored scripts. |
-| Character profiles (for LLM conversations) | 3 | 3–5 per district (~60–95) | Name, role, traits, knowledge domain. Lightweight to author — the LLM does the dialogue. |
-| Insight templates per district | ~6–9 (via conversations) | 8–12 per district (~150–230) | LLM conversations generate insights dynamically from district concerns + character knowledge |
-| Concern weights per district | 19 | 19 | All districts have 6-category concern scores (0–10). Drives LLM scoring. |
-| Policy/intervention templates | 6 (in data graph) | 15–20 generic + 40–60 informed | Infrastructure policies defined in entries.js; informed/pattern tiers designed but not wired |
-| Cross-district patterns | 0 | 10–15 | Schema designed, detection not implemented |
-| Scenario events (blizzard arc) | 10 | 15–20 (add smaller disruptions) | Full blizzard arc implemented with cinematic overlays |
-| LLM system prompts | 2 | 3–4 | Post scoring prompt done. Conversation prompt designed. Listening session prompt needed. |
-| Feed chatter templates | ~10 | 80–120 (district-specific, vague↔specific) | Basic templates; needs knowledge-graded detail |
-| DM templates per character | 1 (post-conversation) | 3–5 per character | Weekly follow-ups, disaster updates, reply system needed |
+| Districts | 19 | 19 | Complete |
+| Characters w/ scripted conversations | 11 | 19 (1+ per district) | LLM generates dialogue from profiles |
+| Character profiles | 3 | 3–5 per district (~60–95) | Lightweight; LLM does dialogue |
+| **Department definitions** | **0** | **6** | **New: topic-tag interjection rules, tile-gating, funding effects (§5.5a)** |
+| **Interjection topic-tag map** | **0** | **~40–60 tag→department rules** | **New: which lenses fire on which line topics; engine-side, deterministic** |
+| Insight templates / district | ~6–9 | 8–12 (~150–230) | **Now tiered surface/lens/check (§5.3)** |
+| **Check definitions (difficulty, white/red)** | **0** | **~30–50** | **New: gating community assets + named vulnerable residents** |
+| Concern weights / district | 19 | 19 | Drives scoring + reshuffle |
+| **Bento tiles (generic + dept-gated + pattern-mutated)** | 6 generic | 15–20 generic + 30–40 dept-gated | **Card tiers cut; all routed through departments (§5.7)** |
+| Cross-district patterns | 0 | 10–15 | **Now with cook-time + citywide effect + de-commit (§5.3b)** |
+| Scenario events (blizzard) | 10 | 15–20 | Full arc built |
+| LLM system prompts | 2 | 3–4 | Conversation prompt now *prose-only* (rules are engine-side) |
+| Feed chatter templates | ~10 | 80–120 | Knowledge-graded |
+| DM templates / character | 1 | 3–5 | |
 
 ---
 
 ## 7. Development history
-
-Three prototypes built progressively; the third became the foundation for the current game shell:
-
-- **The card loop** (retired): the decision + framing layer with the coalition model, cost-of-governing, events, and win/lose states. Validated that communication-as-mechanic works and the difficulty gradient holds. The campaign framing system evolved into the current social/resonance system.
-- **The spatial layer** (retired): a Phaser district map with pan/zoom, hover/select, three view modes, and policy ripples. Validated that consequence-on-map reads clearly. Superseded by the Mandate Board's SVG approach.
-- **The Mandate Board** (`Mandate Board.html`): the **design reference** — a polished, interactive SVG map with 19 districts, four view modes, hexagonal radial action menus, glassmorphic panels, and the complete visual language (light cream theme, red accent, Space Grotesk + Doto typography). Still in the repo as a read-only design reference.
-- **The game shell** (`index.html`): the current playable prototype. Built on the Mandate Board's visual DNA, it implements the full 48-week loop: three-view shell (Map/Calendar/Social), hex menu, drag-to-schedule Calendar, LLM-scored posts, 3 conversation scripts, 10-event blizzard arc with cinematic overlays, and all five end-states. ~4,800 lines, all inline.
+*(Unchanged from 0.7.)* The card loop (retired) → the spatial layer (retired) → the Mandate Board (design reference) → the game shell (`index.html`, current playable prototype). 0.8 is a design revision; no prototype history change.
 
 ---
 
 ## 8. UX & interface
 
-The full user flow — hex menu, three views, and all transitions — is documented in §4. This section covers visual treatment and the pieces that sit across views.
+*(0.7 §8 remains current for persistent elements, visual treatment, and quality floor. 0.8 adds two interface pieces.)*
 
-### 8.1 Persistent elements
+### 8.2 Conversation UI (updated for interjections & checks)
 
-Across all three views:
-- **Tab bar** — `M` `C` `S` styled as MTA-line bullets, bottom of screen. Active tab filled, inactive outlined. Notification badges: Social badges on new DMs or ratio'd posts; Map badges on emerging crises; Calendar badges on due commitments.
-- **Status bar** (top) — citywide trust %, city reserve, week/term clock, active crisis indicator. Always visible. Uses the Mandate Board's layout: MANDATE logotype left, data center, crisis right.
-- **Minimap strip** (below status bar, visible in Calendar and Social views) — compressed SVG of the full district graph. Shows knowledge brightness, labeled districts with colored hex badges, pulsing crisis nodes. Tap any district on the minimap to jump to Map view with that district selected.
-- **The notebook** — slide-out drawer accessible from any view (hotkey `N` or pull-tab at right edge). Collects insights organized by district and category. Cross-district patterns highlight automatically when discovered. This is the player's intelligence — the thing that powers good posts and informed policies.
+The glassmorphic conversation panel overlays the Map. NPC text in Space Grotesk; key statements with the red left-border accent. **New:**
+- **Interjection options** render distinctly from free-text: Doto monospace, a bracketed department source tag (`[PUBLIC HEALTH]`), and the department's color as a left border. They sit *above* the always-present free-text input — visible as offered threads, not forced choices.
+- **Checks** show a brief, legible roll moment: the department's funding contribution + the die, against the difficulty. Pass and fail both animate; **fail visibly opens the "why they're guarded" line** rather than greying out — reinforcing that failure is content.
+- **A misleading interjection** (underfunded lens, §5.5.4) looks identical to a real one *in the moment* — the cost is paid when it dead-ends. (Legible in retrospect via the notebook, which tags the dead-end to the underfunded department, teaching "fund to competence.")
+- **The no-solution soft-fail** surfaces as the character's deflation line and a small depth-drop indicator — never a modal scold.
 
-### 8.2 Conversation UI
+### 8.4 Department funding panel (new)
 
-When "Go" fires on the Calendar, the view transitions to Map. The map pans/zooms to the first scheduled district. A conversation panel overlays the map — the map dims, the target district node stays bright and pulsed.
-
-The panel uses the Mandate Board's glassmorphic treatment: dark header with character name, role, and district tag. NPC text in Space Grotesk, key statements highlighted with the red left-border accent.
-
-**With LLM (primary path):** The player types freely in a text input. The LLM plays the character and responds in their voice. No menus — the quality of your questions and empathy determines what gets revealed. A subtle depth indicator shows how open the character is becoming.
-
-**Without LLM (fallback):** Player choices are 2–3 response options that feel natural ("Tell me more about that," "That sounds rough," "I'll look into it") — not strategic menus. A depth meter tracks active listening quality.
-
-In both modes: discovered insights animate in as chips (Doto monospace, colored by category) that fly to the notebook pull-tab. The conversation ends, the panel slides away, the district node pulses brighter (knowledge just increased). If another engagement is scheduled, the map pans to the next district. After all engagements complete, the player is on the Map with fresh insights.
-
-### 8.3 Quality floor
-
-Responsive to mobile (views stack vertically on small screens), keyboard-focusable controls, `prefers-reduced-motion` respected (disables hex menu animations, crossfades instead). The map renders on all modern browsers without a game engine dependency.
+Lives on the Calendar/planning surface (not a new view — keeps the three-view shell intact). Six departments as vertical meters (0–4), each in its agency color, showing current level, the reserve cost to raise it, and a one-line "what this lets you hear/build." Raising a level animates the lens "coming online." Crystallized patterns show as a glow on their category's department (the earned lens sharpening the active one). The panel makes the three-way economy (perceive / bank / act) a single readable screen.
 
 ---
 
 ## 9. Art direction & audio
-
-### 9.1 Visual foundation — the Mandate Board
-
-The visual identity is established by the **Mandate Board** prototype (`Mandate Board.html`), a polished interactive SVG map with panels and a hexagonal action menu. The design language is:
-
-**Palette:**
-- **Background:** warm cream/off-white (`#ececea`) with subtle radial gradient. Light, airy, civic — not dark.
-- **Accent:** a single red (`#ff2d2d`) used for: the MANDATE logotype, trust warnings, active selections, the hexagonal action menu highlight, danger states. Red is the only chromatic color in the entire UI.
-- **Neutrals:** everything else is grayscale. Blocs are distinguished by value (`#1a1a1a` through `#777777`), not hue. Text is near-black on cream. Panels are semi-transparent white with backdrop blur.
-- **Knowledge brightness:** unvisited districts fade to ~14% opacity on the map — a literal dimming. Visited districts are solid. This single visual trick makes the knowledge system immediately legible.
-
-**Typography:**
-- **Space Grotesk** (400–700) — display face for labels, headings, body text.
-- **Doto** (500–900) — monospace pixel-grid face for all data: trust percentages, budget, week counters, countdown timers, category chips. Replaces Space Mono from earlier spec.
-
-**Layout pattern:**
-- Full-bleed SVG map as the canvas.
-- **Top bar:** `MANDATE` logotype (red, letterspaced), week/quarter counter, approval/trust %, reserve, crisis indicator.
-- **Bloc bar:** five constituency dots with labels and percentages, centered below the top bar.
-- **Left panel:** objective card, countdown timer, infrastructure checklist, public credit dots, map legend. Glassmorphic: `rgba(250,250,248,0.94)` with `backdrop-filter: blur(12px)`, 1px border, `border-radius: 10px`.
-- **Right panel:** district detail — selected district name (white on dark header), bloc, local trust (large Doto number, colored by trust level), population weight, concern quote (red left-border), knowledge progress bar, infrastructure status.
-- **Bottom bar:** view mode switcher (Coalition, Trust, Knowledge, Needs) as pill buttons. Active = red fill, white text. Inactive = transparent, gray text.
-
-**Interaction patterns:**
-- **Hexagonal radial menu** (reference: `index.html` Phaser implementation): click a district node → six hex buttons **expand outward** from the node center with staggered delays and `back.out` easing. Each hex has its own color (VISIT=green, LISTEN=cyan, POLICY=purple, POST=pink, INFO=gold, CLOSE=gray). Connected by per-color lines. On hover: hex scales 1.12x, fill inverts to action color, label goes dark. On dismiss: items **collapse back to center** with `quad.in` easing. Clicking an action hex labels the district (persistent badge on node), then collapses the menu.
-- **Node selection:** selected district gets a pulsing ring; all other labels dim to 18% opacity so focus narrows. Labeled (but unselected) districts show a small colored hex badge so you can see your planning marks across the map.
-- **View mode switching:** bottom pill bar, one active at a time. Each mode recolors the map nodes (coalition = bloc grays, trust = red/gray/black by trust level, knowledge = opacity by freshness, needs = category chip icons on visited nodes).
-
-### 9.2 Extending the language to Calendar and Social views
-
-The Mandate Board defines the Map view. Calendar and Social must share the same visual DNA:
-
-- **Calendar:** Same glassmorphic panels. Week slots as horizontal blocks (Doto labels for week numbers). Engagement cards styled like the district detail panel. The map minimap strip at top uses the same SVG rendering at reduced scale.
-- **Social:** Post composer as a card with the glassmorphic treatment. Feed items as stacked cards. Engagement metrics (likes, shares) in Doto monospace. DM threads in the same chat-bubble style as conversations. The feed background is the same cream. Red accent for notification badges, ratio indicators, and viral posts.
-
-### 9.3 Audio
-
-(Later): a low ambient city hum; distinct stings for trust gained vs. lost; a heavier motif when a fail-state nears. Restraint over spectacle.
+*(Unchanged from 0.7.)* Mandate Board visual language: warm cream (`#ececea`), single red accent (`#ff2d2d`), grayscale neutrals, knowledge-brightness dimming, Space Grotesk + Doto. **0.8 note:** department colors are the one sanctioned expansion of the palette beyond red — used *only* for interjection tags and the funding panel, where distinguishing six lenses by hue is load-bearing. Everywhere else the grayscale-plus-red discipline holds.
 
 ---
 
 ## 10. Technical architecture
 
-**Runtime pattern:** a thin app shell with a **tab router** between three views — Map (SVG + DOM panels), Calendar (DOM), and Social (DOM). A persistent status bar sits above the active view; the minimap strip renders a scaled-down SVG in Calendar/Social. The notebook is a slide-out drawer accessible from any view. Conversations overlay the Map view as a DOM panel.
+*(0.7 §§10.0–10.2 remain current: Svelte/Vite shell, SVG/MapLibre map, EventBus bridge, Ollama integration with the inbound/outbound split, data-driven content, save/restore. The key 0.8 architectural principle is stated in §5.5.6 and reinforced here:)*
 
-The Mandate Board prototype (`Mandate Board.html`) establishes the reference implementation for the Map view. It uses **SVG for the map** (not Phaser/Canvas), which simplifies the stack significantly: no game engine dependency, native text rendering, CSS animations, better accessibility, and trivial DOM overlay integration. The 19-node district graph does not need Canvas performance — SVG handles it cleanly.
+> **0.8 architectural rule — rules are engine-side, prose is LLM-side.** Everything mechanically load-bearing in a conversation — which departments interject, the topic-tag matching, check rolls, the no-solution detection, insight tiering — is computed deterministically by game systems. The LLM only generates *prose* (character voice, naturally-phrased interjection threads, pass/fail lines). This is what makes the Disco mechanics survive fallback mode intact (§5.5.7) and directly retires the "LLM quality floor" risk for anything that affects outcomes.
 
-### 10.0a EventBus bridge (inline in index.html)
+### 10.3 New & changed systems
 
-An inline `EventBus` class is defined in `index.html` and emits events at key lifecycle points: `ui.weekAdvanced`, `clock.weekStart`, `engagement.started`, `conversation.ended`, `post.published`, `game.start`. A **state bridge** wraps `gameState` and `DISTRICTS` with a dot-path `get`/`set`/`update` API, allowing the modular systems (`clock.js`, `trust.js`, `policy.js`, `scenario.js`) to be wired via the bus without direct state imports.
-
-### 10.0b Ollama integration (LLM as game engine)
-
-The local LLM (Ollama at `localhost:11434`, configurable via `OLLAMA_MODEL`, default `llama3.2`) serves as the game's intelligence layer in two symmetric roles:
-
-**1. Conversations (inbound — player listens to the city)**
-When a scheduled engagement fires, the LLM receives a system prompt with:
-- The character's profile (name, role, district, traits, knowledge domain)
-- The district's concerns and current state (trust, knowledge, recent events)
-- The player's existing insights (what they already know — the LLM avoids repeating)
-- The game clock (week number, disaster proximity, crisis phase)
-- Conversation history (for recurring visits — "last time you said X")
-
-The LLM plays the character in a multi-turn conversation. The player types freely. After the conversation ends (player closes, or 5+ exchanges), the LLM returns structured JSON: insights discovered, trust delta, depth score, character reaction, and a follow-up hook for DMs.
-
-**2. Post scoring (outbound — player speaks to the city)**
-`handlePost()` is async and sends the player's post text plus all discovered insights as context. The LLM returns per-district scores (0–10) and resident reaction quotes. Trust deltas are applied per district based on scores.
-
-**Fallback behavior:** When Ollama is unavailable, conversations fall back to scripted dialogue trees (multiple-choice, depth meter). Posts fall back to keyword matching against insight text. The game is fully playable in offline/fallback mode — the LLM path is richer, not required.
-
-### 10.1 Principles (unchanged)
-
-- **Data-driven content.** Districts, insights, characters, conversation fragments, policies, messages, and events are data (entries + links), not code. New content = new entries. The balance harness reads the same data.
-- **SVG + DOM, no game engine.** The map is an SVG element with reactive data binding (nodes, edges, glows, opacity). All panels, conversations, and views are plain DOM. No Phaser dependency — the Mandate Board prototype proves SVG handles the map beautifully. CSS handles animations (transitions, keyframes); SVG filters handle glow effects.
-- **Save/restore.** Storage-agnostic state layer. In-memory for embedded artifacts; `localStorage` or backend once deployed.
-- **Balance simulator** as a maintained CLI tool (Node) — rebuild for the new loop.
-
-### 10.2 Existing systems (carry forward)
-
-These systems survive the pivot with modifications:
-
-| System | File | Status | Notes |
-|---|---|---|---|
-| EventBus | `bus.js` | **Done** | Pub/sub backbone with wildcard patterns. Also inlined in index.html. |
-| StateStore | `state.js` | **Done** | Dot-path get/set/update, snapshot/restore. Also inlined. |
-| EntryRegistry | `registry.js` | **Done** | Content graph queries. Not yet populated/used in shell. |
-| ClockSystem | `clock.js` | **Done** | Weekly cadence, deficit, erosion, win/lose. Logic duplicated inline in index.html. |
-| TrustSystem | `trust.js` | **Done** | Per-district resilience, bloc aggregates, citywide. Logic duplicated inline. |
-| PolicySystem | `policy.js` | **Partial** | Insight-gated tiers designed. Not wired into shell. |
-| ScenarioSystem | `scenario.js` | **Partial** | Condition-based event engine. 10 blizzard events are hardcoded inline instead. |
-| CoalitionSystem | `coalition.js` | **Retired** | Replaced by TrustSystem. File deleted. |
-| CampaignSystem | `campaign.js` | **Retired** | Replaced by inline Social view + LLM scoring. File deleted. |
-| HazardSystem | `hazard.js` | **Retired** | Folded into scenario events. File deleted. |
-| InfrastructureSystem | `infrastructure.js` | **Deferred** | Data exists in entries.js/links.js; build system paused. |
-
-### 10.3 New systems
-
-Each is a standalone file in `systems/`, communicating only through the bus. No system imports another.
-
-**EngagementSystem** (`systems/engagement.js`)
-Manages the label→schedule→execute pipeline. Labels come from the hex menu on the Map (free, no limit). The Calendar displays the label queue and lets the player drag labels into time slots. When the player hits "Go", scheduled engagements execute in order.
+**DepartmentSystem** (`systems/department.js`) — **new, the hub**
+Owns per-department funding state (0–4). Answers two queries for other systems and emits funding events. Imports nothing.
 
 | Listens to | Emits |
 |---|---|
-| `ui.districtLabeled` | `label.added` (updates queue, node badge) |
-| `ui.districtUnlabeled` | `label.removed` |
-| `ui.labelScheduled` | `engagement.scheduled` (slot filled) |
-| `clock.weekStart` | `engagement.available` (slots for this week) |
-| `ui.weekStarted` ("Go") | `engagement.started` / `engagement.ended` (per slot) |
+| `ui.departmentFunded {dept, level}` | `department.funded {dept, level, reserveDelta}` |
+| `conversation.lineSpoken {topicTags}` (query) | `department.interjections {dept, threads[], checkBonus, misleadingRisk}` |
+| `pattern.crystallized {category}` | `department.lensSharpened {dept, effectiveBonus}` |
+| `bento.draftStarted` (query) | `department.availableTiles {tiles[]}` |
 
-**ConversationSystem** (`systems/conversation.js`)
-Manages character conversations via two paths. **LLM path (primary):** sends character profile, district state, player insight history, and conversation history to Ollama. The LLM plays the character; the player types freely. After the conversation, the LLM returns structured JSON with insights, trust delta, depth score, and follow-up hooks. **Fallback path:** scripted dialogue trees with multiple-choice responses and a depth meter.
-
-| Listens to | Emits |
-|---|---|
-| `engagement.started` (visit/listening) | `conversation.loaded` (character, topics) |
-| `ui.conversationMessage` (player typed text) | `conversation.exchange` (LLM response, depth change) |
-| `ui.conversationChoice` (fallback mode) | `conversation.exchange` (scripted response) |
-| `ui.conversationEnd` | `conversation.ended` (insights gained, trust delta) |
-| | `insight.discovered` (per insight) |
-
-**InsightSystem** (`systems/insight.js`)
-Manages the knowledge graph. Stores discovered insights per district, tracks freshness, detects cross-district patterns when the same category+problem appears in multiple places, and unlocks informed/pattern policy tiers.
+**ConversationSystem** (`systems/conversation.js`) — **substantially revised**
+Now orchestrates the interjection/check loop. On each NPC line, it tags the line's topics, asks DepartmentSystem which lenses interject, renders those threads alongside free-text, resolves checks deterministically, enforces the no-solution rule, and tiers the resulting insights. The LLM is called only for prose.
 
 | Listens to | Emits |
 |---|---|
-| `insight.discovered` | `insight.recorded` |
-| `clock.phaseStart` (advance) | `insight.staled` (freshness decay) |
-| | `pattern.discovered` (cross-district link found) |
-| | `policy.tierUnlocked` (informed/pattern policy now available) |
+| `engagement.started` | `conversation.loaded {character, fragility}` |
+| `conversation.lineSpoken` → (queries DepartmentSystem) | `conversation.interjectionsOffered {threads[]}` |
+| `ui.conversationMessage` / `ui.interjectionTaken` | `conversation.exchange {response, depthDelta, checkResult?}` |
+| `ui.conversationEnd` | `conversation.ended {insights[tiered], trustDelta, soloViolation}` |
+| | `insight.discovered {tier, source_dept?}` (per insight) |
 
-**KnowledgeSystem** (`systems/knowledge.js`)
-Per-district knowledge state — how well the mayor currently understands each place. Driven by visits (brightens) and time (dims). Feeds the Knowledge view mode on the map.
-
-| Listens to | Emits |
-|---|---|
-| `conversation.ended` | `knowledge.updated` (district brightens) |
-| `clock.phaseStart` (advance) | `knowledge.decayed` (weekly dimming) |
-
-**SocialSystem** (`systems/social.js`)
-Replaces the old campaign/framing system. Manages the social media view: post composition, grounding scoring, feed generation, DM threads. Posts are scored against the player's actual insight history — grounded posts generate engagement, hollow posts get ratio'd. The feed is procedurally generated from district concerns, post reactions, events, and character DMs.
+**InsightSystem** (`systems/insight.js`) — **revised for tiers + Thought-Cabinet patterns**
+Stores tiered insights; tracks freshness; detects patterns. **New:** patterns now *cook* (delayed crystallization), emit a citywide perceptual effect on crystallization, and support costly de-commit.
 
 | Listens to | Emits |
 |---|---|
-| `ui.postComposed` | `post.published` (grounding score, reach) |
-| `post.published` | `feed.reaction` (per-district engagement response) |
-| `conversation.ended` | `dm.available` (character can now DM you) |
-| `clock.weekAdvance` | `feed.updated` (new district chatter, mood shifts) |
-| `ui.dmSent` | `dm.replied` (trust maintenance delta) |
+| `insight.discovered {tier}` | `insight.recorded` |
+| `clock.weekStart` | `insight.staled`; `pattern.cooking {progress}`; `pattern.crystallized {category}` |
+| `ui.patternAbandoned {patternId}` | `pattern.abandoned {reserveDelta, recookWeeks}` |
 
-**OnboardingSystem** (`systems/onboarding.js`)
-Manages the scripted Week 0 sequence. Tracks which beat the player is on, gates certain actions (e.g., forces the first visit), and hands off to the normal loop after Beat 6. Listens for player actions to advance beats. Emits UI cues for the shell to render the briefing, desk policy, interruption, and contrast screens.
+**Bento/PolicySystem** (`systems/policy.js`) — **revised: card tiers removed, department-gated**
+The insight-gated *card* tiers from 0.7 §10.5 are cut. Tile availability now comes from DepartmentSystem; pattern crystallization mutates tiles. Adjacency synergy/conflict resolution on the 5×5 grid is unchanged in spirit.
 
 | Listens to | Emits |
 |---|---|
-| `game.start` | `onboarding.beat` (beat number, narrative, UI cue) |
-| `ui.onboardingAction` (player advances) | `onboarding.complete` (normal loop begins) |
-| `policy.resolved` (Beat 2 desk policy) | |
-| `conversation.ended` (Beat 4 first conversation) | |
+| `bento.draftStarted` → (queries DepartmentSystem) | `bento.tilesAvailable` |
+| `pattern.crystallized` | `bento.tileMutated {from, to}` |
+| `ui.bentoPlaced {tile, cell}` | `bento.synergy {type}` / `bento.conflict {type}` |
+| `ui.bentoEnacted` | `policy.resolved {trustDeltas, budgetDelta, casualtyMods}` |
 
-### 10.4 State model (new)
+*(EngagementSystem, KnowledgeSystem, SocialSystem, OnboardingSystem, ScenarioSystem carry forward from 0.7 with no structural change. ConversationSystem's revision is the largest; DepartmentSystem is the only genuinely new file.)*
+
+### 10.4 State model (additions for 0.8)
 
 ```javascript
 {
-  // Clock
-  week: 0,                    // 0 = onboarding, 1–48 = term
-  slotsTotal: 3,
-  
-  // Label queue (from hex menu on Map → flows to Calendar)
-  labels: [
-    // { districtId: "d_east_harlem", action: "visit", labeledAt: 1 }
-  ],
-  
-  // Scheduled engagements (labels dragged into Calendar slots)
-  schedule: [
-    // { slot: 0, districtId: "d_east_harlem", action: "visit" }
-    // { slot: 1, districtId: null, action: "policy" }
-  ],
-  
-  // Onboarding
-  onboarding: {
-    active: true,
-    beat: 1,                  // 1–6
-    deskPolicySigned: false,
-    firstConversationDone: false,
+  // ...all 0.7 state carries forward...
+
+  // NEW: department funding (the active lens)
+  departments: {
+    housing:        { level: 0 },   // 0–4
+    public_health:  { level: 1 },   // tutorial starts this at 1
+    emergency_mgmt: { level: 0 },
+    transportation: { level: 0 },
+    social_services:{ level: 0 },
+    sanitation:     { level: 0 },
   },
 
-  // Resources
-  reserve: 5.0,              // $B
-  operatingDeficit: 1.5,     // $B/month (applied weekly as ~0.375)
-
-  // Per-district (19 entries)
-  districts: {
-    d_east_harlem: {
-      trust: 40,              // 0–100
-      knowledge: 0,           // 0–100 (freshness of understanding)
-      lastVisited: null,      // week number or null
-      bloc: "working",
-      pop: 120000,
-      concerns: ["housing", "safety"],  // active concern categories
-    },
-    // ... 18 more
-  },
-
-  // Insights (discovered by player)
+  // REVISED: insights now carry a tier + source
   insights: [
-    // {
-    //   id: "ins_eh_heat",
-    //   district: "d_east_harlem",
-    //   category: "housing",
-    //   severity: 0.8,
-    //   freshness: 1.0,        // decays toward 0
-    //   discoveredAt: 0,       // week
-    //   description: "Heat failures in rent-stabilized buildings",
-    //   crossLink: null,       // or pattern ID
-    // }
+    // { id, district, category, severity, freshness, discoveredAt,
+    //   tier: "surface" | "lens" | "check",
+    //   source_dept: "public_health" | null,
+    //   check: { difficulty, roll, passed, type: "white"|"red" } | null,
+    //   description }
   ],
 
-  // Patterns (auto-detected cross-district links)
-  patterns: [],
+  // REVISED: patterns are now Thought-Cabinet-like
+  patterns: [
+    // { id, category, requiredInsights, contributingInsights[],
+    //   state: "cooking" | "crystallized",
+    //   cookProgress: 0..1,           // advances ~1/3 per week
+    //   crystallizedAt: null | week,
+    //   citywideLensBonus: 0 | n,     // applied to source dept's interjection freq + check bonus
+    //   recookUntil: null | week }    // set on abandon
+  ],
 
-  // Blocs (aggregate lens, computed from districts)
-  blocs: {
-    working:      { trust: 40 },
-    finance:      { trust: 40 },
-    realestate:   { trust: 40 },
-    progressives: { trust: 40 },
-    labor:        { trust: 40 },
-  },
-
-  // Policies enacted
-  policies: [],               // { id, week, type: "generic"|"informed"|"pattern", targets }
-
-  // Social media
-  posts: [],                  // { id, week, claim, tone, policyId?, groundingScore, engagement: {likes, shares, replies} }
-  feed: [],                   // { id, week, type: "chatter"|"reaction"|"news", district?, text, mood }
-  dms: [],                    // { id, characterId, district, messages: [{sender, text, week}], trust_delta }
-
-  // Aggregate
-  citywide: 40,               // population-weighted trust
-  gameOver: false,
-  gameResult: null,            // "resilient_city"|"held_together"|"blind_response"|"evacuation_failure"|"fiscal_crisis"
-  
-  // History (for telemetry + end-card)
-  history: [],                // { week, type, id, label, details }
+  // bento: tile availability is DERIVED from departments + patterns (not stored as unlock flags)
 }
 ```
 
-### 10.5 Content graph extensions
+### 10.5 ~~Insight-gated policy cards~~ — **REMOVED in 0.8**
+The 0.7 `tier: generic|informed|pattern` policy-card schema is cut. Policy construction is the bento box only (§5.7), with tiles gated by DepartmentSystem and mutated by crystallized patterns. The content-graph `policy` entries become **tile** definitions tagged with a gating department and an optional pattern-mutation target.
 
-New entry types added to `data/entries.js`:
-
-```javascript
-// Characters — people you meet in districts
-{ id: "c_eh_maria", type: "character", label: "Maria Delgado",
-  role: "Tenant organizer", district: "d_east_harlem",
-  traits: ["direct", "tired", "knowledgeable"],
-  portrait: "maria_delgado" }
-
-// Insight templates — possible discoveries per district
-{ id: "ins_eh_heat", type: "insight", label: "Heat failures",
-  description: "Landlords aren't fixing heat in rent-stabilized buildings.",
-  district: "d_east_harlem", category: "housing", baseSeverity: 0.8,
-  crossLinkPattern: "pat_housing_neglect" }
-
-// Conversation fragments — reusable dialogue pieces
-{ id: "cf_heat_opener", type: "fragment", label: "Heat complaint opener",
-  speaker: "npc", text: "Third winter in a row, no heat past 10pm.",
-  topic: "housing", mood: "frustrated",
-  reveals: "ins_eh_heat",         // discovering this insight
-  followups: ["cf_heat_dig", "cf_heat_empathy", "cf_heat_deflect"] }
-
-// Patterns — cross-district problem themes
-{ id: "pat_housing_neglect", type: "pattern",
-  label: "Systemic housing neglect",
-  description: "Landlords across multiple neighborhoods failing to maintain rent-stabilized units.",
-  requiredInsights: 3,            // from different districts
-  category: "housing",
-  unlocksPolicy: "pol_targeted_heat_enforcement" }
-
-// Informed policies — unlocked by insights
-{ id: "pol_targeted_heat_enforcement", type: "policy",
-  label: "Targeted heat enforcement in rent-stabilized buildings",
-  tier: "informed",               // generic | informed | pattern
-  requiredInsights: ["ins_eh_heat"],  // minimum to unlock
-  budgetDelta: -0.3,
-  trustEffect: { targeted: +12, citywide: +1 },
-  description: "Deploy code enforcement to specific buildings..." }
-```
-
-New link types added to `data/links.js`:
-
-```javascript
-// Character → District
-{ source: "c_eh_maria", target: "d_east_harlem", type: "lives_in" }
-
-// Character → Insight (can reveal)
-{ source: "c_eh_maria", target: "ins_eh_heat", type: "knows_about" }
-
-// Fragment → Fragment (conversation branching)
-{ source: "cf_heat_opener", target: "cf_heat_dig", type: "leads_to", value: "curious" }
-{ source: "cf_heat_opener", target: "cf_heat_empathy", type: "leads_to", value: "empathetic" }
-
-// Insight → Pattern (contributes to)
-{ source: "ins_eh_heat", target: "pat_housing_neglect", type: "contributes_to" }
-
-// Pattern → Policy (unlocks)
-{ source: "pat_housing_neglect", target: "pol_targeted_heat_enforcement", type: "unlocks" }
-```
-
-### 10.6 Event flow — one week (steady state)
-
-The week is **player-driven**, not phase-locked. The player freely switches between Map, Calendar, and Social views. Events fire in response to player actions, not a fixed sequence.
+### 10.6 Event flow — one conversation (0.8 detail)
 
 ```
-clock.weekStart {week}
-  └─ knowledge.decayed (all districts dim slightly)
-  └─ insight.staled (old insights lose freshness)
-  └─ feed.updated (new district chatter, DMs from characters)
-  └─ engagement.available {slots: 3}
-  └─ scenario.evaluate (events, emerging crises → map alerts, feed items)
-
-── PLAYER-DRIVEN (no enforced order) ──
-
-Map labeling (free, no slot cost):
-  └─ ui.districtLabeled {districtId, action: "visit"|"listen"|"policy"|"message"}
-       └─ label.added {districtId, action}  → node shows badge, Calendar queue updates
-  └─ ui.districtUnlabeled {districtId}
-       └─ label.removed {districtId}  → badge clears, Calendar queue updates
-
-Calendar scheduling:
-  └─ ui.labelScheduled {slot, districtId, action}  (drag from queue to slot)
-  └─ ui.labelUnscheduled {slot}                     (remove from slot)
-  └─ ui.weekStarted (player clicks "Go" — plays out scheduled engagements)
-       └─ FOR EACH scheduled slot:
-            └─ engagement.started {districtId, action}
-            └─ IF visit/listening:
-                 └─ [MAP VIEW] conversation overlay
-                 └─ conversation.loaded {character, topics}
-                 └─ LLM PATH: ui.conversationMessage → Ollama → conversation.exchange (multi-turn)
-                    FALLBACK: ui.conversationChoice → conversation.exchange (×3–5)
-                 └─ conversation.ended {insights[], trustDelta, depth, followUpHook}
-                 └─ insight.discovered (×1–3)
-                 └─ knowledge.updated
-            └─ IF policy:
-                 └─ policy.available {generic, informed, pattern}
-                 └─ ui.policyChosen → policy.resolved {trustDeltas, budgetDelta}
-            └─ engagement.ended
-            └─ label consumed (removed from queue and node badge)
-
-Social actions (any time, no slot cost):
-  └─ ui.postComposed {claim, tone, policyId?}
-       └─ post.published {groundingScore, reach}
-       └─ feed.reaction (per-district engagement responses appear in feed)
-  └─ ui.dmSent {characterId, text}
-       └─ dm.replied {trust_delta}
-
-── WEEK END ──
-
-  └─ ui.weekAdvanced (player clicks "End Week" on Calendar)
-       └─ trust erosion for unvisited/unacted districts
-       └─ apply operating deficit (~$0.375B)
-       └─ unscheduled labels persist in queue (carry over to next week)
-       └─ check win/lose conditions
-       └─ clock.weekStart {week + 1}
+engagement.started {district, action}
+  └─ conversation.loaded {character, thisRunFragility}
+  └─ LOOP per NPC line:
+       └─ conversation.lineSpoken {topicTags}
+            └─ DepartmentSystem → which funded lenses match topicTags?
+                 └─ for each: roll misleadingRisk if dept < competence(2)
+                 └─ conversation.interjectionsOffered {threads[] (1–3), free_text}
+       └─ player picks an interjection OR types
+            └─ IF interjection toward check-tier insight:
+                 └─ roll = dept.level (+ pattern bonus) + die(1..6)
+                 └─ pass → insight.discovered {tier:"check"}
+                 └─ fail → insight.discovered {tier:"surface", "why-guarded"}; thread closes
+                    (white: retry next visit / after +funding; red: locked this term)
+            └─ IF player typed a SOLUTION before depth threshold:
+                 └─ soloViolation = true; depthDelta negative; threads close
+            └─ ELSE free-text on-topic → possible lens/surface insight
+  └─ conversation.ended {insights[tiered], trustDelta, depth, soloViolation, followUpHook}
+       └─ knowledge.updated; dm.available
+       └─ InsightSystem checks: did this complete a pattern's requiredInsights?
+            └─ if yes → pattern.cooking {progress:0} (crystallizes ~3 weeks later)
 ```
 
-### 10.7 Event flow — Week 0 (onboarding)
-
-During onboarding, only the Map view is active. Calendar and Social tabs are visible but locked (dimmed, with a subtle "Week 1" label). This focuses the player on the map and the first conversation before revealing the full interface.
-
-```
-game.start
-  └─ onboarding.beat {beat: 1, type: "briefing"}
-       └─ [MAP VIEW] newspaper splash overlay, oath, dim map behind
-       └─ ui.onboardingAction (player dismisses)
-  └─ onboarding.beat {beat: 2, type: "desk_policy"}
-       └─ [MAP VIEW] generic housing policy card overlaid on map
-       └─ ui.policyChosen → policy.resolved (mild trust, big budget hit)
-       └─ map barely changes — the gap is visible
-       └─ state: onboarding.deskPolicySigned = true
-       └─ ui.onboardingAction
-  └─ onboarding.beat {beat: 3, type: "interruption"}
-       └─ [MAP VIEW] scheduler dialogue overlay, "East Harlem is asking"
-       └─ East Harlem node pulses on the dim map
-       └─ ui.onboardingAction (player agrees to go)
-  └─ onboarding.beat {beat: 4, type: "first_conversation"}
-       └─ [MAP VIEW] conversation panel overlays map, East Harlem node glows
-       └─ engagement.started {type: "mayor_visit", district: "d_east_harlem"}
-       └─ conversation.loaded → normal conversation flow
-       └─ conversation.ended → insight.discovered
-       └─ state: onboarding.firstConversationDone = true
-  └─ onboarding.beat {beat: 5, type: "contrast"}
-       └─ [MAP VIEW] notebook slides out (1 insight) next to desk policy summary
-       └─ "That's day one. 47 weeks left. Here's what you know."
-       └─ Map: one bright node, 18 dim
-       └─ ui.onboardingAction
-  └─ onboarding.beat {beat: 6, type: "handoff"}
-       └─ Calendar and Social tabs unlock (animate in, badge with "NEW")
-       └─ Social feed populates with initial city chatter
-       └─ state: onboarding.active = false
-       └─ onboarding.complete
-       └─ clock.weekStart {week: 1}  ← normal loop begins, all views active
-```
-
-### 10.8 Swift/macOS port (MandateSwift/)
-
-A native macOS app built in SwiftUI, targeting App Store distribution. The Swift port is the **release target**; the web prototype remains the playtesting and design iteration tool.
-
-**Architecture:**
-- **7 core systems ported:** EventBus, GameState, ContentGraph, ClockSystem, TrustSystem, PolicySystem, ScenarioSystem — all as Swift classes/structs mirroring the JS bus-connected pattern.
-- **Static data:** All 115+ content graph entries and 170+ links ported as Swift static arrays (`Entries.swift`, `Links.swift`). 10 scenario events (`ScenarioEvents.swift`). 10 NPC conversation scripts (`Conversations.swift`).
-- **Views:** SwiftUI views for the three-view shell (GameShell, StatusBar, BlocBar), canvas-based hex map with radial menu and 4 view modes (MapView, HexRadialMenu, DistrictDetailPanel), calendar with scheduling and week advancement (CalendarView), conversation overlay (ConversationOverlay), social feed with compose bar, feed timeline, and DM sidebar (SocialView, ComposeBar, FeedTimeline, DMSidebar), and game end overlay with all 5 outcomes (GameEndOverlay).
-- **Design tokens:** Centralized `Theme` enum (DesignTokens.swift) with palette, typography, spacing, and animation constants — the Swift equivalent of the CSS custom properties in the web version.
-- **LLM integration:** Ollama HTTP at `localhost:11434`, same as web. `LLMService.swift` handles the connection; `PostScorer.swift` mirrors the web's `handlePost()` with per-district scoring; `FallbackScorer.swift` provides keyword-matching when Ollama is unavailable.
-
-**What's missing vs. web:**
-- Pattern detection system (cross-district insight linking)
-- Chatter generation (procedural feed content based on district knowledge)
-- 3 of 8 post pipeline steps (full grounding chain not yet wired)
-- Pan/zoom gestures on the map canvas
-- Drag-to-schedule on the calendar
-- Initial feed and DM seeding on game start
-- Node flashing animation on label
-- Map badge rendering for labeled districts
-
-**Platform strategy:**
-- **Web = prototype and playtesting tool.** Zero-friction access — send one HTML file. Design iteration happens here first.
-- **Swift = release target.** App Store distribution, native performance, presentation-quality UI.
-- **Don't maintain both in parallel.** Finalize design decisions in the web prototype, then do a final Swift port pass.
-- **LLM path:** Ollama HTTP works from both platforms today. The future path for self-contained distribution is **MLX Swift** — Apple's native ML framework — which would allow the game to run its own local model without requiring Ollama. This is the key advantage of the native port: a single `.app` bundle with embedded inference.
-
-**File count:** 37 Swift source files, ~4,300 lines.
+### 10.8 Swift/macOS port
+*(Carries forward from 0.7. 0.8 impact: the Swift port must add `DepartmentSystem.swift` and revise `ConversationSystem`/insight models to match. Because the Disco mechanics are engine-side and deterministic, they port cleanly — no reliance on LLM behavior. The card-tier policy code is removed to match the web cut.)*
 
 ---
 
 ## 11. Open design questions
 
-### Answered by implementation
-
-- ~~**Conversation depth vs. pace:**~~ Implemented as free-form LLM conversations (no fixed exchange count). Scripted fallback uses 3–5 exchanges with depth meter. Playtesting will determine if conversations need a soft time limit.
-- ~~**Posting frequency:**~~ No limit. The constraint is entirely "you need insights to post well." LLM scoring naturally punishes hollow posts with low engagement and trust erosion. No artificial cap needed.
-- ~~**Lying and spin:**~~ Allowed. The LLM detects it — posts about unvisited districts get low scores and get ratio'd in the feed. The option to lie is itself the interesting choice; the system punishes it naturally.
-- ~~**Difficulty ramp:**~~ The blizzard arc starts signaling at week 4 (distant forecast). Complexity is present from day one — 19 districts, all unknown. The countdown creates urgency without artificial gating.
+### Resolved in 0.8
+- ~~**Conversation system design.**~~ Disco-inspired: department interjections + content-opening checks + the no-solution rule (§5.5).
+- ~~**Listening-quality opacity.**~~ Replaced by lens-surfaced options (safe listening) + the single hard no-solution rule. No black-box scoring of "good listening."
+- ~~**Thought Cabinet — build it or not?**~~ Not separately. Patterns absorb the role (cook-time + citywide perception + costly de-commit, §5.3b). Departments are the active lens; patterns the earned lens.
+- ~~**Bento vs. card duplication.**~~ Cards cut. Bento is the only policy interface, gated by departments (§5.7).
+- ~~**LLM quality floor for outcomes.**~~ Mechanics are engine-side; LLM is prose-only (§5.5.6, §10.3). Fallback keeps the mechanics intact.
+- ~~**Conversation length control.**~~ Interjection threads are finite and checks resolve threads; combined with the no-solution rule and character fatigue, conversations self-limit without an artificial turn cap.
+- ~~**Roguelike: specificity vs. anti-memorization.**~~ Characters stay constant; their *fragility* and the *rewarded lens* reshuffle (§5.13).
 
 ### Still open
-
-- **LLM conversation quality floor:** How do we ensure the LLM stays in character and doesn't hallucinate NYC facts? The system prompt needs guardrails — character profile, district concerns, and explicit "do not invent locations or statistics" instructions. What's the minimum model size that produces good conversations? `llama3.2` (3B) may be too small for multi-turn roleplay.
-- **Conversation length control:** With free-form LLM conversations, what stops a player from interrogating one character for 20 turns? Options: (a) the character gets tired and ends it ("I've got to go, Mayor"), (b) a soft timer in the UI ("You have other meetings today"), (c) diminishing insight returns after 5–6 exchanges.
-- **Insight staleness curve:** How fast should knowledge decay? Too fast = frustrating ("I can never keep up"). Too slow = no pressure to revisit. Current code applies −4 knowledge/week. Probably district-dependent — fast-changing neighborhoods decay faster.
-- **Feed as gameplay vs. flavor:** How much of the feed is mechanically significant (early warnings, actionable intel) vs. atmosphere? The ratio determines whether players learn to read the feed strategically.
-- **DM depth:** One reply ("Thanks, I hear you") or multi-turn threads? With LLM-powered conversations, DMs could also be LLM-generated — characters message you with updates, you reply freely. But this risks making DMs a second conversation channel that competes with visits.
-- **Recurring characters:** With LLM conversations, revisiting a district can naturally surface the same character with memory of your last conversation. The LLM system prompt includes conversation history. But how much history is too much context? Should the game limit repeat visits to the same character to encourage meeting new people?
-- **The notebook as UI:** How much of the insight system is visible as an explicit notebook vs. baked into the map and social view? The notebook risks feeling like homework. The social feed partially replaces it as a "what do I know" surface.
-- **Community asset amplification:** When a discovered asset meets a pre-positioned intervention, the asset's protective radius should double. But what's the right multiplier? Too high and assets feel overpowered. Too low and the discovery doesn't feel meaningful.
-- **Listening session dynamics:** With 2–3 characters in a single LLM conversation, how do we prevent the meeting from becoming incoherent? The LLM needs structure: each character speaks in turn, they build on each other's points, disagreements surface real tensions. This is harder than 1-on-1 conversations.
-- **Model selection & performance:** `llama3.2` (3B) is fast but may lack the nuance for in-character roleplay. `llama3.1:8b` is better but slower. Should the game offer a model selector, or should it auto-detect what's available? What's the latency budget for a conversation turn? (>3 seconds breaks immersion.)
-- **Roguelike balance:** How much variation between runs is enough to prevent memorization without making the game feel arbitrary? If concern weights shift too much, returning players can't build on prior knowledge. If they shift too little, the second run feels like the same city. The *Blue Prince* lesson: the rooms change, but the rules don't. What are Mandate's invariant rules vs. variable parameters?
-- **Candidate AI quality:** Candidates need to feel like real opponents, not strawmen. Their feed reactions must be plausible — a finance-aligned candidate should make arguments that *sound reasonable*, not cartoonishly evil. How much LLM context does a candidate reaction need? Can it be a single prompt with the candidate profile + the player's recent action, or does it need run history?
-- **Bento box UX:** Spatial policy construction is intuitive in concept but potentially fiddly in execution. How many tiles fit in the grid? If the grid is too small (3x3), options feel limited. If too large (6x6), the combinatorial space overwhelms. What's the right grid size for "feels like a real budget constraint but not a puzzle game"? How do synergy/conflict rules get communicated — tooltips, color coding, physical snap/repel feedback?
-- **Approval vs. resilience:** With candidates, the player manages two scores — approval (political) and resilience (civic). Do these compete for the same resources (time slots, budget), or are they orthogonal? If a player can max both, there's no tension. If they're zero-sum, the game risks feeling punitive. The sweet spot: they're correlated in the short term (popular moves build resilience) but diverge under pressure (the right move for the city is unpopular).
+- **Department count & granularity.** Six feels right for legibility, but does it cover the disaster types? A pandemic run leans heavily on Public Health + Social Services — are two lenses enough to make that run feel distinct, or does it need a 7th (e.g., a "Communications/Trust" lens)? Playtest per disaster type.
+- **Can-a-lens-be-wrong (§5.5.4) — keep or cut?** The underfunded-lens misleading interjection is pedagogically honest (thin-staffed agencies give bad reads) but risks frustration. Default 15% below competence; **must playtest whether it teaches "fund to competence" or just feels unfair.** Cut-bar: if testers distrust *funded* lenses, remove entirely.
+- **Red checks — how many, how punishing?** One-shot locked-until-next-run assets create real stakes but also real feel-bad on a failed roll. What share of community assets should be red vs. retryable white? Probably very few (the most decisive 2–3 per run).
+- **Pattern cook-time & de-commit cost.** 3 weeks / reserve-hit-plus-3-week-recook are guesses. Cook-time too long and patterns never pay off in a 48-week term; de-commit too cheap and the roguelike lens-reshuffle loses its bite.
+- **Three-way economy balance.** Perceive / bank / act is the central new tension. Where are the failure cliffs? (Over-funding → Fiscal Crisis; under-funding → deaf at the disaster.) The balance harness must model all three explicitly.
+- **Interjection volume.** 1–3 lenses per line — does a fully-funded player drown in bracketed options? Cap per line? Prioritize by severity/relevance? Risk: the safe lens-options crowd out free-typing, and players stop writing.
+- **Surfacing the "why" of a misleading dead-end.** The notebook tags dead-ends to the underfunded department — is that legible enough to teach, or do players just feel cheated and not connect it to funding?
+- **(Carried from 0.7, still live):** insight staleness curve; feed as gameplay vs. flavor; DM depth; listening-session coherence; model selection/latency; candidate AI quality; bento grid size; approval-vs-resilience coupling.
 
 ---
 
 ## 12. Risks
+*(0.7 risks carry forward. 0.8 adds/sharpens:)*
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Conversations feel repetitive or shallow | High | Procedural assembly from fragments; recurring characters with memory; playtest conversation fatigue early |
-| Politically charged content reads as partisan or preachy | Med | Keep blocs as game factions, not real parties; comedy + evenhandedness; playtest with mixed audiences |
-| Insight system feels like busywork ("homework before the fun part") | Med | Make conversations intrinsically enjoyable, not just data-gathering; insights should feel like discoveries, not checkboxes |
-| Knowledge/trust model is too opaque (pillar #2 breaks) | Med | Every system must answer "does the player understand why trust went up/down?"; the notebook and map views must make the chain legible |
-| Content volume is daunting (60+ characters, 150+ insights) | High | Prioritize 5–7 districts for Phase 1; use procedural assembly over hand-authored scripts; template system for conversations |
-| Balance breaks as content scales | Med | Maintained simulator in CI; playtest coverage/trust curves regularly |
-| SVG perf on low-end mobile with many animated nodes | Low | 19 nodes is well within SVG performance budget; reduce glow filters on low-end; `prefers-reduced-motion` disables animations |
-| Scope creep (conversations + insights + messages + recurring chars all at once) | High | Strict phase gating; ship the listening loop before adding message resonance depth |
+| **Players drown in interjection options, stop free-typing** | Med | Cap interjections/line; keep free-text always primary in layout; playtest the option-vs-typing ratio |
+| **Underfunded-lens "wrong reads" feel unfair, not instructive** | Med | Cap to below-competence only; notebook attribution; hard cut-bar if it backfires (§11) |
+| **Three-way economy too punishing — players feel they can't afford to perceive** | Med | Tune funding costs; ensure level-2 competence is reachable for 2–3 depts by mid-term on careful play |
+| **Department system adds cognitive load on top of an already-rich loop** | Med | The funding panel is one screen; departments *replace* the vague "lenses" hand-wave rather than adding a wholly new concept; onboarding funds one for you |
+| **Removing policy cards strands existing content** | Low | 0.7 policy entries convert to bento tiles with a gating-department tag; mechanical, not creative, rework |
+| Conversations feel repetitive/shallow | Med | Interjections + fragility-reshuffle keep the *same* character fresh across runs; engine-side variety |
+| LLM hallucination affecting outcomes | **Low (down from Med)** | **Outcomes are engine-side; LLM is prose-only (§5.5.6)** |
 
 ---
 
 ## 13. Success metrics & playtesting
-
-Because this is being built by an HCI researcher, instrument it like one.
-
-- **Completion:** % of players who finish a full term; where dropoff clusters by week.
-- **Engagement with listening:** do players choose to visit districts, or do they skip to generic policies? Time spent in conversations vs. time spent governing. If players skip the conversations, the design has failed.
-- **Coverage patterns:** how many of the 19 districts does a player visit in a run? Do they cluster or spread? Where do they go first and why?
-- **Social behavior:** do players craft posts based on insights they gathered, or do they spray generic claims? Do they read the feed? Do they reply to DMs? Does grounding correlate with trust outcomes? How often do they check Social vs. Map vs. Calendar?
-- **Legibility:** post-run, can players name what a specific district needed? Can they explain why trust went up or down? (The pillar-2 test.)
-- **Replay:** runs per session; do players try different coverage strategies across runs (geographic, bloc-focused, crisis-driven)?
-- **Lightweight telemetry** + a structured think-aloud protocol for qualitative passes. Key events to log: district visits, conversation choices, insights discovered, messages crafted, policy selections, trust deltas. Keep raw event logs so balance and UX can be analyzed together.
+*(0.7 metrics carry forward. 0.8 adds:)*
+- **Lens-driven listening:** do players fund departments *before* visiting, and does funded-lens coverage correlate with Check-tier insight discovery? (If players ignore departments and still succeed, the spine isn't load-bearing — redesign.)
+- **The three-way economy:** distribution of reserve across perceive/bank/act at week 30. Are players finding the tension, or defaulting to one strategy?
+- **Pattern commitment:** do players let patterns crystallize and feel the citywide perceptual shift? Do they ever pay to de-commit? (De-commit usage is the tell that the roguelike lens-reshuffle is biting.)
+- **No-solution rule legibility:** post-run, can players articulate *why* a conversation went cold? (The pillar-1 test — did they learn that solving-too-early fails?)
+- **Wrong-lens teaching (if kept):** do players connect dead-end interjections to underfunding, and respond by funding to competence?
 
 ---
 
 # Dev roadmap
 
-Phases are gated: don't start a phase until the prior phase's exit criteria are met. Effort is rough and assumes a solo dev or very small team; treat the ranges as relative, not promises.
+*(Phases 0–5 from 0.7 carry forward. 0.8 inserts the conversation/department rework as the spine of Phase 1's remaining work and reorders two items. Only the changed parts are shown.)*
 
-### Phase 0 — Prototypes · **DONE**
-Two balance-tested slices: the card loop and the spatial map.
-**Exit (met):** spatial layer proven; coalition model validated; visual language established.
+### Phase 1 — The listening loop · **~80% → revised target**
 
-### Phase 1 — The listening loop: *"One Week, Playable"* · **~80% COMPLETE**
+**The remaining Phase-1 work is now organized around the spine.** Build order:
 
-**Done:**
-- [x] Three-view shell with tab router, status bar, bloc bar
-- [x] Live Map view: SVG nodes, edges, 4 view modes, pan/zoom, hex menu with animated expand/collapse
-- [x] Label → Queue → Schedule pipeline (hex menu tags flow to Calendar, drag to slots)
-- [x] Calendar view: monthly grid, 3 slots/week, drag-to-schedule, undo via ×/click
-- [x] Social view: compose bar, LLM-scored posts (Ollama), feed timeline, DM sidebar, insight list
-- [x] Conversation overlay: typing indicator, NPC text, player choices, depth meter, insight chips (10 scripted districts)
-- [x] GO execution: plays scheduled engagements in order, triggers conversations
-- [x] END WEEK: trust erosion, knowledge decay (−4/week), operating deficit (−$0.375B), feed chatter, win/lose checks
-- [x] Trust chain: visits → insights → posts → trust deltas → map update
-- [x] Blizzard scenario arc: 10 events (weeks 4–44), cinematic overlays, preparation checklist
-- [x] All five end-states with cinematic Frostpunk-style ending screen
-- [x] EventBus bridge with state bridge (dot-path get/set/update API)
-- [x] Modular systems written (bus, state, registry, clock, trust, policy, scenario) — not yet wired into shell
+1. **DepartmentSystem (`systems/department.js`)** — funding state 0–4, reserve integration, the two query interfaces (interjections, tiles). *This is the new keystone — everything else in Phase 1 hangs off it.*
+2. **Conversation rework** — interjection offering (engine-side topic-tag → lens matching), deterministic checks (white/red, content-opening failure), the no-solution rule, insight tiering. LLM reduced to prose.
+3. **Department funding panel UI (§8.4)** — the perceive/bank/act screen on the Calendar surface.
+4. **Patterns-as-Thought-Cabinet** — cook-time, citywide crystallization effect, costly de-commit (revise InsightSystem).
+5. **Bento gating** — cut policy cards; route tile availability through DepartmentSystem; pattern tile-mutation.
+6. *(Carried from 0.7:)* LLM-powered conversation prose for all 19 districts; remaining character profiles; onboarding Week 0 (now also introduces one funded department); notebook drawer (now shows insight tiers + cooking patterns); insight freshness decay; feed intelligence; extract systems from shell; reconcile data sources.
 
-**Remaining:**
-- [ ] **LLM-powered conversations** — wire Ollama to generate dynamic conversations from character profiles (the biggest remaining feature; solves the content bottleneck)
-- [ ] **Character profiles for remaining 9 districts** — name, role, traits, knowledge domain (10 of 19 done; LLM generates the dialogue)
-- [ ] **Onboarding / Week 0** — scripted first day (§4.0, beats 1–6)
-- [ ] **Notebook drawer** — slide-out panel showing all insights, accessible from any view
-- [ ] **Insight freshness decay** — insights go stale after ~6–8 weeks, stop grounding posts
-- [ ] **Pattern detection** — same category in 3+ districts → pattern → unlocks informed interventions
-- [ ] **DM system** — weekly character follow-ups, player replies, trust maintenance
-- [ ] **Feed intelligence** — vague/specific gradient based on district knowledge level
-- [ ] **Extract systems from shell** — move inline logic to bus-connected modules
-- [ ] **Reconcile data sources** — DISTRICTS array in index.html vs. data/entries.js → single source of truth
+**Revised exit:** a tester plays Week 0 → blizzard; funds departments and *feels* the perceive/bank/act tension; sees different interjections based on funding; passes/fails checks where failure still teaches; commits a pattern and feels the citywide lens sharpen; builds a department-gated bento policy; reaches all five end-states. Onboarding teaches the spine by example.
 
-**Exit:** a tester plays Week 0 through the blizzard; onboarding teaches all views; LLM conversations yield insights; posts are grounded or hollow with visible consequences; all five end-states reachable.
-
-### Phase 2 — Conversation depth & social resonance · ~4–6 wks
-Make the LLM conversation system feel alive. **Pick a subset — do not build all at once.**
-
-- **Conversation memory** — the LLM receives previous conversation history on revisits. Characters remember what you said, whether you followed through, how things changed. ("You said you'd look into the heat. That was six weeks ago.")
-- **Community asset activation** — ASSET-type insights discovered in listening sessions unlock crisis response options during the blizzard. The pharmacy generator stores insulin; the mosque becomes a warming center; the block association phone tree mobilizes 200 people.
-- **Full grounding scoring** — nuanced resonance that rewards tone-matched, insight-backed posts and generates realistic engagement patterns (ratio'd posts, viral grounded posts, quote-post callouts).
-- **Feed intelligence** — the feed becomes a real signal layer: early warnings from unvisited districts (vague), specific intel from visited ones, reaction threads on your posts.
-- **Trust diffusion** across the transit graph — neglected districts drag their neighbors; trust is contagious in both directions.
-
-**Exit:** conversations feel like relationships, not data extraction; the Social view feels alive and responsive; community assets change disaster outcomes; at least one depth system shipped and legible.
-
-### Phase 3 — Content & authenticity · ~4–6 wks
-- Expand character profiles to 3–5 per district with distinct voices, traits, and knowledge domains. (LLM generates dialogue from profiles — authoring is lightweight.)
-- Cross-district patterns and the informed/pattern intervention unlock tree (10–15 patterns).
-- Events bank toward 25–30 (smaller disruptions between the main blizzard arc).
-- LLM prompt tuning: ensure characters stay in voice, don't hallucinate, and reveal insights at the right depth.
-- Accessibility pass; copy polish; onboarding tuning based on playtest data.
-
-**Exit:** a full run produces varied, authentic conversations; the city reads as NYC; a new player learns the loop unaided; the disaster feels different depending on preparation.
-
-### Phase 4 — Meta, polish & retention · ~3–4 wks
-- **Daily seeded challenge** — same city, same problems, compare trust scores and coverage.
-- Shareable end-cards ("You governed NYC. Trust: 62%. Districts never visited: 4. The Bronx remembers.").
-- Run history and stats; audio pass; "juice" (screen feedback, conversation animations, map transitions); settings.
-
-**Exit:** a shippable web build with a reason to return tomorrow.
-
-### Phase 5 — Roguelike, candidates & bento box · ~6–8 wks
-
-The three systems that turn Mandate from a single-arc experience into a replayable political survival game. Build in order: roguelike first (structural), then candidates (content), then bento box (interaction).
-
-- **Roguelike run variation** — disaster type selection (blizzard/hurricane/heat wave/pandemic/infrastructure collapse), concern weight reshuffling, character rotation from pool, variable timeline pressure, starting bloc hostility variation. First run always blizzard (tutorial). Subsequent runs draw from pool.
-- **Legacy & persistence** — meta-knowledge progression (no mechanical advantages). Legacy score across runs. Unlocked disaster types. Run history with coverage heatmaps.
-- **Candidates** — 2–3 rival candidates per run with bloc alignments, platforms, and reactive feed behavior. Approval rating alongside resilience. Candidate LLM reactions to player posts and policies. Election outcome as second win/lose axis.
-- **Bento Box Policy Builder** — spatial grid for policy construction. WHERE/WHAT/HOW/FUNDING tiles. Adjacency synergies and conflicts. Insight-unlocked efficient tile variants. Replaces the current policy card selection UI.
-- **Balance pass** — new difficulty curves for multiple disaster types. Candidate AI tuning. Bento box grid sizing. Cross-run balance (is each disaster type winnable?).
-
-**Exit:** three distinct runs feel meaningfully different. Candidates add political tension without feeling unfair. The bento box makes policy construction tangible and rewarding. A player who's done 5 runs understands the *system* but can't predict the *city*.
+### Phase 5 — Roguelike, candidates & bento · **revised**
+The bento box is **no longer introduced here** — it moves into Phase 1 as the (now department-gated) policy interface. Phase 5 keeps: roguelike run variation (now explicitly the **two-axis** reshuffle — fragility + rewarded lens, §5.13), legacy/persistence (meta-knowledge only), candidates (with the optional department-funding-attack hook), and the cross-disaster-type balance pass (now including per-disaster lens-reward tuning).
 
 ### Cross-cutting (every phase)
-- Rebuild and maintain the balance simulator for the new loop.
-- Playtest at the end of each phase against the S13 metrics; feed findings back into tuning.
-- Maintain the design-pillar test: any new feature that fails pillar #2 (knowledge is earned) or pillar #4 (time is the constraint) gets cut or redesigned.
-- **Platform strategy:** iterate in web first, then port to Swift. Don't maintain both in parallel. The Swift port gets a final sync pass before each release milestone. MLX Swift integration (self-contained LLM) is the gating feature for App Store distribution.
+*(Unchanged, plus:)* maintain the **engine-side-rules / LLM-prose-only** discipline as a hard architectural invariant — any feature that pushes outcome logic into the LLM gets redesigned. Maintain the design-pillar test; the new spine must always answer "does the player understand why they could or couldn't perceive/build this?"
 
 ---
 
-## Appendix A — Reference constants (target)
+## Appendix A — Reference constants (0.8 additions)
 
 ```
-Blocs                5 (Working, Business, Real Estate, Progressives, Labor)
-Districts            19 across 6 regions (bronx, mupper, mcore, queens, brooklyn, si)
-Term length         ~48 weeks (compressed term)
-Disaster arc         Before (~wk 1-30) → During (~wk 30-42) → After (~wk 42-48)
-Time slots/week      3–4
-Start reserve        $5.0B
-Start resilience     40 (all districts — you're new, they're skeptical)
-Start knowledge      0 (all districts — you know nothing yet)
-Resilience erosion   ~1 pt/district/week if unvisited
-Knowledge decay      insights go stale after ~6–8 weeks
-Operating deficit    ~$1.5B/month
-Evac failure         citywide resilience < 20%
-Insolvency           reserve < −$3.0B
-Held Together        citywide resilience ≥ 50% at term end
-The Resilient City   citywide resilience ≥ 75% at term end (zero preventable casualties)
-Target survival      ~15% (blind response) / ~25% (random visits) / ~60% (strategic visits) / ~80% (full HCD loop mastery)
+Departments              6 (Housing, Public Health, Emergency Mgmt, Transportation, Social Services, Sanitation/Infra)
+Department funding range  0–4 (2 = competence threshold; 3 = unlocks efficient bento tiles)
+Misleading-interjection   15% chance below competence (level < 2); 0% at/above   [TUNABLE]
+Check formula             dept_level (+ pattern bonus) + die(1..6) >= difficulty
+Check types               white (retryable after +1 funding or next visit) / red (1 per term)
+Insight tiers             surface (free) / lens (dept-gated) / check (dept-gated + roll)
+Pattern cook-time         ~3 weeks to crystallize                               [TUNABLE]
+Pattern de-commit cost    reserve hit + 3-week re-cook penalty                  [TUNABLE]
+Three-way economy         reserve funds: department levels | banked reserve | enacted policies
+--- (0.7 constants below, unchanged) ---
+Districts 19 · Term ~48 wks · Slots 3–4/wk · Start reserve $5.0B · Start resilience 40 · Start knowledge 0
+Operating deficit ~$1.5B/mo · Evac failure <20% · Insolvency <−$3.0B · Held Together ≥50% · Resilient City ≥75%
 ```
 
-## Appendix B — Files
+## Appendix B — Files (0.8 changes)
 
-### Game
-- `index.html` — **Game shell.** ~4,800 lines. SVG map, hex menu, three-view tabs (Map/Calendar/Social), conversation overlay, LLM-scored posts, blizzard scenario arc, cinematic endings. All systems inline.
-- `Mandate Board.html` — **Design reference.** Bundled interactive SVG prototype. Read-only visual DNA.
-
-### Data
-- `data/entries.js` — Content graph nodes: 19 districts (with concern weights, vulnerability tags), hazards, infrastructure, blocs, policies, outcomes.
-- `data/links.js` — Content graph edges: threatens, mitigates, protects, costs, cascades.
-
-### Systems (modular, bus-connected — built but not yet wired into shell)
-- `systems/bus.js` — EventBus with wildcard patterns.
-- `systems/state.js` — StateStore with dot-path get/set/update, snapshot/restore.
-- `systems/registry.js` — EntryRegistry for content graph traversal.
-- `systems/clock.js` — ClockSystem: weekly cadence, deficit, erosion, win/lose.
-- `systems/trust.js` — TrustSystem: per-district resilience, bloc aggregates, citywide.
-- `systems/policy.js` — InterventionSystem: insight-gated policy tiers (stub).
-- `systems/scenario.js` — ScenarioSystem: condition-based weekly events (stub).
-
-### Dev tools
-- `graph.html` — Content graph visualizer with D3 force layout.
-- `test-llm.html` — Ollama post-scoring test harness.
-
-### MandateSwift/ (native macOS port)
 ```
-MandateSwift/
-├── Package.swift                          ← SPM manifest (SwiftUI, MLX dependencies)
-└── Sources/
-    ├── MandateApp.swift                   ← App entry point
-    ├── Core/
-    │   ├── EventBus.swift                 ← Pub/sub backbone (mirrors bus.js)
-    │   ├── GameState.swift                ← Observable state model
-    │   ├── GameEngine.swift               ← Orchestrator: wires systems to state
-    │   ├── ContentGraph.swift             ← Entry/link queries (mirrors registry.js)
-    │   ├── ClockSystem.swift              ← Weekly cadence, deficit, win/lose
-    │   ├── TrustSystem.swift              ← Per-district resilience, bloc aggregates
-    │   ├── PolicySystem.swift             ← Insight-gated intervention tiers
-    │   └── ScenarioSystem.swift           ← Condition-based weekly events
-    ├── Data/
-    │   ├── Entries.swift                  ← 115+ static entries (districts, infra, blocs, etc.)
-    │   ├── Links.swift                    ← 170+ static links (threatens, mitigates, etc.)
-    │   ├── Conversations.swift            ← 10 NPC conversation scripts
-    │   └── ScenarioEvents.swift           ← 10 blizzard-arc events
-    ├── Models/
-    │   ├── District.swift                 ← District data model
-    │   ├── Entry.swift                    ← Content graph entry type
-    │   ├── Link.swift                     ← Content graph link type
-    │   ├── Post.swift                     ← Social post model
-    │   └── Scenario.swift                 ← Scenario event model
-    ├── LLM/
-    │   ├── LLMService.swift               ← Ollama HTTP client
-    │   ├── PostScorer.swift               ← LLM-based post scoring (per-district)
-    │   └── FallbackScorer.swift           ← Keyword matching when Ollama unavailable
-    ├── Utilities/
-    │   ├── DesignTokens.swift             ← Theme enum: palette, typography, spacing
-    │   └── Clamp.swift                    ← Numeric clamping utility
-    └── Views/
-        ├── Shell/
-        │   ├── GameShell.swift            ← Three-view tab router
-        │   ├── StatusBar.swift            ← Week, resilience, reserve display
-        │   ├── BlocBar.swift              ← Five constituency bloc indicators
-        │   └── LLMStatusView.swift        ← Ollama connection status indicator
-        ├── Map/
-        │   ├── MapView.swift              ← Canvas-based hex map, 4 view modes
-        │   ├── HexRadialMenu.swift        ← Radial action menu (VISIT/LISTEN/MSG/INFO/CLOSE)
-        │   └── DistrictDetailPanel.swift   ← Trust, knowledge, concern detail
-        ├── Calendar/
-        │   └── CalendarView.swift          ← Monthly grid, scheduling, GO/END WEEK
-        ├── Conversation/
-        │   └── ConversationOverlay.swift   ← NPC dialogue with depth meter
-        ├── Social/
-        │   ├── SocialView.swift            ← Two-pane layout (posts + feed)
-        │   ├── ComposeBar.swift            ← Post composition with tone selector
-        │   ├── FeedTimeline.swift          ← Scrolling feed of city chatter + reactions
-        │   └── DMSidebar.swift             ← Character DM threads
-        └── GameEnd/
-            └── GameEndOverlay.swift        ← Frostpunk-style ending with 5 outcomes
+NEW:
+  systems/department.js        ← DepartmentSystem: funding state, interjection & tile queries (the hub)
+
+SUBSTANTIALLY REVISED:
+  systems/conversation.js      ← interjection/check loop, no-solution rule, insight tiering; LLM = prose only
+  systems/insight.js           ← tiered insights; patterns now cook / crystallize citywide / de-commit
+  systems/policy.js            ← card tiers removed; bento tiles gated by departments, mutated by patterns
+
+REMOVED:
+  (0.7 §10.5 insight-gated policy-card schema — folded into department-gated bento tiles)
+
+UI ADDITIONS:
+  Department funding panel (Calendar surface, §8.4)
+  Conversation UI: interjection options, check roll moment, content-opening failure (§8.2)
+
+SWIFT PORT:
+  + DepartmentSystem.swift; revise ConversationSystem + insight models; remove card-tier policy code
 ```
 
-### Documentation
-- `gdd.md` — This document.
-- `roadmap.md` — Implementation roadmap with phase checklist.
-- `interactions.md` — Interaction specification: every player action traced from input to state change to visual feedback.
-- `scenarios.md` — 20 scenario posts with full system traces through the content graph.
+*(All other files from the 0.7 Appendix B carry forward unchanged.)*
