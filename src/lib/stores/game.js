@@ -24,6 +24,8 @@ export const game = writable({
   heardAbout: {},
   citywide: 50,
   citywideDisorder: 10,
+  departments: { HEALTH: 1, HOUSING: 1, INFRA: 1, SERVICES: 1, SAFETY: 1, COMMUNITY: 1 },
+  thoughts: [],
 });
 
 // ── UI state (view switching, selections — not persisted) ──

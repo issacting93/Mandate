@@ -1,7 +1,8 @@
 <script>
   import { game } from '$lib/stores/game.js';
-  import { openBento } from '$lib/engine.js';
+  import { openBento, fundDepartment, deptSys } from '$lib/engine.js';
   import { DISTRICTS } from '$data/districts.js';
+  import { DEPARTMENTS, DEPT_IDS } from '$systems/department.js';
 
   const BLIZZARD_WEEK = 48;
   const TOTAL_CREDIT = 7;
@@ -85,6 +86,35 @@
         </li>
       {/each}
     </ul>
+  </div>
+
+  <div class="obj-divider"></div>
+
+  <!-- Departments (Disco Elysium skill lenses) -->
+  <div>
+    <div class="obj-section-title">DEPARTMENTS</div>
+    <div class="dept-grid">
+      {#each DEPT_IDS as deptId}
+        {@const dept = DEPARTMENTS[deptId]}
+        {@const level = $game.departments?.[deptId] || 1}
+        {@const cost = deptSys.getFundCost(deptId)}
+        {@const canAfford = $game.reserve >= cost && level < 5}
+        <div class="dept-row">
+          <span class="dept-name" style="color:{dept.color}">{dept.label}</span>
+          <div class="dept-pips">
+            {#each Array(5) as _, i}
+              <span class="dept-pip" class:filled={i < level} style={i < level ? `background:${dept.color}` : ''}></span>
+            {/each}
+          </div>
+          <button
+            class="dept-fund-btn"
+            disabled={!canAfford}
+            title={level >= 5 ? 'MAX' : `$${cost}B`}
+            onclick={() => fundDepartment(deptId)}
+          >+</button>
+        </div>
+      {/each}
+    </div>
   </div>
 
   <div class="obj-divider"></div>
@@ -257,5 +287,64 @@
   .credit-dot.filled {
     background: var(--red);
     border-color: var(--red);
+  }
+
+  /* ── Department funding UI ── */
+  .dept-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dept-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dept-name {
+    font-size: 10px;
+    font-weight: 700;
+    width: 80px;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .dept-pips {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+  }
+  .dept-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid var(--panel-border);
+  }
+  .dept-pip.filled {
+    border-color: transparent;
+  }
+  .dept-fund-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+  }
+  .dept-fund-btn:hover:not(:disabled) {
+    border-color: var(--dark);
+    color: var(--dark);
+    background: rgba(0,0,0,0.04);
+  }
+  .dept-fund-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
   }
 </style>

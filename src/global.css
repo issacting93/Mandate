@@ -14,6 +14,13 @@
   --divider: rgba(0, 0, 0, 0.08);
   --font-ui: 'Space Grotesk', sans-serif;
   --font-data: 'Doto', monospace;
+  /* Department colors (Disco Elysium skill lenses) */
+  --dept-health: #2dd4bf;
+  --dept-housing: #f59e0b;
+  --dept-infra: #64748b;
+  --dept-services: #8b5cf6;
+  --dept-safety: #f97316;
+  --dept-community: #22c55e;
 }
 
 /* ── Reset ──────────────────────────────────── */

@@ -9,8 +9,11 @@ import { InsightSystem } from '$systems/insight.js';
 import { InterventionSystem } from '$systems/intervention.js';
 import { BentoSystem } from '$systems/bento.js';
 import { MetreSystem } from '$systems/metre.js';
+import { DepartmentSystem } from '$systems/department.js';
 import { SCENARIO_EVENTS } from '$data/scenarios.js';
-import { CONVERSATIONS } from '$data/conversations.js';
+import { CONVERSATIONS as CONVERSATIONS_V1 } from '$data/conversations.js';
+import { CONVERSATIONS_V2 } from '$data/conversations_v2.js';
+const CONVERSATIONS = { ...CONVERSATIONS_V1, ...CONVERSATIONS_V2 };
 import { INTERVENTIONS } from '$data/interventions.js';
 import { TILES, SYNERGIES, CONFLICTS } from '$data/tiles.js';
 import { DISTRICTS, districtMap, ACTION_COLORS } from '$data/districts.js';
@@ -63,6 +66,7 @@ const districtEntries = DISTRICTS.map(d => ({
   pop: parseFloat(d.pop) || 1, bloc: d.bloc,
 }));
 export const metreSys = new MetreSystem(bus, state, districtEntries);
+export const deptSys = new DepartmentSystem(bus, state);
 
 // ── Conversations ──
 export { CONVERSATIONS };
@@ -206,6 +210,9 @@ bus.on('state.changed', ({ path, newValue }) => {
   if (path === 'citywideDisorder') {
     game.update(g => { g.citywideDisorder = newValue; return g; });
   }
+  if (path === 'departments') {
+    game.update(g => { g.departments = newValue; return g; });
+  }
 });
 
 // ── Bridge: Bento events ──
@@ -235,6 +242,14 @@ bus.on('bento.placeFailed', (data) => {
 // ── Bridge: Svelte UI actions → bus events ──
 export function startGame() {
   bus.emit('game.start');
+}
+
+export function fundDepartment(deptId) {
+  bus.emit('department.fund', { deptId });
+}
+
+export function defundDepartment(deptId) {
+  bus.emit('department.defund', { deptId });
 }
 
 export function emitEngagement(action, districtId) {
@@ -465,5 +480,6 @@ if (typeof window !== 'undefined') {
   window.__interventionSys = interventionSys;
   window.__bentoSys = bentoSys;
   window.__metreSys = metreSys;
+  window.__deptSys = deptSys;
   window.__districts = DISTRICTS;
 }
