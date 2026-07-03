@@ -365,6 +365,9 @@ async function runSimulation(browser, config) {
   }
 
   // Extract results
+  // Wait a moment for final transitions to finish and overlay to mount
+  await page.waitForTimeout(2000);
+
   const result = { id, label, strategy, week, duration: Date.now() - startTime };
 
   const endOverlayFinal = page.locator('.game-end-overlay').first();
