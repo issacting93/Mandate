@@ -246,10 +246,31 @@ bus.on('comms.resolved', (data) => {
 bus.on('comms.resolveFailed', (data) => { showToast(`Cannot publish: ${data.reason}`, '#B82A18'); });
 
 // ── Bridge: Doctrine bloc trust shifts ──
-bus.on('doctrine.blocShift', ({ boost, penalty, boostAmount, penaltyAmount }) => {
+bus.on('doctrine.blocShift', ({ deptId, boost, penalty, boostAmount, penaltyAmount }) => {
+  const doctrines = deptSys.getAllDoctrines();
+  const currentBranch = doctrines[deptId]; // 'A' or 'B'
+  
+  // Count how many total departments have chosen this branch
+  let count = 0;
+  for (const b of Object.values(doctrines)) {
+    if (b === currentBranch) {
+      count++;
+    }
+  }
+
+  // Diminishing returns: 1st doctrine: +3, 2nd: +2, 3rd+: +1
+  let finalBoost = boostAmount;
+  if (currentBranch) {
+    if (count === 2) {
+      finalBoost = Math.max(1, boostAmount - 1);
+    } else if (count >= 3) {
+      finalBoost = Math.max(1, boostAmount - 2);
+    }
+  }
+
   for (const d of DISTRICTS) {
     if (boost.includes(d.bloc)) {
-      d.trust = Math.min(100, d.trust + boostAmount);
+      d.trust = Math.min(100, d.trust + finalBoost);
     }
     if (penalty.includes(d.bloc)) {
       d.trust = Math.max(0, d.trust - penaltyAmount);
@@ -614,12 +635,12 @@ bus.on('clock.weekEnd', ({ week }) => {
     const a = districtMap[aId];
     const b = districtMap[bId];
     if (!a || !b) continue;
-    // High-trust districts boost neighbors
-    if (a.trust > 60) b.trust = Math.min(100, b.trust + 1);
-    if (b.trust > 60) a.trust = Math.min(100, a.trust + 1);
-    // Low-trust districts drag neighbors
-    if (a.trust < 30) b.trust = Math.max(0, b.trust - 1);
-    if (b.trust < 30) a.trust = Math.max(0, a.trust - 1);
+    // High-trust districts boost neighbors (capped at +0.5/week)
+    if (a.trust > 60) b.trust = Math.min(100, b.trust + 0.5);
+    if (b.trust > 60) a.trust = Math.min(100, a.trust + 0.5);
+    // Low-trust districts drag neighbors (capped at -0.5/week)
+    if (a.trust < 30) b.trust = Math.max(0, b.trust - 0.5);
+    if (b.trust < 30) a.trust = Math.max(0, a.trust - 0.5);
   }
   // Update citywide
   game.update(g => {

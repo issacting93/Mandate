@@ -10,10 +10,10 @@
 // via a getter function, not from the StateStore directly. This is because
 // ConversationOverlay pushes insights directly to the game store.
 
-const DECAY_RATE = 0.12;
+const DECAY_RATE = 0.09;
 const FRESH_THRESHOLD = 0.3;
 const PATTERN_MIN_DISTRICTS = 3;
-const COOK_TIME = 3; // weeks to crystallize
+const COOK_TIME = 5; // weeks to crystallize
 const ABANDON_RESERVE_COST = 0.3; // $B cost to abandon a crystallized pattern
 const RECOOK_PENALTY = 3; // weeks before a new pattern of same category can start
 

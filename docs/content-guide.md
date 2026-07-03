@@ -283,9 +283,9 @@ Insights are the atomic unit of intelligence in Mandate. They represent specific
    > *Good: "Pharmacy at 138th has generator — stores insulin for 12 residents. Carlos coordinates with 3 block captains."*  
    > *Bad: "There's a pharmacy with a generator nearby."*
 
-4. **Insights decay.** Freshness starts at 1.0 and decays at a rate of 0.12 per week. At freshness 0.3, an insight is considered stale. At 0.0, it is dead. Dead insights no longer count toward pattern detection or tile gating. This means intelligence gathered in Week 1 is irrelevant by Week 9 unless reinforced.
+4. **Insights decay.** Freshness starts at 1.0 and decays at a rate of 0.09 per week. At freshness 0.3, an insight is considered stale. At 0.0, it is dead. Dead insights no longer count toward pattern detection or tile gating. This means intelligence gathered in Week 1 is irrelevant by Week 9 unless reinforced.
 
-5. **Insight-to-pattern pipeline.** When 3 or more fresh insights of the same category exist across 3 or more different districts, a pattern begins forming. After 3 weeks of cook time, the pattern crystallizes and grants a permanent +1 effective level to the matching department. (See `systems/insight.js` for the `PATTERN_MIN_DISTRICTS` and `COOK_TIME` constants.)
+5. **Insight-to-pattern pipeline.** When 3 or more fresh insights of the same category exist across 3 or more different districts, a pattern begins forming. After 5 weeks of cook time, the pattern crystallizes and grants a permanent +1 effective level to the matching department. (See `systems/insight.js` for the `PATTERN_MIN_DISTRICTS` and `COOK_TIME` constants.)
 
 6. **Skill-check insights vs. automatic insights.** Automatic insights (the `insight` field on an exchange) are always granted. Skill-check insights (inside `checks[].pass.insight`) are conditional — the player must pass the department check to receive them. Failed checks yield a `trustInsight` instead, which is narrative-only and does not count toward patterns.
 
