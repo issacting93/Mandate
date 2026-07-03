@@ -139,15 +139,30 @@ All three testers flagged a lull after the initial sweep of visits. Suggestions:
 
 ---
 
-## 09 — Running the Simulations
+## 09 — Critique: The "Desk Governance" Exploit
 
-### 9.1 Single Simulation Runner
+The 10-run concurrent batch validation revealed a major systemic challenge regarding player effort vs. reward:
+* **The Grassroots Player** played **74 to 78 deep conversations** per run, representing **1.5 to 2.5 hours of active reading** and managing decaying insights.
+* **The Technocrat / Neglect Player** played **0 conversations**, representing a **5-to-10 minute speedrun** of pure menu-clicking (upgrading departments and skipping weeks).
+
+Because both playstyles survive to Week 49 with 100% reliability, the game currently fails to enforce its core thesis: *governing from a desk is dangerous.* To prevent desk-governance from being the dominant strategy, we should consider implementing the following counterweights:
+
+1. **Neglect Penalty (Compounding Disorder):** Districts left unvisited or with knowledge `< 20` for 15+ weeks should generate compounding Disorder (protests, strikes, service failures). If a player speedruns the game from their desk, citywide Disorder should spike past 85 (triggering a Political Crisis game over) long before the blizzard.
+2. **Knowledge-Gated Bento Cost Scaling:** Deploying bento policies targeting districts where knowledge is `< 30` should cost double or triple the reserve (simulating blind deployment waste). High-knowledge districts should unlock local cost-sharing, making policies cheaper.
+3. **Comms Post "Ratio" Mechanics:** Posting statements about unvisited districts (knowledge `< 25`) should trigger media pushback/ratios, spiking Disorder and dropping trust.
+4. **Listening Session Resource Rewards:** Deep conversations should occasionally yield reserve grants or free Bento tiles (e.g., local mutual aid funds or community clinics), actively rewarding the Grassroots player with strategic capital.
+
+---
+
+## 10 — Running the Simulations
+
+### 10.1 Single Simulation Runner
 Run a single strategy profile (`balanced`, `technocrat`, `grassroots`) in headless Chrome:
 ```bash
 node play_simulation.js balanced
 ```
 
-### 9.2 10-Run Concurrent Batch Runner
+### 10.2 10-Run Concurrent Batch Runner
 Execute the complete concurrent 10-run batch simulation (concurrency limit: 3):
 ```bash
 node run_simulations.js
