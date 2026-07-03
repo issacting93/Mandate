@@ -4,6 +4,53 @@ Session-by-session development log. Most recent first.
 
 ---
 
+## 2026-07-01 — Style Guide Application + Mayor's Cabinet
+
+### Design language overhaul
+- Rewrote `global.css` with Style Guide v1.0 token system
+- New token naming: `--ink-mid`, `--ink-ghost`, `--paper-card`, `--paper-white`, `--rule`, `--rule-light`, `--red-light`, `--red-border`, `--amber`, `--purple`, `--green`, `--blue`, `--slate`
+- Retired Doto font — `--font-data` now aliases to Space Mono Bold
+- Retired Space Grotesk font
+- Updated `index.html` font imports: Bebas Neue + Space Mono (with italic) + Material Symbols only
+- Two typefaces only: Bebas Neue (display) and Space Mono (body + data)
+
+### Style guide applied to all 18 components
+- Replaced ~200+ hardcoded hex color values with CSS custom properties
+- Removed all non-50% `border-radius` (zero border-radius per style guide)
+- Replaced all hardcoded font-family strings with `var(--font-display)` / `var(--font-body)`
+- Corrected old red values (`#ff2d2d`, `#ff4444`) → `#B82A18`
+- Corrected old green/amber values to match token hex
+
+### Onboarding overlay redesign
+- Dark void → A4-ratio paper document modal on semi-transparent backdrop
+- Corner brackets on document edges
+- All text switched from light-on-dark to ink-on-paper
+- Buttons switched to style guide CTA patterns (ink bg, Bebas Neue, red hover)
+- Headlines use Bebas Neue display instead of bold Space Mono
+
+### New components (since last changelog)
+- DraftView.svelte — Draft board (replaces CalendarView)
+- IntelView.svelte — Intelligence view (replaces SocialView)
+- NotebookOverlay.svelte — Insight notebook (N key)
+- WeekEndOverlay.svelte — Week debrief
+- CommsBento.svelte — Communications bento
+
+### Removed components
+- CalendarView.svelte, SocialView.svelte, BlocBar.svelte
+
+### New systems
+- DepartmentSystem (`systems/department.js`) — 6 departments, levels 1-5, fund/defund, effective level with crystallized thought bonus
+- DealSystem (`systems/deal.js`) — Weekly card deal, weighted pool, face-down legibility, re-deal mechanic
+
+### Removed systems
+- TrustSystem (`systems/trust.js`), PolicySystem (`systems/policy.js`)
+
+### Naming
+- Conversation/chat system is now called "The Mayor's Cabinet"
+- Views renamed: Map / Draft / Intel (was Map / Calendar / Socials)
+
+---
+
 ## 2026-06-29 — Svelte Port + Visual Effects
 
 ### Svelte + Vite port

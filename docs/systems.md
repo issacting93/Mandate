@@ -2,7 +2,7 @@
 
 Tracks what each game system does, where it lives, and what's working vs broken.
 
-Updated 2026-06-30.
+Updated 2026-07-02.
 
 ---
 
@@ -15,13 +15,15 @@ Updated 2026-06-30.
 | **EntryRegistry** | `systems/registry.js` | Done | Content graph (nodes + typed edges). Not yet wired to game loop. |
 | **ClockSystem** | `systems/clock.js` | Done | Weekly cadence. Checks dual-metre win/lose. Emits `clock.weekStart`/`weekEnd`. |
 | **MetreSystem** | `systems/metre.js` | Wired (Sprint 1) | Dual-metre (Resilience + Disorder). Modifier stacks with decay/expiry. Listens to conversations, posts, policies, clock. Both metres visible in StatusBar. |
-| **TrustSystem** | `systems/trust.js` | Done (legacy) | Per-district modifier stacks. Largely superseded by MetreSystem but still referenced. |
 | **ScenarioSystem** | `systems/scenario.js` | Done | Paradox-style condition/effect DSL. Evaluates on `clock.weekStart`. Chains, pools, priorities. |
 | **InsightSystem** | `systems/insight.js` | Done | Freshness decay (0.12/week), pattern detection (3+ districts same category). |
 | **InterventionSystem** | `systems/intervention.js` | Done | 3-tier: generic (always), informed (2+ insights), pattern (cross-district). Budget checks. |
 | **BentoSystem** | `systems/bento.js` | Done | 5x5 spatial policy builder. WHERE/WHAT/HOW/FUNDING tiles. Adjacency synergies/conflicts. |
 | **SchemaValidator** | `systems/schema.js` | Done | JSON Schema validation for all content types. Dev tool. |
-| **PolicySystem** | `systems/policy.js` | Exists | Insight-gated tiers designed. Not wired to engine.js. |
+| **DepartmentSystem** | `systems/department.js` | Done | Disco Elysium-style skill lenses. 6 departments (HEALTH, HOUSING, INFRA, SERVICES, SAFETY, COMMUNITY). Levels 1-5, funded from budget. `getEffectiveLevel` includes crystallized thought bonus (+1). Gates conversation interjections, card legibility, dice checks, bento tile mutations. |
+| **DealSystem** | `systems/deal.js` | Done | Weekly card deal from weighted pool. Weights: wanted (2.5x), neglect (0.15/wk capped 3.0), feed-hot (1.5x), recency penalty (0.1x within 2 wks). Deals 5 cards, player drafts 3. Face-down legibility gated by dept level >=2. Re-deal costs 1 slot. |
+| **DiceSystem** | `systems/dice.js` | Done | Dice check resolution for department-gated skill rolls. |
+| **CommsBentoSystem** | `systems/comms-bento.js` | Done | Communications bento board system. |
 
 ## Gameplay Chain (engine.js)
 
@@ -30,7 +32,7 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 | Chain step | Where | Status |
 |------------|-------|--------|
 | Hex menu VISIT/LISTEN | MapView + HexMenu + engine.js `engagement.started` handler | Working. Toggle labels, toast confirmation. |
-| Label → Calendar queue | CalendarView reads `game.labels` | Working. Drag-to-schedule. |
+| Label → Draft queue | DraftView reads `game.labels` | Working. Card draft from weighted deal. |
 | GO → Conversation sequencer | engine.js `executeWeek()` | Working. Plays through scheduled conversations in order. Non-convo districts get direct stat bump. |
 | Conversation → Insights | ConversationOverlay.svelte (inline state machine) | Working. Depth meter, insight chips, DM creation. |
 | END WEEK → Clock advance | engine.js `advanceWeek()` → ClockSystem | Working. Trust erosion, knowledge decay, deficit, feed chatter, win/lose. |
@@ -46,7 +48,8 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 |-------|------|-----------|
 | `game` | `src/lib/stores/game.js` | Core game state (week, reserve, schedule, insights, posts, feed, DMs, citywide, citywideDisorder) |
 | `blizzardSeverity` | `src/lib/stores/game.js` | Derived from `game.week`. Drives fog, building frost, snow shader intensity. |
-| `currentView` | `src/lib/stores/game.js` | UI routing (map/calendar/socials) |
+| `currentView` | `src/lib/stores/game.js` | UI routing (map/draft/intel) |
+| `debriefActive` | `src/lib/stores/game.js` | Week-end debrief overlay trigger |
 | `selectedDistrict` | `src/lib/stores/game.js` | Map selection state |
 | `conversationActive` | `src/lib/stores/game.js` | Conversation overlay trigger |
 | `cinematicData` | `src/lib/stores/game.js` | Cinematic overlay trigger |
@@ -66,24 +69,26 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 | **NYC data builder** | `tools/build-nyc.mjs` | Done. Build script for NYC geographic data. |
 | **Schema validator** | `systems/schema.js` | Done. JSON Schema validation for all content types. |
 
-## Components (16 Svelte 5)
+## Components (18 Svelte 5)
 
 | Component | File | Notes |
 |-----------|------|-------|
 | StatusBar | `StatusBar.svelte` | Week, reserve, dual-metre bars (Resilience + Disorder). |
-| BlocBar | `BlocBar.svelte` | Five constituency bloc averages. |
 | LeftPanel | `LeftPanel.svelte` | Objective card, blizzard countdown, prep checklist. |
 | RightPanel | `RightPanel.svelte` | District detail: trust, knowledge, concerns, character. |
 | MapView | `MapView.svelte` | MapLibre 3D map + SVG overlay. 4 view modes. |
 | HexMenu | `HexMenu.svelte` | Radial action menu. VISIT/LISTEN/MSG/INFO/CLOSE. |
-| CalendarView | `CalendarView.svelte` | Monthly grid, queue strip, drag-to-schedule, GO/END WEEK. |
-| SocialView | `SocialView.svelte` | Compose bar, LLM-scored posts, feed, DM sidebar, notebook. |
-| BottomNav | `BottomNav.svelte` | M/C/S tab bar. |
-| ConversationOverlay | `ConversationOverlay.svelte` | Dialogue state machine, typing indicator, depth meter, insight chips. |
+| DraftView | `DraftView.svelte` | Draft board: slots, field briefing cards, department funding, budget bar. Government briefing aesthetic. |
+| IntelView | `IntelView.svelte` | Intelligence view: insights, patterns, DMs. |
+| BottomNav | `BottomNav.svelte` | View tab bar (map/draft/intel). |
+| ConversationOverlay | `ConversationOverlay.svelte` | The Mayor's Cabinet dialogue state machine, typing indicator, depth meter, insight chips. |
 | CinematicOverlay | `CinematicOverlay.svelte` | Frostpunk-style dark overlay for major events. |
 | GameEndOverlay | `GameEndOverlay.svelte` | Final stats, per-district outcomes, 5 end states. |
 | OnboardingOverlay | `OnboardingOverlay.svelte` | 6-beat scripted Week 0. Functional (built, skippable). |
+| NotebookOverlay | `NotebookOverlay.svelte` | Insight notebook, accessible from any view via N key. |
+| WeekEndOverlay | `WeekEndOverlay.svelte` | Week debrief with stats/changes. |
 | BentoBox | `BentoBox.svelte` | 5x5 spatial policy builder with tile placement + evaluation. |
+| CommsBento | `CommsBento.svelte` | Communications/comms bento view. |
 | GraphView | `GraphView.svelte` | Canvas force-directed systems graph (117 nodes, 332 links). |
 | Toast | `Toast.svelte` | Notification toasts. |
 
@@ -91,10 +96,9 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 
 | System | GDD Section | Priority | Notes |
 |--------|-------------|----------|-------|
-| **EngagementSystem** | roadmap 1A | Medium | Extract label/schedule/execute logic from UI. Currently inline in engine.js + calendar/map components. Functional but not modular. |
-| **ConversationSystem** | roadmap 1A | Medium | Extract dialogue state machine. Currently inline in ConversationOverlay.svelte. Functional but not modular. |
+| **EngagementSystem** | roadmap 1A | Medium | Extract label/schedule/execute logic from UI. Currently inline in engine.js + draft/map components. Functional but not modular. |
+| **ConversationSystem** | roadmap 1A | Medium | Extract The Mayor's Cabinet dialogue state machine. Currently inline in ConversationOverlay.svelte. Functional but not modular. |
 | **KnowledgeSystem** | roadmap 1A | Medium | Per-district knowledge bump/decay. Currently inline in week-end logic. Functional but not modular. |
-| **SocialSystem** | roadmap 1A | Medium | Post pipeline, feed generation, DM logic. Currently inline in SocialView.svelte. Functional but not modular. |
 | **CandidateSystem** | GDD 5.12 | Low (Phase 5) | Rival candidate reactions in feed. Design only. |
 
 ## Shader / Visual Systems
@@ -116,11 +120,11 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 | **SS4.0 Onboarding (Week 0)** | Built | 6-beat OnboardingOverlay.svelte: newspaper, desk policy, interruption, first conversation (simulated), contrast, handoff. Functional with skip button. |
 | **SS5.1 Community resilience** | Built and wired | MetreSystem tracks per-district resilience via modifier stacks. StatusBar shows dual metre. Bloc bar recomputes. Trust erosion on neglect. |
 | **SS5.2 The map** | Built and wired | MapLibre 3D + SVG overlay. 4 view modes (coalition, trust, knowledge, needs). Knowledge brightness. Hex menu. Fly-to on select. |
-| **SS5.3 Insights (freshness, patterns)** | Built and wired | InsightSystem: freshness decay 0.12/week, pattern detection 3+ districts same category. Notebook in SocialView sidebar. |
+| **SS5.3 Insights (freshness, patterns)** | Built and wired | InsightSystem: freshness decay 0.12/week, pattern detection 3+ districts same category. Notebook accessible via N key (NotebookOverlay). |
 | **SS5.3a Community assets** | Partially built | ASSET insight category exists. Assets activate on blizzard strike (engine.js handler). Asset tiles exist in Bento data. Missing: asset discovery via listening sessions (only scripted conversations). |
 | **SS5.4 Engagements (time system)** | Built (inline) | Label/schedule/execute chain works end-to-end via engine.js. 3 time slots. Not extracted to a standalone system. |
-| **SS5.5 Conversations** | Built (11/19 districts) | Scripted fallback dialogue with depth meter + insight chips. 11 districts have scripts. LLM free-form path designed but not wired. |
-| **SS5.6 Social media** | Built and wired | Compose bar, LLM-scored posts (Ollama + keyword fallback), feed timeline, DM sidebar, notebook. Feed intelligence (vague/specific gradient) not implemented. |
+| **SS5.5 Conversations (The Mayor's Cabinet)** | Built (11/19 districts) | Disco Elysium-style dialogue with department interjections, dice checks, depth meter + insight chips. 11 districts have scripts (conversations_v2.js). DepartmentSystem gates interjections and legibility. |
+| **SS5.6 Social media / Intel** | Rebuilt | IntelView replaces SocialView. Insights, patterns, DMs. Feed intelligence (vague/specific gradient) not implemented. |
 | **SS5.7 Emergency interventions / Bento Box** | Built and wired | BentoSystem: 5x5 grid, WHERE/WHAT/HOW/FUNDING tiles, adjacency synergies/conflicts. InterventionSystem: 3-tier insight-gated. Tile mutations from insights designed in data. |
 | **SS5.8 Cost of governing (dual metres)** | Built and wired | MetreSystem tracks Resilience + Disorder. Both visible in StatusBar. Knowledge decay, trust erosion, operating deficit all functional. |
 | **SS5.9 Disasters & events** | Built and wired | 10 blizzard-arc scenario events via ScenarioSystem. Cinematic overlays. Blizzard severity ramp. Community asset activation. Per-district casualty calculation. |
@@ -134,10 +138,9 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 2. **DM system** -- basic follow-ups work (2-week and 4-week checks, disaster-phase DMs, policy acknowledgments). Missing: player reply functionality, full weekly generation cycle.
 3. **Feed intelligence** -- vague/specific gradient based on knowledge, disaster-phase urgency scaling. Currently template-based.
 4. **LLM conversation path** -- free-form conversation with LLM playing character. Designed but not wired. Currently scripted fallback only.
-5. **Minimap strip** -- GDD describes a persistent minimap in Calendar/Social views. Not built.
-6. **Notebook drawer** -- hotkey N accessible from any view. Built in SocialView sidebar only.
-7. **System extraction** -- Engagement, Conversation, Knowledge, Social logic functional but inline in components/engine.js rather than extracted to standalone systems/.
-8. **Trust diffusion** -- GDD wants trust to spread across transit graph edges. Not implemented.
+5. **Minimap strip** -- GDD describes a persistent minimap in Draft/Intel views. Not built.
+6. **System extraction** -- Engagement, Conversation, Knowledge logic functional but inline in components/engine.js rather than extracted to standalone systems/.
+7. **Trust diffusion** -- GDD wants trust to spread across transit graph edges. Not implemented.
 
 ## Playtest Verification (2026-06-30)
 

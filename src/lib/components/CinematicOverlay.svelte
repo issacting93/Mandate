@@ -95,10 +95,10 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #e8a83e;
+    color: var(--amber);
   }
   .headline.danger {
-    color: #ff5a52;
+    color: var(--red);
   }
   .narrative {
     font-size: 12.5px;
@@ -114,13 +114,12 @@
     border: 1px solid rgba(255,255,255,0.2);
     background: transparent;
     color: #fff;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     padding: 10px 32px;
-    border-radius: 20px;
     cursor: pointer;
   }
   .dismiss-btn:hover {

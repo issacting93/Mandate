@@ -1,11 +1,10 @@
 <script>
   import StatusBar from '$lib/components/StatusBar.svelte';
-  import BlocBar from '$lib/components/BlocBar.svelte';
   import LeftPanel from '$lib/components/LeftPanel.svelte';
   import MapView from '$lib/components/MapView.svelte';
   import RightPanel from '$lib/components/RightPanel.svelte';
-  import CalendarView from '$lib/components/CalendarView.svelte';
-  import SocialView from '$lib/components/SocialView.svelte';
+  import DraftView from '$lib/components/DraftView.svelte';
+  import IntelView from '$lib/components/IntelView.svelte';
   import BottomNav from '$lib/components/BottomNav.svelte';
   import ConversationOverlay from '$lib/components/ConversationOverlay.svelte';
   import CinematicOverlay from '$lib/components/CinematicOverlay.svelte';
@@ -14,10 +13,14 @@
   import OnboardingOverlay from '$lib/components/OnboardingOverlay.svelte';
   import BentoBox from '$lib/components/BentoBox.svelte';
   import GraphView from '$lib/components/GraphView.svelte';
-  import { currentView, onboardingComplete } from '$lib/stores/game.js';
+  import NotebookOverlay from '$lib/components/NotebookOverlay.svelte';
+  import WeekEndOverlay from '$lib/components/WeekEndOverlay.svelte';
+  import CommsBento from '$lib/components/CommsBento.svelte';
+  import { currentView, onboardingComplete, debriefActive } from '$lib/stores/game.js';
   import { downloadPlaylog } from '$lib/playlog.js';
 
   let graphOpen = $state(false);
+  let notebookOpen = $state(false);
 
   $effect(() => {
     function handleKey(e) {
@@ -25,8 +28,12 @@
       if (e.key === 'g' || e.key === 'G') {
         graphOpen = !graphOpen;
       }
-      if (e.key === 'Escape' && graphOpen) {
-        graphOpen = false;
+      if (e.key === 'n' || e.key === 'N') {
+        notebookOpen = !notebookOpen;
+      }
+      if (e.key === 'Escape') {
+        if (graphOpen) graphOpen = false;
+        if (notebookOpen) notebookOpen = false;
       }
       // Ctrl+Shift+L — download playlog JSON
       if (e.key === 'L' && e.ctrlKey && e.shiftKey) {
@@ -41,17 +48,16 @@
 </script>
 
 <StatusBar />
-<BlocBar />
 
 <main class="main-area">
   {#if $currentView === 'map'}
     <LeftPanel />
     <MapView />
     <RightPanel />
-  {:else if $currentView === 'calendar'}
-    <CalendarView />
-  {:else if $currentView === 'socials'}
-    <SocialView />
+  {:else if $currentView === 'draft'}
+    <DraftView />
+  {:else if $currentView === 'intel'}
+    <IntelView />
   {/if}
 </main>
 
@@ -63,9 +69,13 @@
 <GameEndOverlay />
 <Toast />
 <BentoBox />
+<CommsBento />
 <OnboardingOverlay />
 
-<!-- Graph view (toggle with G key) -->
+<WeekEndOverlay visible={$debriefActive} onclose={() => debriefActive.set(false)} />
+
+<!-- Global overlays (any view) -->
+<NotebookOverlay visible={notebookOpen} onclose={() => notebookOpen = false} />
 <GraphView visible={graphOpen} />
 
 <style>

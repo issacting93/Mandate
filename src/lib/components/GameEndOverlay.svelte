@@ -115,8 +115,8 @@
     letter-spacing: 0.04em;
     margin: 8px 0;
   }
-  .result-title.win { color: #34d399; }
-  .result-title.lose { color: #ff5a52; }
+  .result-title.win { color: var(--green); }
+  .result-title.lose { color: var(--red); }
   .result-subtitle {
     font-size: 12.5px;
     color: rgba(255,255,255,0.6);
@@ -139,13 +139,13 @@
     color: rgba(255,255,255,0.4);
   }
   .stat-value {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 22px;
     font-weight: 900;
     color: #fff;
   }
-  .stat-value.good { color: #34d399; }
-  .stat-value.bad { color: #ff5a52; }
+  .stat-value.good { color: var(--green); }
+  .stat-value.bad { color: var(--red); }
   /* ── District Outcomes ── */
   .district-outcomes {
     margin-top: 20px;
@@ -154,7 +154,7 @@
     margin-right: auto;
   }
   .outcomes-label {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -175,7 +175,6 @@
     gap: 8px;
     padding: 4px 8px;
     background: rgba(255,255,255,0.04);
-    border-radius: 4px;
     font-size: 11px;
   }
   .outcome-name {
@@ -184,7 +183,7 @@
     text-align: left;
   }
   .outcome-status {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -192,7 +191,7 @@
     text-align: right;
   }
   .outcome-score {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 900;
     width: 28px;
@@ -204,13 +203,12 @@
     border: 1px solid rgba(255,255,255,0.2);
     background: transparent;
     color: #fff;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     padding: 10px 32px;
-    border-radius: 20px;
     cursor: pointer;
   }
   .restart-btn:hover {

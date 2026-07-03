@@ -1,0 +1,458 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap');
+
+  .w-root {
+    background: #F7F5F0;
+    font-family: 'Space Mono', monospace;
+    color: #111;
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    min-height: 600px;
+    position: relative;
+  }
+
+  .w-watermark {
+    position: absolute;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 200px;
+    color: rgba(0,0,0,0.03);
+    letter-spacing: -6px;
+    top: 50%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    line-height: 1;
+  }
+
+  .w-main { padding: 20px; position: relative; z-index: 1; }
+  .w-sidebar {
+    border-left: 1px solid #DEDAD4;
+    padding: 20px 16px;
+    background: #FDFCF9;
+    position: relative;
+    z-index: 1;
+  }
+
+  .w-topbar {
+    display: flex; align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #DEDAD4;
+    margin-bottom: 20px;
+  }
+  .w-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; color: #B82A18;
+    letter-spacing: 3px; margin-right: 28px;
+  }
+  .w-stats { display: flex; gap: 20px; flex: 1; }
+  .w-stat { display: flex; flex-direction: column; gap: 3px; }
+  .w-stat-label { font-size: 8px; letter-spacing: 2px; color: #999; text-transform: uppercase; }
+  .w-stat-row { display: flex; align-items: center; gap: 8px; }
+  .w-stat-track { width: 64px; height: 2px; background: #E5E2DC; }
+  .w-stat-fill-r { height: 2px; background: #E8A020; width: 55%; }
+  .w-stat-fill-d { height: 2px; background: #B82A18; width: 18%; }
+  .w-stat-val { font-size: 11px; font-weight: 700; color: #111; }
+  .w-meta { font-size: 8px; color: #AAA; letter-spacing: 1px; margin-left: 16px; align-self: center; }
+  .w-wk-block { margin-left: auto; text-align: right; }
+  .w-wk-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; color: #B82A18; line-height: 1; display: block;
+  }
+  .w-wk-total { font-size: 8px; color: #BBB; letter-spacing: 1px; }
+
+  .w-section-head {
+    display: flex; align-items: flex-end; gap: 10px;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid #DEDAD4;
+  }
+  .w-sec-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px; line-height: 1; color: #B82A18;
+  }
+  .w-sec-title {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #333;
+    padding-bottom: 4px;
+  }
+  .w-sec-sub { font-size: 8px; color: #AAA; letter-spacing: 1px; }
+  .w-sec-right { margin-left: auto; font-size: 8px; color: #BBB; letter-spacing: 1px; text-align: right; padding-bottom: 4px; }
+
+  .w-slots { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 6px; }
+
+  .w-slot {
+    border: 1px solid #DEDAD4;
+    height: 68px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #FDFCF9;
+    position: relative;
+    cursor: pointer;
+  }
+  .w-slot:hover { border-color: #B82A18; }
+  .w-slot-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; line-height: 1; color: #E5E2DC;
+  }
+  .w-slot-label { font-size: 7px; letter-spacing: 2px; color: #CCC; text-transform: uppercase; }
+  .w-slot-corner { position: absolute; width: 7px; height: 7px; }
+  .w-slot-corner.tl { top: 0; left: 0; border-top: 1px solid #B82A18; border-left: 1px solid #B82A18; }
+  .w-slot-corner.tr { top: 0; right: 0; border-top: 1px solid #B82A18; border-right: 1px solid #B82A18; }
+  .w-slot-corner.bl { bottom: 0; left: 0; border-bottom: 1px solid #B82A18; border-left: 1px solid #B82A18; }
+  .w-slot-corner.br { bottom: 0; right: 0; border-bottom: 1px solid #B82A18; border-right: 1px solid #B82A18; }
+
+  .w-slot-status { font-size: 8px; color: #BBB; letter-spacing: 1px; margin-bottom: 14px; }
+  .w-divider { border: none; border-top: 1px solid #DEDAD4; margin: 14px 0; }
+
+  .w-brief-header {
+    display: flex; align-items: flex-end; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .w-redeal {
+    margin-left: auto; font-size: 8px; color: #B82A18; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer;
+    border: 1px solid #F0CECA; padding: 2px 8px;
+    background: #FEF8F7; align-self: center;
+  }
+
+  .w-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .w-card {
+    background: #FFFFFF;
+    border: 1px solid #E8E5DF;
+    border-top: 2px solid #DDD;
+    padding: 10px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 130px;
+  }
+  .w-card:hover { border-color: #BBBAB5; border-top-color: inherit; }
+  .w-card.labor { border-top-color: #7B4FBF; }
+  .w-card.working { border-top-color: #E8A020; }
+  .w-card.biz { border-top-color: #999; }
+  .w-card.prog { border-top-color: #E8A020; }
+
+  .w-card-eye {
+    font-size: 7px; letter-spacing: 1.5px; color: #AAA; text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .w-card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; color: #111; line-height: 1; margin-bottom: 6px;
+  }
+  .w-card-intel {
+    font-size: 8px; color: #888; line-height: 1.5;
+    border-left: 2px solid #E8E5DF;
+    padding-left: 6px;
+    font-style: italic;
+    flex: 1;
+  }
+  .w-card-footer {
+    margin-top: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .w-card-tag {
+    font-size: 7px; letter-spacing: 1px; text-transform: uppercase;
+    color: #BBB; display: flex; align-items: center; gap: 4px;
+  }
+  .w-card-dot { width: 5px; height: 5px; flex-shrink: 0; }
+  .w-card-add {
+    width: 16px; height: 16px; border: 1px solid #E5E2DC;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #CCC; flex-shrink: 0;
+  }
+  .w-card-barcode {
+    display: flex; gap: 1px; margin-top: 6px; opacity: 0.1;
+  }
+  .w-card-barcode span { background: #111; height: 6px; display: block; }
+
+  .w-classified {
+    position: absolute; bottom: 14px; right: 18px;
+    border: 1px solid rgba(184,42,24,0.12);
+    padding: 2px 8px;
+    font-size: 7px; letter-spacing: 3px; color: rgba(184,42,24,0.18);
+    text-transform: uppercase; transform: rotate(-3deg);
+    pointer-events: none;
+  }
+
+  .w-sb-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: #AAA; margin-bottom: 3px; }
+  .w-sb-budget {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px; color: #111; line-height: 1; margin-bottom: 12px;
+  }
+  .w-budgetbar { height: 3px; display: flex; gap: 1px; margin-bottom: 10px; }
+  .w-bp { background: #4B4BFF; width: 0%; }
+  .w-br { background: #2A9E5C; width: 78%; }
+  .w-bs { background: #E5E2DC; width: 22%; }
+  .w-legend { display: flex; gap: 10px; margin-bottom: 14px; }
+  .w-leg { display: flex; align-items: center; gap: 4px; font-size: 7px; color: #AAA; }
+  .w-leg-dot { width: 6px; height: 6px; flex-shrink: 0; }
+  .w-dept-label {
+    font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: #AAA;
+    border-bottom: 1px solid #DEDAD4; padding-bottom: 6px; margin-bottom: 10px;
+  }
+  .w-dept { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #F0EDE8; }
+  .w-dept:last-of-type { border-bottom: none; }
+  .w-dept-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .w-dept-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: #111; line-height: 1; }
+  .w-dept-alloc { font-size: 8px; color: #AAA; }
+  .w-dept-code { font-size: 7px; color: #BBB; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .w-dept-ctrl { display: flex; align-items: center; gap: 6px; }
+  .w-dept-track { flex: 1; height: 2px; background: #E8E5DF; position: relative; }
+  .w-dept-fill { position: absolute; left: 0; top: 0; height: 2px; width: 25%; }
+  .w-dept-cost { font-size: 7px; color: #BBB; min-width: 30px; text-align: right; }
+  .w-dept-btn {
+    width: 14px; height: 14px; border: 1px solid #E5E2DC;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #BBB; cursor: pointer; flex-shrink: 0;
+    font-family: 'Space Mono', monospace; background: #FDFCF9;
+  }
+  .w-dept-btn:hover { border-color: #999; color: #333; }
+  .w-go-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid #DEDAD4; }
+  .w-go {
+    width: 100%; background: #111; border: none; padding: 11px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: #F7F5F0;
+    letter-spacing: 3px; cursor: pointer; display: block; text-transform: uppercase;
+  }
+  .w-go:hover { background: #B82A18; }
+  .w-go-sub { font-size: 7px; color: #CCC; letter-spacing: 1.5px; text-align: center; margin-top: 6px; text-transform: uppercase; }
+</style>
+
+<h2 class="sr-only">Mandate — Draft Your Week, white version with uniform card grid</h2>
+
+<div class="w-root">
+  <div class="w-watermark">WK 01<br>/ 48</div>
+
+  <div class="w-main">
+    <div class="w-topbar">
+      <div class="w-logo">MANDATE</div>
+      <div class="w-stats">
+        <div class="w-stat">
+          <div class="w-stat-label">Resilience</div>
+          <div class="w-stat-row">
+            <div class="w-stat-track"><div class="w-stat-fill-r"></div></div>
+            <div class="w-stat-val">55</div>
+          </div>
+        </div>
+        <div class="w-stat">
+          <div class="w-stat-label">Disorder</div>
+          <div class="w-stat-row">
+            <div class="w-stat-track"><div class="w-stat-fill-d"></div></div>
+            <div class="w-stat-val">10</div>
+          </div>
+        </div>
+        <div class="w-meta">January · Blizzard in 47 wks</div>
+      </div>
+      <div class="w-wk-block">
+        <span class="w-wk-num">01</span>
+        <span class="w-wk-total">/ 48</span>
+      </div>
+    </div>
+
+    <div class="w-section-head">
+      <div class="w-sec-num">01</div>
+      <div>
+        <div class="w-sec-title">Draft Your Week</div>
+        <div class="w-sec-sub">DIRECTIVE // FIELD MEETINGS</div>
+      </div>
+      <div class="w-sec-right">Three slots · choose who gets heard</div>
+    </div>
+
+    <div class="w-slots">
+      <div class="w-slot">
+        <div class="w-slot-corner tl"></div><div class="w-slot-corner tr"></div>
+        <div class="w-slot-corner bl"></div><div class="w-slot-corner br"></div>
+        <div class="w-slot-num">1</div>
+        <div class="w-slot-label">Open Slot</div>
+      </div>
+      <div class="w-slot">
+        <div class="w-slot-corner tl"></div><div class="w-slot-corner tr"></div>
+        <div class="w-slot-corner bl"></div><div class="w-slot-corner br"></div>
+        <div class="w-slot-num">2</div>
+        <div class="w-slot-label">Open Slot</div>
+      </div>
+      <div class="w-slot">
+        <div class="w-slot-corner tl"></div><div class="w-slot-corner tr"></div>
+        <div class="w-slot-corner bl"></div><div class="w-slot-corner br"></div>
+        <div class="w-slot-num">3</div>
+        <div class="w-slot-label">Open Slot</div>
+      </div>
+    </div>
+    <div class="w-slot-status">0 of 3 committed · click a briefing to assign</div>
+
+    <hr class="w-divider">
+
+    <div class="w-brief-header">
+      <div class="w-sec-num" style="font-size:30px">02</div>
+      <div>
+        <div class="w-sec-title">Field Briefings</div>
+        <div class="w-sec-sub">5 SURFACED THIS CYCLE</div>
+      </div>
+      <div class="w-redeal">↺ Re-deal · 1 slot</div>
+    </div>
+
+    <div class="w-cards">
+      <div class="w-card labor">
+        <div class="w-card-eye">The Bronx · Labor</div>
+        <div class="w-card-title">Fordham</div>
+        <div class="w-card-intel">Chatter in the feed about jobs.</div>
+        <div class="w-card-barcode">
+          <span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:4px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span>
+        </div>
+        <div class="w-card-footer">
+          <div class="w-card-tag"><svg class="w-card-dot" viewBox="0 0 5 5"><rect width="5" height="5" fill="#7B4FBF"/></svg>Services lens</div>
+          <div class="w-card-add">+</div>
+        </div>
+      </div>
+
+      <div class="w-card working">
+        <div class="w-card-eye">Brooklyn · Working Families</div>
+        <div class="w-card-title">Crown Heights</div>
+        <div class="w-card-intel">Chatter in the feed about safety.</div>
+        <div class="w-card-barcode">
+          <span style="width:1px"></span><span style="width:3px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:4px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:3px"></span>
+        </div>
+        <div class="w-card-footer">
+          <div class="w-card-tag"><svg class="w-card-dot" viewBox="0 0 5 5"><rect width="5" height="5" fill="#E8A020"/></svg>Safety lens</div>
+          <div class="w-card-add">+</div>
+        </div>
+      </div>
+
+      <div class="w-card biz">
+        <div class="w-card-eye">Manhattan · Business Coalition</div>
+        <div class="w-card-title">Midtown</div>
+        <div class="w-card-intel">Office vacancies hollowing out, feed says.</div>
+        <div class="w-card-barcode">
+          <span style="width:3px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:4px"></span><span style="width:1px"></span><span style="width:2px"></span>
+        </div>
+        <div class="w-card-footer">
+          <div class="w-card-tag"><svg class="w-card-dot" viewBox="0 0 5 5"><rect width="5" height="5" fill="#999"/></svg>Infrastructure lens</div>
+          <div class="w-card-add">+</div>
+        </div>
+      </div>
+
+      <div class="w-card biz">
+        <div class="w-card-eye">Brooklyn · Business Coalition</div>
+        <div class="w-card-title">Downtown Brooklyn</div>
+        <div class="w-card-intel">Chatter in the feed about transit.</div>
+        <div class="w-card-barcode">
+          <span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:1px"></span><span style="width:4px"></span>
+        </div>
+        <div class="w-card-footer">
+          <div class="w-card-tag"><svg class="w-card-dot" viewBox="0 0 5 5"><rect width="5" height="5" fill="#999"/></svg>Infrastructure lens</div>
+          <div class="w-card-add">+</div>
+        </div>
+      </div>
+
+      <div class="w-card prog">
+        <div class="w-card-eye">Queens · Progressives</div>
+        <div class="w-card-title">Astoria</div>
+        <div class="w-card-intel">Chatter in the feed about housing.</div>
+        <div class="w-card-barcode">
+          <span style="width:1px"></span><span style="width:4px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:3px"></span>
+        </div>
+        <div class="w-card-footer">
+          <div class="w-card-tag"><svg class="w-card-dot" viewBox="0 0 5 5"><rect width="5" height="5" fill="#E8A020"/></svg>Housing lens</div>
+          <div class="w-card-add">+</div>
+        </div>
+      </div>
+
+      <div class="w-card" style="border-top-color:#DDD; border-style: dashed; background: transparent; cursor: default; opacity: 0.4;">
+        <div style="display:flex; align-items:center; justify-content:center; height:100%; min-height:130px;">
+          <div style="font-size:7px; letter-spacing:2px; color:#AAA; text-transform:uppercase; text-align:center;">Empty slot<br>Re-deal to surface</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-classified">Classified · Mayoral Eyes Only</div>
+  </div>
+
+  <div class="w-sidebar">
+    <div class="w-sb-label">Reserve</div>
+    <div class="w-sb-budget">$4.2B</div>
+    <div class="w-budgetbar">
+      <div class="w-bp"></div><div class="w-br"></div><div class="w-bs"></div>
+    </div>
+    <div class="w-legend">
+      <div class="w-leg"><svg class="w-leg-dot" viewBox="0 0 6 6"><rect width="6" height="6" fill="#4B4BFF"/></svg>Perceive</div>
+      <div class="w-leg"><svg class="w-leg-dot" viewBox="0 0 6 6"><rect width="6" height="6" fill="#2A9E5C"/></svg>Reserve</div>
+      <div class="w-leg"><svg class="w-leg-dot" viewBox="0 0 6 6"><rect width="6" height="6" fill="#E5E2DC"/></svg>Spent</div>
+    </div>
+
+    <div class="w-dept-label">Departments — Funded Lens Reads Deck</div>
+
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Health</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">DOHMH</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#2A9E5C"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Housing</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">HPD</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#E8A020"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Infrastructure</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">DSNY/DEP</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#888"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Services</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">HRA/DFTA</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#7B4FBF"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Safety</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">NYCEM</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#E8A020"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+    <div class="w-dept">
+      <div class="w-dept-top"><div class="w-dept-name">Community</div><div class="w-dept-alloc">1/4</div></div>
+      <div class="w-dept-code">AID</div>
+      <div class="w-dept-ctrl">
+        <div class="w-dept-btn">−</div>
+        <div class="w-dept-track"><div class="w-dept-fill" style="background:#2A9E5C"></div></div>
+        <div class="w-dept-btn">+</div>
+        <div class="w-dept-cost">$0.2B</div>
+      </div>
+    </div>
+
+    <div class="w-go-wrap">
+      <button class="w-go" onclick="sendPrompt('Play out week 01 in Mandate')">Execute Week 01 ↗</button>
+      <div class="w-go-sub">Commit slots to proceed</div>
+    </div>
+  </div>
+</div>

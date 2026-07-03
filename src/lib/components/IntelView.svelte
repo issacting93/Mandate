@@ -1,16 +1,19 @@
 <script>
   import { game } from '$lib/stores/game.js';
-  import { bus, insightSys, emitPost } from '$lib/engine.js';
+  import { bus, emitPost, openComms } from '$lib/engine.js';
   import { DISTRICTS, districtMap, EDGES, CONCERN_SCORES } from '$data/districts.js';
-  import { CONVERSATIONS } from '$data/conversations.js';
+  import { CONVERSATIONS as CONVERSATIONS_V1 } from '$data/conversations.js';
+  import { CONVERSATIONS_V2 } from '$data/conversations_v2.js';
+  const CONVERSATIONS = { ...CONVERSATIONS_V1, ...CONVERSATIONS_V2 };
+  import { scorePost } from '$lib/scoring.js';
+
+  let freshCount = $derived(($game.insights ?? []).filter(i => i.freshness > 0.3).length);
 
   // ── Local reactive state ──
   let composeText = $state('');
   let activeTone = $state('optimistic');
   let posting = $state(false);
   let llmStatus = $state('');
-  let notebookOpen = $state(false);
-  let showDeadInsights = $state(false);
   let selectedInsightChips = $state(new Set());
 
   // ── Tone options ──
@@ -26,17 +29,6 @@
     ($game.insights ?? []).filter(i => i.freshness > 0.3)
   );
 
-  let sidebarFresh = $derived(
-    ($game.insights ?? []).filter(i => i.freshness > 0.3)
-  );
-
-  let staleInsights = $derived(
-    ($game.insights ?? []).filter(i => i.freshness > 0 && i.freshness <= 0.3)
-  );
-
-  let deadInsights = $derived(
-    ($game.insights ?? []).filter(i => i.freshness <= 0)
-  );
 
   let unreadCount = $derived(
     ($game.dms ?? []).filter(dm => dm.unread).length
@@ -45,32 +37,16 @@
   // Merge posts + feed items, sorted by recency
   let allFeedItems = $derived.by(() => {
     const items = [];
-    ($game.posts ?? []).forEach(p => {
-      items.push({ type: 'post', data: p, week: p.week, order: p.order || 0 });
+    ($game.posts ?? []).forEach((p, idx) => {
+      items.push({ type: 'post', data: p, week: p.week, order: p.order || 0, key: `post-${p.order || idx}` });
     });
-    ($game.feed ?? []).forEach(f => {
-      items.push({ type: 'feed', data: f, week: f.week, order: f.order || 0 });
+    ($game.feed ?? []).forEach((f, idx) => {
+      items.push({ type: 'feed', data: f, week: f.week, order: f.order || 0, key: `feed-${f.order || 0}-${idx}` });
     });
     items.sort((a, b) => b.week - a.week || b.order - a.order);
     return items;
   });
 
-  // ── Notebook derived data ──
-  let notebookPatterns = $derived.by(() => {
-    return insightSys?.getPatterns?.() ?? [];
-  });
-
-  let notebookFresh = $derived.by(() => {
-    return insightSys?.getFresh?.() ?? [];
-  });
-
-  let notebookStale = $derived.by(() => {
-    return insightSys?.getStale?.() ?? [];
-  });
-
-  let notebookDead = $derived.by(() => {
-    return insightSys?.getDead?.() ?? [];
-  });
 
   // ── Helpers ──
 
@@ -84,9 +60,9 @@
   }
 
   function freshnessColor(pct) {
-    if (pct > 60) return '#34d399';
-    if (pct > 30) return '#e8a83e';
-    return '#ff5a52';
+    if (pct > 60) return '#2A9E5C';
+    if (pct > 30) return '#E8A020';
+    return '#B82A18';
   }
 
   function feedDotClass(type) {
@@ -125,67 +101,18 @@
     return label.substring(0, max);
   }
 
-  // ── Keyboard shortcut: N to toggle notebook ──
-  function handleKeydown(e) {
-    if (e.key === 'n' || e.key === 'N') {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      notebookOpen = !notebookOpen;
-    }
-  }
+  // N key now handled globally by App.svelte (NotebookOverlay)
 
-  $effect(() => {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', handleKeydown);
-      return () => window.removeEventListener('keydown', handleKeydown);
-    }
-  });
-
-  // ── Post handler (with fallback scoring) ──
-
-  function fallbackScore(text) {
-    const scores = [];
-    const words = text.toLowerCase();
-    const insights = $game.insights ?? [];
-
-    insights.filter(i => i.freshness > 0).forEach(ins => {
-      const keywords = ins.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-      const hits = keywords.filter(k => words.includes(k)).length;
-      const score = Math.min(10, Math.round((hits / Math.max(keywords.length, 1)) * 10));
-      if (score > 0) {
-        const d = districtMap[ins.districtId];
-        const char = CONVERSATIONS[ins.districtId]?.character;
-        scores.push({
-          district: ins.districtId,
-          score,
-          resident: char?.name || 'A resident',
-          reaction: score >= 5
-            ? "They're talking about what we actually said."
-            : "At least someone's paying attention.",
-        });
-      }
-    });
-
-    const overall = scores.length > 0
-      ? Math.round(scores.reduce((a, s) => a + s.score, 0) / scores.length)
-      : 0;
-    return {
-      scores,
-      overall,
-      summary: scores.length > 0
-        ? `Post references ${scores.length} community concern(s).`
-        : 'Post lacks specific community knowledge.',
-    };
-  }
+  // ── Post handler ──
 
   async function handlePost() {
     const text = composeText.trim();
     if (!text || posting) return;
 
     posting = true;
-    llmStatus = 'Evaluating post against community knowledge...';
+    llmStatus = 'Scoring against community knowledge...';
 
-    // Use fallback scoring (LLM scoring can be wired in later)
-    const result = fallbackScore(text);
+    const result = scorePost(text, activeTone, $game.insights ?? [], districtMap, CONVERSATIONS, CONCERN_SCORES);
 
     // Build engagement metrics
     const engagement = {
@@ -405,74 +332,28 @@
 </script>
 
 <!-- ════════════════════════════════════════════════
-     SOCIAL VIEW LAYOUT: Main (compose + feed) | Sidebar (DMs + insights)
+     INTEL VIEW: Feed (left) | Messages (right)
+     Compact compose bar at top. Notebook is now a global overlay (N key).
      ════════════════════════════════════════════════ -->
 
 <div class="social-view">
   <div class="view-split">
 
-    <!-- ── Main Column: Compose + Feed ── -->
+    <!-- ── Left Column: Compose + Feed ── -->
     <div class="view-main">
 
-      <!-- Compose bar -->
-      <div class="compose-bar">
-        <input
-          type="text"
-          class="compose-input"
-          placeholder="What do you want to tell the city?"
-          bind:value={composeText}
-          onkeydown={(e) => { if (e.key === 'Enter') handlePost(); }}
-          disabled={posting}
-        />
-        <button
-          class="compose-post-btn"
-          onclick={handlePost}
-          disabled={posting}
-        >
-          {posting ? '...' : 'POST'}
-        </button>
-      </div>
+      <!-- Statement builder button -->
+      <button class="statement-open-btn" onclick={openComms} disabled={freshCount === 0}>
+        {#if freshCount > 0}
+          ✎ Build Statement · {freshCount} insight{freshCount !== 1 ? 's' : ''} available
+        {:else}
+          No insights yet — visit districts first
+        {/if}
+      </button>
 
-      <!-- Tone selector pills -->
-      <div class="compose-tones">
-        {#each TONES as tone}
-          <button
-            class="compose-tone"
-            class:active={activeTone === tone.id}
-            onclick={() => { activeTone = tone.id; }}
-          >
-            {tone.label}
-          </button>
-        {/each}
-      </div>
-
-      <!-- Insight grounding chips (your knowledge) -->
-      {#if freshInsights.length > 0}
-        <div class="compose-ground">
-          <span class="ground-label">Your knowledge ({freshInsights.length} fresh insights):</span>
-          {#each freshInsights.slice(0, 4) as ins}
-            <span class="compose-insight-chip readonly">
-              &#9670; {ins.category} &mdash; {truncateInsight(ins.text)}
-            </span>
-          {/each}
-          {#if freshInsights.length > 4}
-            <span class="ground-overflow">+{freshInsights.length - 4} more</span>
-          {/if}
-        </div>
-      {:else}
-        <div class="compose-ground">
-          <span class="ground-label">No insights yet. Visit districts first.</span>
-        </div>
-      {/if}
-
-      <!-- LLM status -->
-      {#if llmStatus}
-        <div class="llm-status">{llmStatus}</div>
-      {/if}
-
-      <!-- ── Feed Timeline ── -->
+      <!-- Feed Timeline -->
       <div class="feed-timeline">
-        {#each allFeedItems as item (item.type + '-' + item.order)}
+        {#each allFeedItems as item (item.key)}
           {#if item.type === 'post'}
             {@const p = item.data}
             {@const score = p.overall ?? (p.grounded ? 7 : 2)}
@@ -489,12 +370,10 @@
                 {#if p.scores?.length > 0}
                   <div class="feed-score-districts">
                     {#each p.scores.filter(s => s.score > 0) as s}
-                      <span
-                        class="feed-score-district"
-                        style="color: {s.score >= 7 ? '#34d399' : s.score >= 4 ? 'var(--secondary)' : 'var(--muted)'}"
-                      >
+                      <span class="feed-score-district" style="color: {s.score >= 7 ? 'var(--green)' : s.score >= 4 ? 'var(--ink-mid)' : 'var(--ink-muted)'}">
                         {districtMap[s.district]?.name || s.district}: {s.score}/10
                       </span>
+
                     {/each}
                   </div>
                 {/if}
@@ -523,11 +402,9 @@
       </div>
     </div>
 
-    <!-- ── Sidebar: DMs + Patterns + Insights ── -->
-    <div class="view-sidebar">
-
-      <!-- Messages section -->
-      <div class="sidebar-section-header">
+    <!-- ── Right Column: Messages (promoted from sidebar) ── -->
+    <div class="view-messages">
+      <div class="msg-header">
         <span class="micro-label">MESSAGES</span>
         {#if unreadCount > 0}
           <span class="dm-unread-badge">{unreadCount}</span>
@@ -536,7 +413,6 @@
 
       {#each $game.dms ?? [] as dm}
         {#if dm.messages.length === 0}
-          <!-- Collapsed DM thread -->
           <div class="dm-thread">
             <div class="dm-avatar">{dm.initials}</div>
             <div class="dm-info">
@@ -546,14 +422,16 @@
             </div>
           </div>
         {:else}
-          <!-- Expanded DM thread with messages -->
-          <div class="dm-expanded">
+          <div class="dm-expanded" class:has-unread={dm.unread}>
             <div class="dm-expanded-header">
               <div class="dm-avatar">{dm.initials}</div>
               <div>
                 <div class="dm-name">{dm.characterName}</div>
                 <div class="dm-district">{dm.districtName.toUpperCase()}</div>
               </div>
+              {#if dm.unread}
+                <span class="dm-new-dot"></span>
+              {/if}
             </div>
             {#each dm.messages as msg}
               <div class="dm-expanded-msg" class:sent={msg.sent}>{msg.text}</div>
@@ -562,160 +440,11 @@
         {/if}
       {/each}
 
-      <!-- Patterns section -->
-      {#if ($game.patterns ?? []).length > 0}
-        <div class="sidebar-section-header" style="margin-top: 20px;">
-          <span class="micro-label">PATTERNS</span>
-          <span class="pattern-count">{$game.patterns.length}</span>
-        </div>
-        {#each $game.patterns as p}
-          <div class="insight-chip pattern-chip">&#9670; {p.text}</div>
-        {/each}
+      {#if ($game.dms ?? []).length === 0}
+        <div class="dm-empty">Visit districts to start conversations. Characters will message you here.</div>
       {/if}
-
-      <!-- Insights section -->
-      <div class="sidebar-section-header" style="margin-top: 20px;">
-        <span class="micro-label">INSIGHTS</span>
-        <span class="insight-total-count">{($game.insights ?? []).length}</span>
-      </div>
-
-      {#if ($game.insights ?? []).length === 0}
-        <div class="sidebar-empty">Visit districts to discover insights.</div>
-      {:else}
-        <div class="insight-list">
-          {#each sidebarFresh as ins}
-            <div class="insight-chip">
-              {ins.category} &mdash; {ins.text}
-              <span class="insight-freshness">{Math.round(ins.freshness * 100)}%</span>
-            </div>
-          {/each}
-          {#each staleInsights as ins}
-            <div class="insight-chip stale">
-              {ins.category} &mdash; {ins.text}
-              <span class="insight-stale-badge">STALE</span>
-            </div>
-          {/each}
-          {#each deadInsights as ins}
-            <div class="insight-chip dead">
-              {ins.category} &mdash; {ins.text}
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      <!-- Notebook toggle -->
-      <button class="notebook-toggle" onclick={() => { notebookOpen = !notebookOpen; }}>
-        &#9782; FIELD NOTEBOOK
-        {#if ($game.insights ?? []).length > 0}
-          <span class="notebook-toggle-badge">{($game.insights ?? []).length}</span>
-        {/if}
-      </button>
     </div>
   </div>
-
-  <!-- ════════════════════════════════════════════
-       NOTEBOOK DRAWER (slides in from right)
-       ════════════════════════════════════════════ -->
-  {#if notebookOpen}
-    <div class="notebook-drawer open">
-      <div class="notebook-header">
-        <span>
-          <span class="notebook-title">FIELD NOTEBOOK</span>
-          {#if ($game.insights ?? []).length > 0}
-            <span class="notebook-badge">{($game.insights ?? []).length}</span>
-          {/if}
-        </span>
-        <button class="notebook-close" onclick={() => { notebookOpen = false; }}>&times;</button>
-      </div>
-
-      <div class="notebook-body">
-        <!-- Patterns -->
-        {#if notebookPatterns.length > 0}
-          <div class="notebook-section">
-            <div class="notebook-section-title">Patterns ({notebookPatterns.length})</div>
-            {#each notebookPatterns as p}
-              {@const districtNames = p.districts.map(id => districtMap[id]?.name || id).join(', ')}
-              <div class="notebook-pattern">
-                <div class="notebook-pattern-cat">{p.category}</div>
-                <div class="notebook-pattern-districts">{districtNames}</div>
-              </div>
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Fresh insights -->
-        {#if notebookFresh.length > 0}
-          <div class="notebook-section">
-            <div class="notebook-section-title">Fresh Insights ({notebookFresh.length})</div>
-            {#each groupByDistrict(notebookFresh) as [districtId, insights]}
-              {@const d = districtMap[districtId]}
-              <div class="notebook-district-group">
-                <div class="notebook-district-name">{d?.name || districtId}</div>
-                {#each insights as ins}
-                  {@const pct = Math.round(ins.freshness * 100)}
-                  <div class="notebook-insight">
-                    <span class="notebook-insight-cat {ins.category}">{ins.category}</span>
-                    <div class="notebook-insight-text">{ins.text}</div>
-                    <div class="notebook-freshness">
-                      <div
-                        class="notebook-freshness-fill"
-                        style="width: {pct}%; background: {freshnessColor(pct)}"
-                      ></div>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Stale insights -->
-        {#if notebookStale.length > 0}
-          <div class="notebook-section">
-            <div class="notebook-section-title">Stale Insights ({notebookStale.length})</div>
-            {#each groupByDistrict(notebookStale) as [districtId, insights]}
-              {@const d = districtMap[districtId]}
-              <div class="notebook-district-group">
-                <div class="notebook-district-name">
-                  {d?.name || districtId} <span class="notebook-stale-badge">STALE</span>
-                </div>
-                {#each insights as ins}
-                  <div class="notebook-insight stale">
-                    <span class="notebook-insight-cat {ins.category}">{ins.category}</span>
-                    <div class="notebook-insight-text">{ins.text}</div>
-                  </div>
-                {/each}
-              </div>
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Dead insights (collapsed) -->
-        {#if notebookDead.length > 0}
-          <div class="notebook-section">
-            <button class="notebook-dead-toggle" onclick={() => { showDeadInsights = !showDeadInsights; }}>
-              Show expired ({notebookDead.length}) {showDeadInsights ? '\u25B4' : '\u25BE'}
-            </button>
-            {#if showDeadInsights}
-              {#each notebookDead as ins}
-                <div class="notebook-insight dead">
-                  <span class="notebook-insight-cat {ins.category}">{ins.category}</span>
-                  <div class="notebook-insight-text">{ins.text}</div>
-                </div>
-              {/each}
-            {/if}
-          </div>
-        {/if}
-
-        <!-- Empty state -->
-        {#if notebookPatterns.length === 0 && notebookFresh.length === 0 && notebookStale.length === 0 && notebookDead.length === 0}
-          <div class="notebook-empty">
-            Visit districts and have conversations to gather insights.
-          </div>
-        {/if}
-      </div>
-    </div>
-  {/if}
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -744,12 +473,17 @@
     border-right: 1px solid var(--divider);
   }
 
-  .view-sidebar {
-    width: 280px;
-    min-width: 240px;
-    max-width: 320px;
+  .view-messages {
+    width: 320px;
+    flex-shrink: 0;
     overflow-y: auto;
-    padding: 16px 24px;
+    padding: 16px 20px;
+  }
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
   }
 
   /* ── Compose Bar ── */
@@ -760,7 +494,7 @@
     padding: 12px 16px;
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
-    border-radius: 10px;
+    border-radius: 0;
     margin-bottom: 8px;
   }
 
@@ -782,7 +516,7 @@
     background: var(--red);
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 0;
     padding: 6px 14px;
     font-family: var(--font-data);
     font-size: 10px;
@@ -800,12 +534,13 @@
     cursor: not-allowed;
   }
 
-  /* ── Tone Pills ── */
-  .compose-tones {
+  .compose-tones-inline {
     display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
+    gap: 3px;
+    flex-shrink: 0;
   }
+
+  /* ── Tone Pills ── */
 
   .compose-tone {
     font-family: var(--font-data);
@@ -813,7 +548,7 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     border: 1px solid var(--panel-border);
     background: transparent;
     color: var(--secondary);
@@ -856,7 +591,7 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     background: rgba(255,45,45,0.08);
     color: var(--red);
     border: 1px solid rgba(255,45,45,0.15);
@@ -968,13 +703,13 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     margin-left: 8px;
   }
 
   .feed-grounding.grounded {
-    background: rgba(52,211,153,0.1);
-    color: #34d399;
+    background: rgba(42,158,92,0.1);
+    color: var(--green);
   }
 
   .feed-grounding.hollow {
@@ -1011,13 +746,21 @@
     padding: 32px 0;
   }
 
-  /* ── Sidebar ── */
-  .sidebar-section-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .statement-open-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 2px;
+    cursor: pointer;
     margin-bottom: 12px;
+    text-transform: uppercase;
   }
+  .statement-open-btn:hover:not(:disabled) { background: var(--red); }
+  .statement-open-btn:disabled { opacity: 0.4; cursor: default; }
 
   .micro-label {
     font-family: var(--font-data);
@@ -1026,11 +769,6 @@
     letter-spacing: 0.1em;
     color: var(--muted);
     text-transform: uppercase;
-  }
-
-  .sidebar-empty {
-    color: var(--muted);
-    font-size: 11px;
   }
 
   /* ── DM Threads ── */
@@ -1100,7 +838,7 @@
     background: var(--red);
     color: #fff;
     padding: 1px 6px;
-    border-radius: 6px;
+    border-radius: 0;
   }
 
   .dm-expanded {
@@ -1126,302 +864,27 @@
     color: var(--secondary);
   }
 
-  /* ── Patterns ── */
-  .pattern-count {
-    font-family: var(--font-data);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--red);
+  .dm-expanded.has-unread {
+    border-left: 3px solid var(--red);
+    padding-left: 10px;
   }
 
-  .pattern-chip {
-    background: rgba(255,45,45,0.08);
-    color: var(--red);
-    border-color: rgba(255,45,45,0.2);
-  }
-
-  /* ── Insights (sidebar) ── */
-  .insight-total-count {
-    font-family: var(--font-data);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--muted);
-  }
-
-  .insight-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
-  .insight-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--dark);
-    line-height: 1.4;
-  }
-
-  .insight-chip::before {
-    content: '\25C6';
-    font-size: 7px;
-    color: var(--red);
-    flex-shrink: 0;
-  }
-
-  .insight-chip.stale {
-    opacity: 0.5;
-    border-style: dashed;
-  }
-
-  .insight-chip.dead {
-    opacity: 0.25;
-    text-decoration: line-through;
-  }
-
-  .insight-freshness {
-    font-size: 8px;
-    color: var(--muted);
-    margin-left: 4px;
-  }
-
-  .insight-stale-badge {
-    font-size: 8px;
-    color: var(--red);
-    margin-left: 4px;
-    font-weight: 700;
-  }
-
-  /* ── Notebook Toggle Button ── */
-  .notebook-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 20px;
-    padding: 8px 12px;
-    width: 100%;
-    background: rgba(0,0,0,0.03);
-    border: 1px solid var(--panel-border);
-    border-radius: 8px;
-    font-family: var(--font-data);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--secondary);
-    cursor: pointer;
-    text-transform: uppercase;
-  }
-
-  .notebook-toggle:hover {
-    background: rgba(0,0,0,0.06);
-  }
-
-  .notebook-toggle-badge {
+  .dm-new-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     background: var(--red);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 8px;
+    flex-shrink: 0;
     margin-left: auto;
   }
 
-  /* ── Notebook Drawer ── */
-  .notebook-drawer {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 360px;
-    background: var(--panel-bg);
-    border-left: 1px solid var(--panel-border);
-    z-index: 800;
-    overflow-y: auto;
-    font-family: var(--font-ui);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.08);
-  }
-
-  .notebook-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--panel-border);
-    position: sticky;
-    top: 0;
-    background: var(--panel-bg);
-    z-index: 1;
-  }
-
-  .notebook-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--dark);
-  }
-
-  .notebook-badge {
-    display: inline-block;
-    background: var(--red);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 8px;
-    margin-left: 6px;
-  }
-
-  .notebook-close {
-    background: none;
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    color: #999;
-    padding: 0 4px;
-  }
-
-  .notebook-body {
-    padding: 0;
-  }
-
-  .notebook-section {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--panel-border);
-  }
-
-  .notebook-section-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #999;
-    margin-bottom: 8px;
-  }
-
-  .notebook-pattern {
-    background: rgba(52,211,153,0.06);
-    border: 1px solid rgba(52,211,153,0.2);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-  }
-
-  .notebook-pattern-cat {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: #34d399;
-    text-transform: uppercase;
-  }
-
-  .notebook-pattern-districts {
+  .dm-empty {
     font-size: 12px;
-    color: var(--dark);
-    margin-top: 4px;
-  }
-
-  .notebook-district-group {
-    margin-bottom: 12px;
-  }
-
-  .notebook-district-name {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--dark);
-    margin-bottom: 6px;
-  }
-
-  .notebook-insight {
-    background: #fff;
-    border: 1px solid var(--panel-border);
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    position: relative;
-  }
-
-  .notebook-insight.stale {
-    border-style: dashed;
-    opacity: 0.6;
-  }
-
-  .notebook-insight.dead {
-    opacity: 0.35;
-    text-decoration: line-through;
-  }
-
-  .notebook-insight-cat {
-    display: inline-block;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 1px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  /* Category-specific colors */
-  .notebook-insight-cat.HEALTH   { background: #fef3c7; color: #92400e; }
-  .notebook-insight-cat.HOUSING  { background: #dbeafe; color: #1e40af; }
-  .notebook-insight-cat.INFRA    { background: #e0e7ff; color: #3730a3; }
-  .notebook-insight-cat.SERVICES { background: #fce7f3; color: #9d174d; }
-  .notebook-insight-cat.SAFETY   { background: #fee2e2; color: #991b1b; }
-  .notebook-insight-cat.ASSET    { background: #d1fae5; color: #065f46; }
-
-  .notebook-insight-text {
-    font-size: 12px;
-    color: var(--dark);
-    line-height: 1.4;
-  }
-
-  .notebook-freshness {
-    height: 3px;
-    background: #e5e5e5;
-    border-radius: 2px;
-    margin-top: 6px;
-    overflow: hidden;
-  }
-
-  .notebook-freshness-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s;
-  }
-
-  .notebook-stale-badge {
-    display: inline-block;
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--red);
-    letter-spacing: 0.06em;
-    margin-left: 6px;
-  }
-
-  .notebook-dead-toggle {
-    font-size: 11px;
-    color: #999;
-    cursor: pointer;
-    padding: 4px 0;
-    background: none;
-    border: none;
-    font-family: var(--font-ui);
-    width: 100%;
-    text-align: left;
-  }
-
-  .notebook-dead-toggle:hover {
-    color: var(--dark);
-  }
-
-  .notebook-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: #999;
-    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    border-left: 2px solid var(--red);
+    padding-left: 10px;
+    line-height: 1.5;
   }
 
   /* ── Responsive ── */
@@ -1433,12 +896,7 @@
       border-right: none;
       border-bottom: 1px solid var(--divider);
     }
-    .view-sidebar {
-      max-width: none;
-      min-width: 0;
-      width: 100%;
-    }
-    .notebook-drawer {
+    .view-messages {
       width: 100%;
     }
   }

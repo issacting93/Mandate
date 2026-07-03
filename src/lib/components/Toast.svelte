@@ -41,10 +41,10 @@
     top: 50px;
     left: 50%;
     transform: translateX(-50%) translateY(-8px);
-    background: var(--dark, #1a1a1a);
+    background: var(--dark);
     color: #fff;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 12px;
     font-weight: 600;
     font-family: var(--font-ui);
@@ -64,7 +64,7 @@
   .accent {
     width: 3px;
     min-height: 16px;
-    border-radius: 1px;
+    border-radius: 0;
     position: absolute;
     left: 0;
     top: 0;

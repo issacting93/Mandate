@@ -159,6 +159,7 @@ export class BentoSystem {
   #synergies;
   #conflicts;
   #grid;
+  #deptSys;
 
   constructor(bus, state, tiles, synergies, conflicts) {
     this.#bus = bus;
@@ -167,6 +168,7 @@ export class BentoSystem {
     this.#synergies = synergies;
     this.#conflicts = conflicts;
     this.#grid = new BentoGrid();
+    this.#deptSys = null;
 
     bus.on('ui.bentoOpen', () => this.#present());
     bus.on('ui.bentoPlace', (e) => this.#handlePlace(e));
@@ -177,11 +179,15 @@ export class BentoSystem {
 
   // ── Public API ───────────────────────────────────────────
 
+  setDepartmentSystem(deptSys) {
+    this.#deptSys = deptSys;
+  }
+
   getGrid() {
     return this.#grid;
   }
 
-  // Get available tiles (respecting insight mutations)
+  // Get available tiles (respecting insight mutations + department gating)
   getAvailableTiles() {
     const insights = this.#state.get('insights') || [];
     const available = [];
@@ -195,6 +201,12 @@ export class BentoSystem {
         if (count < (tile.requiredInsightCount || 1)) continue;
       }
 
+      // Department level gate: efficient tiles require funded departments
+      if (tile.requiredDept && this.#deptSys) {
+        const effective = this.#deptSys.getEffectiveLevel(tile.requiredDept.id);
+        if (effective < tile.requiredDept.level) continue;
+      }
+
       // If this is a mutation, suppress the parent tile
       if (tile.mutatesFrom) {
         // This mutation is available — parent will be suppressed below
@@ -203,7 +215,7 @@ export class BentoSystem {
         // Check if a mutation of this tile is available
         const mutation = this.#allTiles.find(
           t => t.mutatesFrom === tile.id &&
-            this.#checkInsightRequirement(t, insights)
+            this.#checkTileRequirements(t, insights)
         );
         if (mutation) {
           // Parent is suppressed — mutation replaces it
@@ -438,5 +450,14 @@ export class BentoSystem {
       i => i.category === tile.requiredInsightCategory && i.freshness > 0.3
     ).length;
     return count >= (tile.requiredInsightCount || 1);
+  }
+
+  #checkTileRequirements(tile, insights) {
+    if (!this.#checkInsightRequirement(tile, insights)) return false;
+    if (tile.requiredDept && this.#deptSys) {
+      const effective = this.#deptSys.getEffectiveLevel(tile.requiredDept.id);
+      if (effective < tile.requiredDept.level) return false;
+    }
+    return true;
   }
 }

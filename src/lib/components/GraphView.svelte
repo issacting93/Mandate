@@ -15,7 +15,7 @@
     hazard:           { label: 'Hazard',            c: '#ff6b63' },
     concern:          { label: 'Concern',           c: '#e8c547' },
     district:         { label: 'District',          c: '#2fc3e8' },
-    infrastructure:   { label: 'Infrastructure',    c: '#34d399' },
+    infrastructure:   { label: 'Infrastructure',    c: '#2A9E5C' },
     bloc:             { label: 'Bloc',              c: '#ff5fa0' },
     resource:         { label: 'Resource',          c: '#ffc24d' },
     policy:           { label: 'Policy',            c: '#ff9f43' },
@@ -31,8 +31,8 @@
     cascades:      { bk: 'threat',    c: '#ff8a5c', dash: true },
     causes:        { bk: 'threat',    c: '#ff6b63', dash: false },
     exposed_to:    { bk: 'threat',    c: '#e06b6b', dash: false },
-    mitigates:     { bk: 'defense',   c: '#34d399', dash: false },
-    protects:      { bk: 'defense',   c: '#34d399', dash: false },
+    mitigates:     { bk: 'defense',   c: '#2A9E5C', dash: false },
+    protects:      { bk: 'defense',   c: '#2A9E5C', dash: false },
     requires:      { bk: 'defense',   c: '#cfd6e4', dash: false },
     costs:         { bk: 'meta',      c: '#ffc24d', dash: false },
     builds:        { bk: 'build',     c: '#ff9f43', dash: false },
@@ -46,13 +46,13 @@
     unlocks:       { bk: 'build',     c: '#38bdf8', dash: false },
     enables:       { bk: 'build',     c: '#ff9f43', dash: true },
     implements:    { bk: 'build',     c: '#38bdf8', dash: false },
-    prevents:      { bk: 'defense',   c: '#34d399', dash: false },
+    prevents:      { bk: 'defense',   c: '#2A9E5C', dash: false },
     adjacent_to:   { bk: 'spatial',   c: '#4b5563', dash: true },
   };
 
   const BUCKETS = {
     threat:    { label: 'Threats',    c: '#ff6b63', on: true },
-    defense:   { label: 'Defense',    c: '#34d399', on: true },
+    defense:   { label: 'Defense',    c: '#2A9E5C', on: true },
     build:     { label: 'Build',      c: '#ff9f43', on: true },
     knowledge: { label: 'Knowledge',  c: '#a78bfa', on: true },
     concern:   { label: 'Concerns',   c: '#e8c547', on: false },
@@ -240,7 +240,7 @@
         if (!dim) {
           ctx.globalAlpha = hidden ? 0.2 : (selected && !isSel && !isNbr ? 0.3 : 0.9);
           ctx.font = (isSel ? '600 11px' : '500 10px') + ' "Space Grotesk", sans-serif';
-          ctx.fillStyle = hidden ? '#555' : (isSel ? '#fff' : '#aeb6c4');
+          ctx.fillStyle = hidden ? '#555555' : (isSel ? '#fff' : '#aeb6c4');
           ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
           ctx.fillText(hidden ? '???' : n.label, n.x + r + 4, n.y);
         }
@@ -415,7 +415,7 @@
     position: absolute;
     background: rgba(16,20,28,0.9);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
+    border-radius: 0;
     backdrop-filter: blur(8px);
     padding: 10px 12px;
   }
@@ -448,7 +448,7 @@
   .legend-dot {
     width: 8px;
     height: 8px;
-    border-radius: 3px;
+    border-radius: 0;
     flex-shrink: 0;
   }
 
@@ -469,7 +469,7 @@
     font-family: var(--font-ui);
     font-size: 10px;
     padding: 5px 8px;
-    border-radius: 6px;
+    border-radius: 0;
     margin: 3px 0;
     cursor: pointer;
     transition: 0.12s;
@@ -481,7 +481,7 @@
   .filter-line {
     width: 14px;
     height: 3px;
-    border-radius: 2px;
+    border-radius: 0;
     flex-shrink: 0;
   }
 

@@ -9,15 +9,18 @@ import { InsightSystem } from '$systems/insight.js';
 import { InterventionSystem } from '$systems/intervention.js';
 import { BentoSystem } from '$systems/bento.js';
 import { MetreSystem } from '$systems/metre.js';
-import { DepartmentSystem } from '$systems/department.js';
+import { DepartmentSystem, DEPARTMENTS } from '$systems/department.js';
+import { DealSystem } from '$systems/deal.js';
+import { CommsBentoSystem } from '$systems/comms-bento.js';
 import { SCENARIO_EVENTS } from '$data/scenarios.js';
 import { CONVERSATIONS as CONVERSATIONS_V1 } from '$data/conversations.js';
 import { CONVERSATIONS_V2 } from '$data/conversations_v2.js';
 const CONVERSATIONS = { ...CONVERSATIONS_V1, ...CONVERSATIONS_V2 };
 import { INTERVENTIONS } from '$data/interventions.js';
 import { TILES, SYNERGIES, CONFLICTS } from '$data/tiles.js';
-import { DISTRICTS, districtMap, ACTION_COLORS } from '$data/districts.js';
-import { game, conversationActive, cinematicData, gameEndData, toastMessage, bentoActive, bentoState } from '$lib/stores/game.js';
+import { DISTRICTS, EDGES, districtMap, ACTION_COLORS, CONCERN_SCORES } from '$data/districts.js';
+import { NYC_RUMORS } from '$data/nyc-rumors.js';
+import { game, conversationActive, cinematicData, gameEndData, toastMessage, bentoActive, bentoState, commsActive, commsState } from '$lib/stores/game.js';
 import { get } from 'svelte/store';
 
 // ── Singleton instances ──
@@ -34,7 +37,6 @@ const INITIAL_STATE = {
   week: 1,
   reserve: 5.0,
   slotsTotal: 3,
-  labels: [],
   schedule: [null, null, null],
   weekStarted: false,
   insights: [],
@@ -67,41 +69,15 @@ const districtEntries = DISTRICTS.map(d => ({
 }));
 export const metreSys = new MetreSystem(bus, state, districtEntries);
 export const deptSys = new DepartmentSystem(bus, state);
+export const dealSys = new DealSystem(bus, state, DISTRICTS, districtMap, deptSys);
+export const commsSys = new CommsBentoSystem(bus, state, districtMap, CONCERN_SCORES);
+bentoSys.setDepartmentSystem(deptSys);
+insightSys.setGameStateAccessor(() => get(game));
 
 // ── Conversations ──
 export { CONVERSATIONS };
 
-// ══════════════════════════════════════════════════════════════
-// FIX #1: Engagement handler — VISIT/LISTEN → labels
-// ══════════════════════════════════════════════════════════════
-bus.on('engagement.started', ({ action, districtId }) => {
-  if (action === 'close' || action === 'info' || action === 'message') return;
-
-  game.update(g => {
-    // Toggle: if already labeled with same action, remove it
-    const existing = g.labels.findIndex(l => l.districtId === districtId);
-    if (existing >= 0 && g.labels[existing].action === action) {
-      // Remove label and any schedule entry
-      g.labels.splice(existing, 1);
-      g.schedule = g.schedule.map(s => s && s.districtId === districtId ? null : s);
-      return g;
-    }
-    // Replace or add label
-    if (existing >= 0) {
-      g.labels[existing].action = action;
-    } else {
-      g.labels.push({ districtId, action, labeledAt: g.week });
-    }
-    return g;
-  });
-
-  // Toast + visual feedback
-  const d = districtMap[districtId];
-  if (d) {
-    const color = ACTION_COLORS[action] || '#34d399';
-    showToast(`${d.name} → ${action.toUpperCase()}`, color);
-  }
-});
+// (Legacy label handler removed — hex menu now uses toggleWanted)
 
 // ══════════════════════════════════════════════════════════════
 // FIX #5: GO → Conversation sequencer
@@ -168,13 +144,7 @@ function playNextConversation() {
 
 function finishWeekEngagements() {
   conversationRunning = false;
-  // Clear schedule and consumed labels
-  game.update(g => {
-    const scheduledIds = new Set(g.schedule.filter(Boolean).map(s => s.districtId));
-    g.labels = g.labels.filter(l => !scheduledIds.has(l.districtId));
-    g.schedule = [null, null, null];
-    return g;
-  });
+  // Mark week as played — schedule cleared on advanceWeek
 }
 
 // When a conversation ends, play the next one (or finish)
@@ -188,15 +158,35 @@ bus.on('conversation.ended', () => {
 // FIX #2: advanceWeek — properly advances via ClockSystem
 // ══════════════════════════════════════════════════════════════
 export function advanceWeek() {
-  // Reset weekStarted for next week's planning
-  game.update(g => { g.weekStarted = false; return g; });
+  const g = get(game);
+  const hadVisits = g.schedule.some(s => s && s.districtId !== '_redeal');
+
+  game.update(gs => {
+    gs.weekStarted = false;
+    gs.slotsTotal = 3;
+    gs.schedule = [null, null, null];
+    // Track consecutive empty weeks for rate limiting
+    gs.consecutiveEmptyWeeks = hadVisits ? 0 : (gs.consecutiveEmptyWeeks || 0) + 1;
+    // Reserve delta for StatusBar flash
+    gs.reserveDelta = -0.08;
+    return gs;
+  });
+
   bus.emit('ui.weekAdvanced');
+
+  // Clear delta flash after 2 seconds
+  setTimeout(() => {
+    game.update(gs => { gs.reserveDelta = null; return gs; });
+  }, 2000);
+
+  // Deal fresh hand for next week
+  setTimeout(() => dealHand(), 100);
 }
 
 // ── Bridge: StateStore changes → Svelte game store ──
 bus.on('state.changed', ({ path, newValue }) => {
   const topKey = path.split('.')[0];
-  const syncKeys = ['week', 'reserve', 'weekStarted', 'insights', 'patterns', 'posts', 'feed', 'dms', 'labels', 'schedule', 'heardAbout'];
+  const syncKeys = ['week', 'reserve', 'weekStarted', 'insights', 'patterns', 'posts', 'feed', 'dms', 'schedule', 'heardAbout', 'thoughts', 'departments', 'doctrines'];
   if (syncKeys.includes(topKey)) {
     game.update(g => {
       g[topKey] = newValue;
@@ -239,6 +229,56 @@ bus.on('bento.placeFailed', (data) => {
   showToast(`Cannot place tile here.`, '#ef4444');
 });
 
+// ── Bridge: Comms Bento events ──
+bus.on('comms.presented', (data) => { commsState.set(data); });
+bus.on('comms.placed', (data) => { commsState.update(s => ({ ...s, evaluation: data.evaluation, grid: data.grid })); });
+bus.on('comms.removed', (data) => { commsState.update(s => ({ ...s, evaluation: data.evaluation, grid: data.grid })); });
+bus.on('comms.cleared', () => { commsState.update(s => ({ ...s, evaluation: commsSys.evaluate([]), grid: commsSys.getGrid().toGrid() })); });
+bus.on('comms.resolved', (data) => {
+  commsActive.set(false);
+  showToast(`Statement published: ${data.scores.length} district(s) reached`, '#2A9E5C');
+  // Push post into game state for feed display
+  game.update(g => {
+    g.posts.push(data.post);
+    return g;
+  });
+});
+bus.on('comms.resolveFailed', (data) => { showToast(`Cannot publish: ${data.reason}`, '#B82A18'); });
+
+// ── Bridge: Doctrine bloc trust shifts ──
+bus.on('doctrine.blocShift', ({ boost, penalty, boostAmount, penaltyAmount }) => {
+  for (const d of DISTRICTS) {
+    if (boost.includes(d.bloc)) {
+      d.trust = Math.min(100, d.trust + boostAmount);
+    }
+    if (penalty.includes(d.bloc)) {
+      d.trust = Math.max(0, d.trust - penaltyAmount);
+    }
+  }
+  // Update citywide
+  game.update(g => {
+    g.citywide = Math.round(DISTRICTS.reduce((s, d) => s + d.trust, 0) / DISTRICTS.length);
+    return g;
+  });
+});
+
+bus.on('department.doctrineChosen', ({ deptId, doctrine }) => {
+  showToast(`${doctrine.name} doctrine — ${DEPARTMENTS[deptId]?.label || deptId}`, DEPARTMENTS[deptId]?.color || '#999');
+  game.update(g => {
+    g.doctrines = deptSys.getAllDoctrines();
+    return g;
+  });
+});
+
+bus.on('department.doctrineSwitched', ({ deptId, doctrine, cost }) => {
+  showToast(`Switched to ${doctrine.name} — $${cost}B, reset to level 2`, '#B82A18');
+  game.update(g => {
+    g.doctrines = deptSys.getAllDoctrines();
+    g.departments = deptSys.getAllLevels();
+    return g;
+  });
+});
+
 // ── Bridge: Svelte UI actions → bus events ──
 export function startGame() {
   bus.emit('game.start');
@@ -250,6 +290,73 @@ export function fundDepartment(deptId) {
 
 export function defundDepartment(deptId) {
   bus.emit('department.defund', { deptId });
+}
+
+export function chooseDoctrine(deptId, branch) {
+  bus.emit('department.chooseDoctrine', { deptId, branch });
+}
+
+export function switchDoctrine(deptId, branch) {
+  bus.emit('department.switchDoctrine', { deptId, branch });
+}
+
+// ── Deal system ──
+export function dealHand() {
+  const g = get(game);
+  const hand = dealSys.deal(g);
+  game.update(gs => { gs.hand = hand; return gs; });
+}
+
+export function draftCard(districtId) {
+  game.update(g => {
+    const openIdx = g.schedule.indexOf(null);
+    if (openIdx < 0) return g;
+    const card = g.hand.find(c => c.districtId === districtId);
+    if (!card) return g;
+    g.schedule[openIdx] = { districtId, action: 'visit' };
+    return g;
+  });
+}
+
+export function undraftCard(slotIdx) {
+  game.update(g => {
+    g.schedule[slotIdx] = null;
+    return g;
+  });
+}
+
+export function redeal() {
+  game.update(g => {
+    // Re-deal costs 1 slot — fill a slot with null permanently
+    const openSlots = g.schedule.filter(s => s === null).length;
+    if (openSlots <= 0) return g;
+    // Mark one slot as "spent" by reducing slotsTotal
+    g.slotsTotal = Math.max(1, g.slotsTotal - 1);
+    // Also null out the last open slot
+    for (let i = g.schedule.length - 1; i >= 0; i--) {
+      if (g.schedule[i] === null) {
+        g.schedule[i] = { districtId: '_redeal', action: 'skip' };
+        break;
+      }
+    }
+    // Deal a fresh hand
+    g.hand = dealSys.deal(g);
+    return g;
+  });
+  showToast('Re-dealt — lost 1 slot', '#f59e0b');
+}
+
+export function toggleWanted(districtId) {
+  game.update(g => {
+    if (!g.wanted) g.wanted = [];
+    const idx = g.wanted.indexOf(districtId);
+    if (idx >= 0) {
+      g.wanted.splice(idx, 1);
+    } else {
+      g.wanted.push(districtId);
+    }
+    return g;
+  });
 }
 
 export function emitEngagement(action, districtId) {
@@ -271,6 +378,16 @@ export function openBento() {
 
 export function closeBento() {
   bentoActive.set(false);
+}
+
+// ── Comms Bento ──
+export function openComms() {
+  commsActive.set(true);
+  bus.emit('ui.commsOpen');
+}
+
+export function closeComms() {
+  commsActive.set(false);
 }
 
 // ── Bridge: scenario events → cinematic overlay ──
@@ -395,11 +512,15 @@ bus.on('clock.weekEnd', ({ week }) => {
 
       // Regular follow-ups (only fire once per threshold)
       if (weeksSinceVisit === 2) {
-        dm.messages.push({ text: `Any news on what we talked about? — ${charName}`, sent: false });
+        const msg2 = `Any news on what we talked about? — ${charName}`;
+        dm.messages.push({ text: msg2, sent: false });
         dm.unread = true;
+        showToast(`${charName} sent you a message`, '#8b5cf6');
       } else if (weeksSinceVisit === 4) {
-        dm.messages.push({ text: `Starting to feel like just another photo op. — ${charName}`, sent: false });
+        const msg4 = `Starting to feel like just another photo op. — ${charName}`;
+        dm.messages.push({ text: msg4, sent: false });
         dm.unread = true;
+        showToast(`${charName}: "${msg4.split('—')[0].trim()}"`, '#e8a83e');
         // Disorder bump for neglect
         bus.emit('metre.addDisorder', {
           districtId: dm.districtId,
@@ -471,6 +592,104 @@ bus.on('clock.weekEnd', ({ week }) => {
   game.update(gs => { gs.disasterOutcomes = outcomes; return gs; });
 });
 
+// ── Early neglect feed injection (week 3+) ──
+bus.on('clock.weekStart', ({ week }) => {
+  if (week === 3) {
+    const visitedCount = DISTRICTS.filter(d => d.lastVisited !== null).length;
+    if (visitedCount <= 3) {
+      game.update(g => {
+        g.feed.unshift({
+          type: 'chatter', week,
+          text: 'District leaders are asking: is the new mayor only going to visit once?',
+        });
+        return g;
+      });
+    }
+  }
+});
+
+// ── Trust diffusion across transit graph (§5.2) ──
+bus.on('clock.weekEnd', ({ week }) => {
+  for (const [aId, bId] of EDGES) {
+    const a = districtMap[aId];
+    const b = districtMap[bId];
+    if (!a || !b) continue;
+    // High-trust districts boost neighbors
+    if (a.trust > 60) b.trust = Math.min(100, b.trust + 1);
+    if (b.trust > 60) a.trust = Math.min(100, a.trust + 1);
+    // Low-trust districts drag neighbors
+    if (a.trust < 30) b.trust = Math.max(0, b.trust - 1);
+    if (b.trust < 30) a.trust = Math.max(0, a.trust - 1);
+  }
+  // Update citywide
+  game.update(g => {
+    g.citywide = Math.round(DISTRICTS.reduce((s, d) => s + d.trust, 0) / DISTRICTS.length);
+    return g;
+  });
+});
+
+// ── Feed intelligence gradient (§5.6) ──
+
+bus.on('clock.weekEnd', ({ week }) => {
+  // Generate 2-3 feed items from real NYC data, graded by district knowledge
+  const feedDistricts = DISTRICTS
+    .filter(() => Math.random() < 0.15) // ~3 districts per week
+    .slice(0, 3);
+
+  game.update(g => {
+    for (const d of feedDistricts) {
+      const concerns = CONCERN_SCORES[d.id] || {};
+      const topDept = Object.entries(concerns).sort((a, b) => b[1] - a[1])[0]?.[0] || 'safety';
+      const rumors = NYC_RUMORS[d.id]?.[topDept];
+      if (!rumors) continue;
+
+      let text;
+      if (d.know >= 60 && rumors.tier3?.length) {
+        text = rumors.tier3[Math.floor(Math.random() * rumors.tier3.length)];
+      } else if (d.know >= 20 && rumors.tier2?.length) {
+        text = rumors.tier2[Math.floor(Math.random() * rumors.tier2.length)];
+      } else if (rumors.tier1?.length) {
+        text = rumors.tier1[Math.floor(Math.random() * rumors.tier1.length)];
+      }
+
+      if (text) {
+        g.feed.unshift({ type: 'chatter', week, text, districtId: d.id });
+      }
+    }
+    return g;
+  });
+});
+
+// ── Pattern events → feed + toast ──
+bus.on('pattern.discovered', ({ category, text }) => {
+  game.update(g => {
+    g.feed.unshift({
+      type: 'news', week: g.week,
+      text: `Pattern forming: ${text}. Crystallizes in ~3 weeks.`,
+    });
+    return g;
+  });
+  showToast(`Pattern forming: ${category}`, '#8b5cf6');
+});
+
+bus.on('pattern.crystallized', ({ category, text }) => {
+  game.update(g => {
+    g.feed.unshift({
+      type: 'news', week: g.week,
+      text: `Pattern crystallized: ${text}. Department lens sharpened.`,
+    });
+    return g;
+  });
+  showToast(`${category} pattern crystallized — lens +1`, '#22c55e');
+});
+
+bus.on('pattern.abandoned', ({ category, cost, recookAfter }) => {
+  showToast(`Abandoned ${category} pattern — $${cost}B`, '#ef4444');
+});
+
+// ── Initial deal ──
+dealHand();
+
 // ── Expose for debugging ──
 if (typeof window !== 'undefined') {
   window.__bus = bus;
@@ -481,5 +700,6 @@ if (typeof window !== 'undefined') {
   window.__bentoSys = bentoSys;
   window.__metreSys = metreSys;
   window.__deptSys = deptSys;
+  window.__dealSys = dealSys;
   window.__districts = DISTRICTS;
 }

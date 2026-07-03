@@ -10,15 +10,25 @@
   let disorder = $derived($game.citywideDisorder ?? 10);
 
   let resilienceColor = $derived(
-    resilience >= 60 ? '#34d399' : resilience >= 40 ? '#e8a83e' : '#ff2d2d'
+    resilience >= 60 ? '#2A9E5C' : resilience >= 40 ? '#E8A020' : '#B82A18'
   );
 
   let disorderColor = $derived(
-    disorder >= 70 ? '#ff2d2d' : disorder >= 40 ? '#e8a83e' : '#9a9a9a'
+    disorder >= 70 ? '#B82A18' : disorder >= 40 ? '#E8A020' : '#999999'
   );
 
   // Disorder flashes red when critical (>= 75)
   let disorderCritical = $derived(disorder >= 75);
+
+  // Reserve color thresholds
+  let reserveColor = $derived(
+    $game.reserve > 3.0 ? '#e9e9e9'
+    : $game.reserve > 1.5 ? '#E8A020'
+    : $game.reserve > 0 ? '#B82A18'
+    : '#B82A18'
+  );
+  let reserveDeficit = $derived($game.reserve <= 0);
+  let reserveDelta = $derived($game.reserveDelta);
 </script>
 
 <header class="status-bar">
@@ -48,11 +58,13 @@
     <span class="status-item">
       WK <strong>{String($game.week).padStart(2, '0')}/48</strong>
     </span>
-    <span class="status-item">
+    <span class="status-item reserve-display" style="color:{reserveColor}" class:deficit={reserveDeficit}>
       <span class="material-symbols-rounded" style="font-size:14px">account_balance</span>
       ${$game.reserve.toFixed(1)}B
+      {#if reserveDeficit}<span class="deficit-tag">DEFICIT</span>{/if}
+      {#if reserveDelta}<span class="reserve-delta">({reserveDelta > 0 ? '+' : ''}{reserveDelta.toFixed(2)})</span>{/if}
     </span>
-    <span class="status-item severity" style="color: {$blizzardSeverity > 0.5 ? '#ff4444' : '#9a9a9a'}">
+    <span class="status-item severity" style="color: {$blizzardSeverity > 0.5 ? '#B82A18' : '#999999'}">
       <span class="material-symbols-rounded" style="font-size:14px">ac_unit</span>
       {Math.round($blizzardSeverity * 100)}%
     </span>
@@ -75,10 +87,9 @@
     gap: 16px;
   }
   .logo {
-    font-family: var(--font-data);
-    font-weight: 900;
-    font-size: 16px;
-    letter-spacing: 0.15em;
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 3px;
     color: var(--red);
     flex-shrink: 0;
   }
@@ -100,7 +111,7 @@
     gap: 6px;
   }
   .metre-label {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -112,19 +123,17 @@
     width: 80px;
     height: 6px;
     background: rgba(255,255,255,0.08);
-    border-radius: 3px;
     overflow: hidden;
   }
   .metre-fill {
     height: 100%;
-    border-radius: 3px;
     transition: width 0.6s ease, background 0.3s ease;
   }
   .metre-fill.critical {
     animation: pulse-danger 1.5s ease-in-out infinite;
   }
   .metre-val {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-weight: 900;
     font-size: 13px;
     width: 24px;
@@ -145,7 +154,7 @@
     flex-shrink: 0;
   }
   .status-item {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -153,5 +162,30 @@
   }
   .severity {
     transition: color 0.3s ease;
+  }
+
+  /* Reserve visibility */
+  .reserve-display {
+    transition: color 0.3s ease;
+  }
+  .reserve-display.deficit {
+    animation: pulse-danger 1.5s ease-in-out infinite;
+  }
+  .deficit-tag {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    margin-left: 4px;
+  }
+  .reserve-delta {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 3px;
+    animation: delta-fade 2s ease-out forwards;
+  }
+  @keyframes delta-fade {
+    0% { opacity: 1; }
+    70% { opacity: 0.7; }
+    100% { opacity: 0; }
   }
 </style>

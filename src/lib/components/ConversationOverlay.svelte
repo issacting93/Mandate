@@ -54,7 +54,7 @@
   }
 
   function getDeptColor(deptId) {
-    return DEPARTMENTS[deptId]?.color || '#999';
+    return DEPARTMENTS[deptId]?.color || '#999999';
   }
 
   function getDeptLabel(deptId) {
@@ -210,10 +210,16 @@
   async function fireInterjections(interjections) {
     if (!interjections || interjections.length === 0) return [];
 
-    // Evaluate which interjections pass their minLevel check
-    const passing = interjections.filter(ij =>
-      deptSys.getEffectiveLevel(ij.dept) >= ij.minLevel
-    );
+    // Evaluate which interjections pass their minLevel check AND doctrine filter
+    const passing = interjections.filter(ij => {
+      if (deptSys.getEffectiveLevel(ij.dept) < ij.minLevel) return false;
+      // Doctrine filter: if interjection has a doctrine tag, only show if player chose that doctrine
+      if (ij.doctrine) {
+        const chosen = deptSys.getDoctrine(ij.dept);
+        if (chosen !== ij.doctrine) return false;
+      }
+      return true;
+    });
 
     if (passing.length === 0) return [];
 
@@ -652,9 +658,8 @@
     inset: 0;
     z-index: 100;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 0 16px 80px;
+    align-items: stretch;
+    justify-content: flex-end;
     background: rgba(0,0,0,0.35);
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -669,34 +674,35 @@
   }
   @keyframes solutionFlash {
     0%, 100% { background: rgba(0,0,0,0.35); }
-    30% { background: rgba(255,45,45,0.25); }
+    30% { background: rgba(184,42,24,0.25); }
   }
 
   .convo-panel {
-    width: 100%;
-    max-width: 520px;
-    max-height: 70vh;
-    background: var(--panel-bg);
+    width: 420px;
+    max-width: 40vw;
+    height: calc(100% - 32px);
+    margin: 16px 16px 16px 0;
+    background: var(--paper-card);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--panel-border);
-    border-radius: 16px;
+    border: 1px solid var(--rule);
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transform: translateY(0);
-    animation: panelSlideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: translateX(0);
+    animation: panelSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  @keyframes panelSlideUp {
-    from { transform: translateY(20px); }
-    to { transform: translateY(0); }
+  @keyframes panelSlideIn {
+    from { transform: translateX(40px); opacity: 0.5; }
+    to { transform: translateX(0); opacity: 1; }
   }
 
   /* ═══════════════════════════════════════════════════════
      HEADER
      ═══════════════════════════════════════════════════════ */
   .convo-header {
-    background: var(--dark, #1a1a1a);
+    background: var(--ink);
     color: #fff;
     padding: 14px 18px;
     display: flex;
@@ -707,11 +713,11 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--red, #ff2d2d);
+    background: var(--red);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-weight: 900;
     font-size: 14px;
     color: #fff;
@@ -729,7 +735,7 @@
     font-weight: 500;
   }
   .convo-district-tag {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -743,12 +749,11 @@
   .convo-depth {
     padding: 0 18px;
     height: 3px;
-    background: var(--divider, rgba(0,0,0,0.08));
+    background: var(--rule);
   }
   .convo-depth-fill {
     height: 100%;
-    background: var(--red, #ff2d2d);
-    border-radius: 2px;
+    background: var(--red);
     transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
@@ -763,14 +768,13 @@
     flex-direction: column;
     gap: 10px;
     scrollbar-width: thin;
-    scrollbar-color: var(--panel-border) transparent;
+    scrollbar-color: var(--rule) transparent;
   }
 
   /* ── Base message ── */
   .convo-msg {
     max-width: 85%;
     padding: 10px 14px;
-    border-radius: 14px;
     font-size: 13px;
     line-height: 1.45;
     opacity: 0;
@@ -785,8 +789,7 @@
   .convo-msg.npc {
     align-self: flex-start;
     background: rgba(0,0,0,0.06);
-    color: var(--dark, #1a1a1a);
-    border-bottom-left-radius: 4px;
+    color: var(--ink);
   }
   .convo-msg.npc.reaction {
     background: rgba(0,0,0,0.04);
@@ -797,15 +800,14 @@
   /* Player messages */
   .convo-msg.player {
     align-self: flex-end;
-    background: var(--dark, #1a1a1a);
+    background: var(--ink);
     color: #fff;
-    border-bottom-right-radius: 4px;
   }
 
   /* Summary */
   .convo-msg.summary {
-    background: rgba(255,45,45,0.06);
-    border-left: 3px solid var(--red, #ff2d2d);
+    background: var(--red-light);
+    border-left: 3px solid var(--red);
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -816,7 +818,7 @@
     max-width: 90%;
     padding: 8px 12px;
     border-left: 3px solid;
-    border-radius: 2px 8px 8px 2px;
+    border-radius: 0;
     font-size: 12px;
     line-height: 1.4;
     opacity: 0;
@@ -828,7 +830,7 @@
   }
 
   .ij-dept-label {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -836,9 +838,9 @@
     display: inline;
   }
   .ij-text {
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-style: italic;
-    color: var(--dark, #1a1a1a);
+    color: var(--ink);
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -848,7 +850,6 @@
     align-self: center;
     text-align: center;
     padding: 10px 16px;
-    border-radius: 10px;
     border: 1px solid;
     max-width: 90%;
     opacity: 0;
@@ -859,12 +860,12 @@
     to { opacity: 1; transform: scale(1); }
   }
   .convo-check.check-pass {
-    border-color: #22c55e;
+    border-color: var(--green);
     background: rgba(34,197,94,0.06);
   }
   .convo-check.check-fail {
-    border-color: #f59e0b;
-    background: rgba(245,158,11,0.06);
+    border-color: var(--amber);
+    background: rgba(232,160,32,0.06);
   }
   .check-dice {
     display: flex;
@@ -883,14 +884,14 @@
     100% { transform: rotate(0deg) scale(1); opacity: 1; }
   }
   .check-label {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.05em;
-    color: var(--dark, #1a1a1a);
+    color: var(--ink);
   }
-  .check-pass .check-label { color: #16a34a; }
-  .check-fail .check-label { color: #d97706; }
+  .check-pass .check-label { color: var(--green); }
+  .check-fail .check-label { color: var(--amber); }
 
   /* ═══════════════════════════════════════════════════════
      TRUST INSIGHT (amber, failed-check insight)
@@ -902,13 +903,12 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.2);
-    border-radius: 8px;
-    font-family: var(--font-data);
+    background: rgba(232,160,32,0.08);
+    border: 1px solid rgba(232,160,32,0.2);
+    font-family: var(--font-body);
     font-size: 10px;
     font-weight: 700;
-    color: #d97706;
+    color: var(--amber);
     letter-spacing: 0.04em;
     line-height: 1.4;
     opacity: 0;
@@ -930,14 +930,12 @@
     gap: 4px;
     padding: 12px 16px;
     background: rgba(0,0,0,0.06);
-    border-radius: 14px;
-    border-bottom-left-radius: 4px;
   }
   .convo-typing-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--muted, #999);
+    background: var(--ink-muted);
     animation: typingBounce 1.2s ease-in-out infinite;
   }
   .convo-typing-dot:nth-child(2) { animation-delay: 0.15s; }
@@ -956,13 +954,12 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(255,45,45,0.08);
-    border: 1px solid rgba(255,45,45,0.2);
-    border-radius: 8px;
-    font-family: var(--font-data);
+    background: var(--red-light);
+    border: 1px solid var(--red-border);
+    font-family: var(--font-body);
     font-size: 10px;
     font-weight: 700;
-    color: var(--red, #ff2d2d);
+    color: var(--red);
     letter-spacing: 0.05em;
     opacity: 0;
     transform: scale(0.8);
@@ -984,31 +981,30 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    border-top: 1px solid var(--divider, rgba(0,0,0,0.08));
+    border-top: 1px solid var(--rule);
     min-height: 20px;
   }
 
   /* Base choice button */
   .convo-choice {
     background: transparent;
-    border: 1px solid var(--panel-border, rgba(0,0,0,0.1));
-    border-radius: 10px;
+    border: 1px solid var(--rule);
     padding: 10px 14px;
-    font-family: var(--font-ui);
+    font-family: var(--font-body);
     font-size: 12.5px;
-    color: var(--dark, #1a1a1a);
+    color: var(--ink);
     cursor: pointer;
     text-align: left;
     transition: all 0.15s ease;
     line-height: 1.3;
   }
   .convo-choice:hover {
-    border-color: var(--red, #ff2d2d);
-    background: rgba(255,45,45,0.03);
+    border-color: var(--red);
+    background: rgba(184,42,24,0.03);
   }
   .convo-choice.selected {
-    border-color: var(--dark, #1a1a1a);
-    background: var(--dark, #1a1a1a);
+    border-color: var(--ink);
+    background: var(--ink);
     color: #fff;
   }
   .convo-choice.faded {
@@ -1023,7 +1019,7 @@
   .convo-choice.dept-choice {
     border-left-width: 3px;
     border-left-style: solid;
-    border-radius: 4px 10px 10px 4px;
+    border-radius: 0;
     padding-left: 12px;
   }
   .convo-choice.dept-choice:hover {
@@ -1031,13 +1027,12 @@
   }
 
   .choice-dept-chip {
-    font-family: var(--font-data);
+    font-family: var(--font-body);
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     border: 1px solid;
-    border-radius: 3px;
     padding: 1px 5px;
     margin-right: 6px;
     display: inline-block;
@@ -1047,22 +1042,22 @@
   /* Solution jump choice */
   .convo-choice.solution-choice {
     border-style: dashed;
-    border-color: var(--muted, #999);
-    color: var(--muted, #999);
+    border-color: var(--ink-muted);
+    color: var(--ink-muted);
     font-size: 12px;
   }
   .convo-choice.solution-choice:hover {
-    border-color: var(--red, #ff2d2d);
-    color: var(--dark, #1a1a1a);
-    background: rgba(255,45,45,0.03);
+    border-color: var(--red);
+    color: var(--ink);
+    background: rgba(184,42,24,0.03);
   }
 
   /* Close button */
   .convo-choice.close-btn {
-    border-color: var(--red, #ff2d2d);
-    color: var(--red, #ff2d2d);
+    border-color: var(--red);
+    color: var(--red);
   }
   .convo-choice.close-btn:hover {
-    background: rgba(255,45,45,0.06);
+    background: rgba(184,42,24,0.06);
   }
 </style>

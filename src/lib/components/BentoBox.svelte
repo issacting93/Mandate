@@ -261,7 +261,7 @@
     max-height: 780px;
     background: var(--dark);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -287,7 +287,7 @@
   .subtitle { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
   .close-btn {
     background: none; border: none; color: rgba(255,255,255,0.4);
-    cursor: pointer; padding: 4px; border-radius: 4px;
+    cursor: pointer; padding: 4px; border-radius: 0;
   }
   .close-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
 
@@ -316,7 +316,7 @@
   .tile-card {
     padding: 8px 10px;
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
+    border-radius: 0;
     cursor: pointer;
     background: rgba(255,255,255,0.02);
     transition: all 0.12s ease;
@@ -364,14 +364,14 @@
     padding: 6px;
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px;
+    border-radius: 0;
   }
 
   .grid-cell {
     width: 88px;
     height: 88px;
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 4px;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -446,7 +446,7 @@
     padding: 8px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
+    border-radius: 0;
   }
   .eval-label {
     font-family: var(--font-data);
@@ -471,7 +471,7 @@
     padding: 12px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
+    border-radius: 0;
     margin-bottom: 14px;
   }
   .metre-box { flex: 1; }
@@ -488,7 +488,7 @@
   .section-label.con { color: #ef4444; }
   .syn-card, .con-card {
     padding: 6px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 10px;
     line-height: 1.4;
     margin-bottom: 4px;
@@ -503,7 +503,7 @@
     padding: 10px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 10px;
     color: rgba(255,255,255,0.35);
     line-height: 1.5;
@@ -520,7 +520,7 @@
     padding: 8px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
+    border-radius: 0;
     color: rgba(255,255,255,0.5);
     font-family: var(--font-data);
     font-size: 10px;
@@ -534,7 +534,7 @@
     padding: 10px;
     background: var(--red);
     border: none;
-    border-radius: 6px;
+    border-radius: 0;
     color: #fff;
     font-family: var(--font-data);
     font-size: 11px;
@@ -544,6 +544,6 @@
     box-shadow: 0 0 20px rgba(255,45,45,0.3);
     transition: all 0.15s ease;
   }
-  .btn-sign:hover { background: #ff4444; box-shadow: 0 0 30px rgba(255,45,45,0.5); }
+  .btn-sign:hover { background: var(--red); box-shadow: 0 0 30px rgba(255,45,45,0.5); }
   .btn-sign:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
 </style>

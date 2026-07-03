@@ -98,4 +98,149 @@ export const SCENARIO_EVENTS = [
       { type: 'feed_item', text: '\ud83c\udf28 BLIZZARD: 26 inches and counting. Citywide emergency declared.', feedType: 'news' },
     ],
   },
+
+  // ═══ BETWEEN-BEAT EVENTS (fill gaps in blizzard arc) ═══
+  {
+    id: 'evt_water_main_break',
+    headline: 'Water Main Break in Jamaica',
+    narrative: 'DEP crews scrambling. Boil water advisory for southeastern Queens.',
+    conditions: [{ type: 'weekRange', min: 6, max: 8 }],
+    effects: [
+      { type: 'feed_item', text: '48-inch water main burst in Jamaica. 20,000 residents without water for 72 hours.', feedType: 'news' },
+      { type: 'trust', district: 'jamaica', delta: -3, condition: 'unvisited' },
+      { type: 'trust', district: 'flushing', delta: -3, condition: 'unvisited' },
+      { type: 'disorderScope', scope: 'all', delta: 3, label: 'Water main emergency' },
+    ],
+  },
+  {
+    id: 'evt_heat_wave',
+    headline: 'Extreme Heat Advisory',
+    narrative: 'Heat index 108°F. Three hospitals reporting surge admissions.',
+    conditions: [{ type: 'week', value: 12 }],
+    effects: [
+      { type: 'feed_item', text: 'Extreme heat in South Bronx, Harlem, Crown Heights. No cooling center intelligence in unvisited districts.', feedType: 'news' },
+      { type: 'trust', district: 'southbronx', delta: -2, condition: 'unvisited' },
+      { type: 'trust', district: 'harlem', delta: -2, condition: 'unvisited' },
+      { type: 'trust', district: 'crown', delta: -2, condition: 'unvisited' },
+      { type: 'disorderScope', scope: 'all', delta: 2, label: 'Heat wave strain' },
+    ],
+  },
+  {
+    id: 'evt_signal_failure',
+    headline: 'MTA Signal System Failure',
+    narrative: 'Signal infrastructure from 1937. Replacement timeline: 2031.',
+    conditions: [{ type: 'weekRange', min: 16, max: 20 }],
+    effects: [
+      { type: 'feed_item', text: 'MTA signal system failure shuts down 4/5/6 line. Commuter chaos in the Bronx and Midtown.', feedType: 'news' },
+      { type: 'trust', district: 'fordham', delta: -3 },
+      { type: 'trust', district: 'midtown', delta: -3 },
+      { type: 'disorderScope', scope: 'all', delta: 2, label: 'Transit breakdown anger' },
+    ],
+  },
+  {
+    id: 'evt_housing_court',
+    headline: 'Housing Court Backlog Crisis',
+    narrative: 'Tenants waiting 18 months for heat violation hearings. Landlords know it.',
+    conditions: [{ type: 'weekRange', min: 24, max: 26 }],
+    effects: [
+      { type: 'feed_item', text: 'Housing court backlog hits 18-month wait. Tenants losing faith in the system.', feedType: 'news' },
+      { type: 'trust', district: 'harlem', delta: -2 },
+      { type: 'trust', district: 'fordham', delta: -2 },
+      { type: 'trust', district: 'bushwick', delta: -2 },
+      { type: 'disorderScope', scope: 'all', delta: 2, label: 'Housing court frustration' },
+    ],
+  },
+  {
+    id: 'evt_restaurant_scandal',
+    headline: 'Restaurant Inspection Scandal',
+    narrative: 'DOHMH inspector falsified 200+ scores. Flushing, Jackson Heights hardest hit.',
+    conditions: [{ type: 'week', value: 27 }],
+    effects: [
+      { type: 'feed_item', text: 'Falsified restaurant inspection scores exposed. 200+ restaurants affected in Flushing and Jackson Heights.', feedType: 'news' },
+      { type: 'trust', district: 'flushing', delta: -3 },
+      { type: 'trust', district: 'jackson', delta: -3 },
+      { type: 'disorderScope', scope: 'all', delta: 3, label: 'Inspection scandal outrage' },
+    ],
+  },
+  {
+    id: 'evt_grid_stress',
+    headline: 'Power Grid Stress Test Failure',
+    narrative: 'Three substations built for 2-foot surge in a 6-foot surge zone.',
+    conditions: [{ type: 'weekRange', min: 32, max: 35 }],
+    effects: [
+      { type: 'feed_item', text: 'Con Ed stress test: 3 substations below surge threshold. Grid vulnerable to winter storm.', feedType: 'news' },
+      { type: 'trust', district: 'ues', delta: -2 },
+      { type: 'trust', district: 'midtown', delta: -2 },
+      { type: 'trust', district: 'lowerman', delta: -2 },
+      { type: 'disorderScope', scope: 'all', delta: 2, label: 'Grid vulnerability fear' },
+    ],
+  },
+  {
+    id: 'evt_shelter_overflow',
+    headline: 'Homeless Shelter Overflow',
+    narrative: 'Right to Shelter mandate vs. physical capacity. Something has to give.',
+    conditions: [{ type: 'week', value: 38 }],
+    effects: [
+      { type: 'feed_item', text: 'DHS shelters at 102% capacity. Right to Shelter mandate under pressure.', feedType: 'news' },
+      { type: 'trust', district: 'midtown', delta: -3 },
+      { type: 'trust', district: 'dtbk', delta: -3 },
+      { type: 'disorderScope', scope: 'all', delta: 4, label: 'Shelter crisis panic' },
+    ],
+  },
+  {
+    id: 'evt_early_freeze',
+    headline: 'Early Freeze — Pipes Burst',
+    narrative: 'Pre-war plumbing wasn\'t built for this. Three boroughs reporting burst pipes.',
+    conditions: [{ type: 'weekRange', min: 40, max: 41 }],
+    effects: [
+      { type: 'feed_item', text: 'Pipes bursting in older buildings across South Bronx, Crown Heights, Riverdale. Emergency repair mobilized.', feedType: 'news' },
+      { type: 'trust', district: 'southbronx', delta: -4, condition: 'unvisited' },
+      { type: 'trust', district: 'crown', delta: -4, condition: 'unvisited' },
+      { type: 'trust', district: 'riverdale', delta: -4, condition: 'unvisited' },
+      { type: 'reserve', delta: -0.2 },
+      { type: 'disorderScope', scope: 'all', delta: 3, label: 'Burst pipe emergency' },
+    ],
+  },
+
+  // ═══ FISCAL WARNINGS (teach reserve drain) ═══
+  {
+    id: 'evt_fiscal_60pct',
+    headline: 'Comptroller Flags Reserve',
+    narrative: 'The Comptroller\'s office reports operating reserves have dropped below 60%. Standard fiscal prudence calls for maintaining at least $3B.',
+    conditions: [{ type: 'reserveBelow', value: 3.0 }],
+    effects: [{ type: 'feed_item', text: 'Comptroller: operating reserve below 60%. "Fiscal caution advised."', feedType: 'news' }],
+  },
+  {
+    id: 'evt_fiscal_downgrade',
+    headline: 'Bond Rating Warning',
+    narrative: 'Rating agencies issue a downgrade warning. The city\'s borrowing costs will rise if reserves continue to fall.',
+    conditions: [{ type: 'reserveBelow', value: 1.5 }],
+    effects: [{ type: 'feed_item', text: 'BREAKING: Bond agencies issue downgrade warning. Reserve critically low.', feedType: 'news' }],
+  },
+  {
+    id: 'evt_fiscal_deficit',
+    headline: 'Deficit Spending Begins',
+    narrative: 'The city has entered deficit spending. Emergency borrowing is authorized, but every dollar now costs more than it should.',
+    conditions: [{ type: 'reserveBelow', value: 0 }],
+    effects: [{ type: 'feed_item', text: 'City enters deficit spending. Emergency borrowing authorized at penalty rates.', feedType: 'news' }],
+  },
+  {
+    id: 'evt_fiscal_oversight',
+    headline: 'State Oversight Looms',
+    narrative: 'The state legislature is considering an emergency financial oversight board — the fiscal equivalent of losing your mandate.',
+    conditions: [{ type: 'reserveBelow', value: -1.5 }],
+    effects: [{ type: 'feed_item', text: 'Albany threatens emergency oversight board. "The mayor has lost fiscal control."', feedType: 'news' }],
+  },
+
+  // ═══ STAFF POLICY NUDGE (teach bento box) ═══
+  {
+    id: 'evt_staff_policy_nudge',
+    headline: 'Deputy Mayor Asks About Policy',
+    narrative: 'Your Deputy Mayor catches you between meetings: "We have insights. We have data. But we haven\'t built a single targeted policy. The Policy Builder is where listening becomes action."',
+    conditions: [
+      { type: 'weekRange', min: 6, max: 10 },
+      { type: 'insightCount', value: 3 },
+    ],
+    effects: [{ type: 'feed_item', text: 'Deputy Mayor: "When are we going to build a real policy from what we\'ve learned?"', feedType: 'chatter' }],
+  },
 ];

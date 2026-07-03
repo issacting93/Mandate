@@ -12,7 +12,7 @@
 //
 // Erosion and trust manipulation moved to MetreSystem via clock.weekEnd.
 
-const WEEKLY_DEFICIT = 0.375; // ~$1.5B/month / 4 weeks
+const WEEKLY_DEFICIT = 0.08; // $3.84B total over 48 weeks. Player has ~$1.2B discretionary from $5B start.
 
 export class ClockSystem {
   #bus;

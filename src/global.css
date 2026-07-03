@@ -1,35 +1,86 @@
-/* ── Tokens ──────────────────────────────────── */
+/* ══════════════════════════════════════════════════
+   MANDATE — Design Tokens
+   Government Briefing Aesthetic · Style Guide v1.0
+   Two typefaces. Four color layers. Zero border-radius.
+   ══════════════════════════════════════════════════ */
+
 :root {
-  --bg: #ececea;
-  --bg-light: #f7f7f5;
-  --bg-dark: #e2e2df;
-  --red: #ff2d2d;
-  --dark: #121212;
-  --dark2: #141414;
-  --dark3: #1a1a1a;
-  --muted: #9a9a9a;
-  --secondary: #6e6e6e;
-  --panel-bg: rgba(250, 250, 248, 0.94);
-  --panel-border: rgba(0, 0, 0, 0.12);
-  --divider: rgba(0, 0, 0, 0.08);
-  --font-ui: 'Space Grotesk', sans-serif;
-  --font-data: 'Doto', monospace;
-  /* Department colors (Disco Elysium skill lenses) */
-  --dept-health: #2dd4bf;
-  --dept-housing: #f59e0b;
-  --dept-infra: #64748b;
-  --dept-services: #8b5cf6;
-  --dept-safety: #f97316;
-  --dept-community: #22c55e;
+  /* ── Surface Layer ── */
+  --paper:       #F7F5F0;   /* Page background */
+  --paper-card:  #FDFCF9;   /* Sidebar, slot backgrounds */
+  --paper-white: #FFFFFF;   /* Raised cards, component panels */
+
+  /* ── Ink Scale ── */
+  --ink:         #111111;   /* Primary text, CTA background */
+  --ink-mid:     #555555;   /* Body prose, card intel */
+  --ink-muted:   #999999;   /* Labels, eyebrows, stat labels */
+  --ink-ghost:   #CCCCCC;   /* Slot numbers, add buttons, placeholders */
+
+  /* ── Rules ── */
+  --rule:        #DEDAD4;   /* Primary borders, dividers, section rules */
+  --rule-light:  #F0EDE8;   /* Dept row separators */
+
+  /* ── Signal Colors ── */
+  --red:         #B82A18;   /* Brand, section nums, active state, CTA hover */
+  --red-light:   #FEF8F7;   /* Re-deal button background */
+  --red-border:  #F0CECA;   /* Re-deal button border */
+  --amber:       #E8A020;   /* Resilience bar fill */
+
+  /* ── Faction Colors — card top-border only ── */
+  --purple:      #7B4FBF;   /* Labor */
+  --green:       #2A9E5C;   /* Health / Green */
+  --blue:        #4B4BFF;   /* Perceive / Blue */
+  --slate:       #888888;   /* Business Coalition */
+  /* --amber also serves Working Families faction */
+
+  /* ── Budget Segments ── */
+  --perceive:    #4B4BFF;
+  --reserve:     #2A9E5C;
+  --spent:       #E5E2DC;
+
+  /* ── Department Colors (lens fills) ── */
+  --dept-health:    #2A9E5C;
+  --dept-housing:   #E8A020;
+  --dept-infra:     #5B6B8C;
+  --dept-services:  #7B4FBF;
+  --dept-safety:    #E8A020;
+  --dept-community: #2A9E5C;
+
+  /* ── Typography: Two voices ── */
+  --font-display: 'Bebas Neue', sans-serif;  /* Structural display */
+  --font-body:    'Space Mono', monospace;    /* Data and prose */
+
+  /* ── Backward-compatible aliases ── */
+  --dark:         #111111;
+  --ink-soft:     #555555;
+  --ink-faint:    #999999;
+  --muted:        #999999;
+  --secondary:    #555555;
+  --line:         #DEDAD4;
+  --line-light:   #F0EDE8;
+  --line-red:     rgba(184, 42, 24, 0.12);
+  --panel-bg:     #FDFCF9;
+  --panel-border: #DEDAD4;
+  --divider:      #DEDAD4;
+  --font-ui:      'Space Mono', monospace;
+  --font-data:    'Space Mono', monospace;
+
+  /* ── State (used by engine, not by style guide UI) ── */
+  --state-success: #2A9E5C;
+  --state-warning: #E8A020;
+  --state-danger:  #B82A18;
+  --state-info:    #4B4BFF;
 }
 
-/* ── Reset ──────────────────────────────────── */
+/* ── Reset ── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
 body {
-  font-family: var(--font-ui);
-  background: radial-gradient(ellipse at 50% 40%, var(--bg-light) 0%, var(--bg) 55%, var(--bg-dark) 100%);
-  color: var(--dark);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--paper);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
 }

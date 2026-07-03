@@ -2,24 +2,24 @@
 
 *A civic resilience simulation about governing New York City through Human-Centered Design.*
 
-**Status:** Playtest-verified Svelte 5 + Vite app · MapLibre 3D map with snow shader, fog, building frost · 16 components, 12 game systems, 117-node content graph (332 links) · dual-metre system (Resilience + Disorder) · Bento Box policy builder · 11 conversation scripts · playtest logger + in-game systems graph · full 48-week loop, blizzard disaster arc, LLM-scored posts, cinematic endings
+**Status:** Playtest-verified Svelte 5 + Vite app · MapLibre 3D map with snow shader, fog, building frost · 17 components, 13 game systems · DepartmentSystem (6 depts, funding 0–4, pattern bonus) · DealSystem (weighted weekly card draft) · dual-metre system (Resilience + Disorder) · Bento Box policy builder with dept-gated tiles · 11 V2 Disco-style conversation scripts (93 interjections, 14 dice checks) · pattern crystallization (cook-time, de-commit) · playtest logger + in-game systems graph · full 48-week loop, blizzard disaster arc, LLM-scored posts, cinematic endings
 **Platforms:** Web (desktop-first, touch-aware) · macOS (SwiftUI, App Store target)
-**Doc version:** 0.8 — **Disco-inspired conversation system; DepartmentSystem as the game's spine; patterns absorb the Thought-Cabinet role; bento box and roguelike reshuffle routed through departments**
+**Doc version:** 0.9 — **Calendar as Blue Prince draft board; two-altitude map; Disco-style conversation panel; all systems wired and playtest-verified**
 
 ---
 
-> ## What changed in 0.8 (read this first)
+> ## What changed in 0.9 (read this first)
 >
-> Version 0.8 resolves the conversation system and, in doing so, completes a system the doc had only gestured at: **departments**. The change is structural, not cosmetic. Summary of the load-bearing decisions:
+> Version 0.9 resolves the three views — Calendar, Map, and Conversation panel — and wires every system end-to-end. The 0.8 department spine is now mechanical, not just designed. Summary:
 >
-> 1. **Conversations are now Disco Elysium–inspired.** Your funded **departments are your "skills"** — they *interject* during conversations, surfacing follow-up threads (and the insights behind them) that a player without that lens would never see. See §5.5.
-> 2. **There is now a real DepartmentSystem (§5.5a).** Departments are funded from the same reserve that pays for policies and the operating deficit — so funding a lens to *hear better* competes with saving cash to *respond*. This is a new third draw on the scarce-resource economy.
-> 3. **Insight checks replace opaque "listening scoring."** Rare insights (community assets, named vulnerable residents) sit behind a check: `department funding + die vs. insight difficulty`. **Failure opens content** (you learn *why* the character is guarded) rather than blocking it. The one hard rule, in both LLM and fallback modes: **jumping to a solution mid-listening is always a soft failure.**
-> 4. **No separate Thought Cabinet. Patterns absorb its role.** A discovered **pattern** now (a) takes a few weeks to *crystallize* (cook-time), (b) once crystallized, reshapes *citywide* perception by making its lens interject harder everywhere, and (c) can be *abandoned* at a cost. Departments are the **active** lens; patterns are the **earned** lens. See §5.3b.
-> 5. **The bento box is now gated by departments (§5.7).** Insight no longer unlocks a parallel menu of policy cards. Instead, funded departments determine which efficient tiles you can draw, and crystallized patterns mutate them. One spine: departments → what you hear (conversations) AND what you can build (bento).
-> 6. **The roguelike reshuffle gains a second axis (§5.13):** which **department lens** a run rewards, alongside which fragility each (constant) character surfaces.
+> 1. **The Calendar is now a Blue Prince–style draft board (§4.3).** The monthly grid is gone. Each week the game *deals* 5 district cards from a weighted pool; the player drafts up to 3 into meeting slots. Unvisited districts are **face-down** — you see borough, bloc, a vague rumor, and which department lens would read it, but not who or what until you go. **Funding a department makes its colour-coded cards legible before you commit** — perception literally reads the deck. A re-deal costs 1 slot (Blue Prince discipline). Map-labelling becomes "mark as wanted" (raises deal weight, not guaranteed placement).
+> 2. **The Map gains a two-altitude model (§5.2).** Zoomed out = flat top-down node-graph where **knowledge is the loud default** (dim = unknown, bright = known). Select a node → camera descends and pitches into a **scoped 3D cityscape** for that one district. 3D is a reward for focusing, not the default. Edges carry diffusion: bright pulse from strong nodes, dark-red drag from weak ones. Four lens modes demote to one primary (Knowledge) + three summoned overlays.
+> 3. **The conversation panel is now a right-aligned, full-height side panel (§8.2)** — Disco Elysium–style. The map stays visible on the left. All 11 districts have V2 conversation scripts with department interjections, dice checks, and solution-jump traps (93 interjections, 14 checks total).
+> 4. **All 0.8 systems are wired and playtest-verified.** DepartmentSystem (funding 0–4, effective level with pattern bonus), DealSystem (weighted pool, face-up/down, lens legibility), InsightSystem (pattern cook-time, crystallization, costly de-commit), BentoSystem (dept-gated tiles), MetreSystem (dual Resilience + Disorder). The department spine pays off four ways: conversations (interjections), bento (tile gating), deck (card legibility), and patterns (earned lens +1).
 >
-> **The spine in one line:** *Departments are the lens you fund → the lens shapes what you hear and what you can build → ground-truth understanding crystallizes into patterns that permanently sharpen the lens.*
+> **What 0.8 established (still current):** Disco-inspired conversations, DepartmentSystem as the spine, patterns absorb the Thought Cabinet, bento gated by departments, roguelike two-axis reshuffle. See the 0.8 changelog in version history for those decisions — they are unchanged and not repeated here.
+>
+> **The spine, now with the draft:** *Departments are the lens you fund → the lens reads the deck (which cards you can evaluate before committing) → the lens shapes what you hear in conversation → the lens determines what you can build → ground-truth understanding crystallizes into patterns that permanently sharpen the lens.*
 
 ---
 
@@ -68,7 +68,7 @@ Tone references: Frostpunk (moral weight, escalating pressure, the cost of not k
 
 ## 4. Core loop
 
-*(Unchanged in structure from 0.7 — Week 0 onboarding, the three-view shell, hex menu, label→schedule→execute. The new conversation mechanics slot into the existing engagement execution; the only loop-level addition is a department-funding decision, which lives in the Calendar/planning surface and is described in §5.5a, not a new view.)*
+*(0.9 restructures the engagement pipeline from label→schedule→execute to **want→deal→draft→execute**. The three-view shell remains (Map, Calendar, Socials), but the Calendar is now a draft board (§4.3), the Map gains a two-altitude model (§5.2), and department funding lives on the Calendar's money zone. The conversation mechanics from 0.8 slot into the draft execution unchanged.)*
 
 ### 4.0 Week 0 — "Your First Day" (onboarding)
 
@@ -94,7 +94,24 @@ The game teaches its own loop by letting the player fail the old way first. No t
 - Departments start dark too — perception is something you fund.
 - The Social feed is already talking — the city doesn't wait for you.
 
-*(Hex menu, view transitions, and the three view descriptions are unchanged from 0.7 and omitted here for length — see the 0.7 §4 text, which remains current. The only edit: the Calendar's planning surface now also hosts the department-funding panel described in §5.5a.)*
+### 4.3 The Calendar (Draft Board) — *Blue Prince–inspired*
+
+The Calendar is where the week is decided. It answers *what do I spend this week?* across the game's three contested resources: **time** (which districts you visit), **money** (which lenses you fund and which policies you build), and **attention** (which districts you leave unheard).
+
+It is built as a **draft**. Every week the game deals the player a hand of district cards from a weighted pool. The player drafts up to three into meeting slots, lives with the ones they leave behind, and funds departments on the same screen.
+
+**Two zones, left and right:**
+
+- **Zone ① — Draft your week (left).** The dealt hand of district cards, three meeting slots, the week clock. Cards come in two states: **face-up** (visited before — full detail, character, trust, rumor) and **face-down** (never visited — shows borough, bloc, a vague feed rumor, and which department lens would read it). A face-down card whose coded lens is funded to competence gains a **reveal line** — a fragility hint that turns the draft from a guess into an informed read. This is the spine's payoff on the draft: **funding a department literally lets you read the deck.**
+- **Zone ② — Fund & spend (right).** Six department funding rows (compact horizontal, stepper controls), the three-way budget bar (perceive/reserve/spent), and GO / Policy Builder / End Week actions. All spending lives here — the Map has no spend controls.
+
+**The deal (DealSystem).** Each week, 5 cards are drawn from a weighted pool of 19 districts. Weights raised by: **wanted markers** (map-labelling raises odds, not guaranteed), **feed heat** (districts with recent chatter), **neglect drift** (unvisited districts gain weight over time). Weights lowered by **recency** (recently visited districts less likely to re-deal). Deal size and weights are tunable.
+
+**Re-deal.** A re-deal discards the hand and draws fresh — but costs 1 of the week's 3 slots. You generally live with the draw.
+
+**Map-labelling → wanting.** The Map's label action is reframed as **"want"** — it raises a district's weight in the deal rather than directly queuing a meeting. The deal, not the player, is the final authority on what's available.
+
+*(Full specification in `mandate-calendar-spec.md`. The late-game question — what fills the hand when everything is visited — is flagged for playtest; mitigations include knowledge-decay re-darkening and the roguelike reshuffle dealing new fragilities.)*
 
 ---
 
@@ -103,8 +120,19 @@ The game teaches its own loop by letting the player fail the old way first. No t
 ### 5.1 Community resilience (the central resource)
 *(Unchanged from 0.7.)* Each of the 19 districts has a **resilience** value (0–100) — not approval, but the neighborhood's confidence that their needs are understood and that collective action works. Built through the chain **show up → listen → understand → act → communicate authentically**. Stored as `trust` in code; displayed as "Resilience." The five constituency blocs (Working Families, Business & Finance, Real Estate, Progressives, Labor) remain as cross-district lenses on the data.
 
-### 5.2 The map (one of three views)
-*(Unchanged from 0.7.)* Nineteen districts, transit-style graph, four view modes (Vulnerability, Resilience, Coalition, Needs). Knowledge brightness is the default and primary signal: dim districts are where you don't know who's fragile.
+### 5.2 The map — two altitudes, one view
+
+The Map has two altitudes, driven by selection — not a toggle.
+
+**Overview (zoomed out, nothing selected).** Flat top-down node-graph. **Knowledge is the loud default** — the strongest visual encoding the view has. Node brightness ramps near-black→white with knowledge; node size grows with confidence. A dim, small node reads instantly as "I know nothing here." This is the thinking surface — where you read the city and decide where to go.
+
+**Detail (node selected).** Camera descends and pitches (~55°) into a **scoped 3D cityscape** for that one district. The hex menu lives here, at the altitude where you act on a place. 3D is a *reward for focusing*, not the default — which fixes the legibility problem of floating nodes over a whole-city 3D render. The transition between overview and detail is the view's signature moment.
+
+**Edges carry diffusion.** A well-understood, high-trust district sends a flowing bright pulse along its edges to neighbors (knowledge/trust diffusion). A collapsing district shows a dark-red drag. The transit graph is now mechanical, not decorative. *(Honest caveat: edges should render neutral until the TrustSystem actually diffuses across them — animated edges without mechanical backing would be lying.)*
+
+**Lens modes.** Knowledge is the primary, always-on encoding. Resilience, Escalation, and Coalition are **summoned overlays**, not co-equal pills — demoted because they're less decision-relevant for finding vulnerability. The default view has exactly one variable.
+
+*(Full visual specification in the two-altitude map mockup. Implementation: one MapLibre map animating pitch + zoom, with the flat node-graph as a symbol layer that fades as 3D building extrusions rise.)*
 
 ### 5.3 Insights (the knowledge system)
 
@@ -144,8 +172,9 @@ A **pattern** is a cross-district conviction about how the city actually works �
 - **Departments** are the **active** lens — what you fund *this term* to hear, adjustable week to week.
 - **Patterns** are the **earned** lens — what the ground has *taught* you, slow to gain, costly to drop, citywide in effect.
 
-### 5.4 Engagements (the time system)
-*(Unchanged from 0.7.)* 3–4 time slots/week. Label on the Map, schedule on the Calendar, overflow is the core tension made visible. Mayor Visit (deep, one person), The Mayor is Listening (broad, 2–3 people, best for community assets), Intervention planning. Posting is free of slot cost but requires insight to land.
+### 5.4 Engagements (the time system) — *now deal→draft→execute*
+
+*(0.9 replaces label→schedule→execute with the draft pipeline.)* 3 time slots/week (baseline). The engagement pipeline is now: **want** a district on the Map (raises its deal weight) → the **deal** surfaces 5 cards at week start → you **draft** up to 3 into slots → **GO** executes them in order (conversations, stat bumps). Overflow tension remains: you leave 2 cards behind every week. Mayor Visit (deep, one person), The Mayor is Listening (broad, 2–3 people, best for community assets), Intervention planning. Posting is free of slot cost but requires insight to land.
 
 ### 5.5 Conversations (the interaction layer) — *Disco Elysium–inspired*
 
@@ -265,6 +294,84 @@ Departments existed in 0.7 only as a word ("lenses"). 0.8 makes them a first-cla
 
 **Wiring (events):** see §10.3. In brief: DepartmentSystem owns funding state, answers "which lenses interject on this line and at what check bonus" for ConversationSystem, and answers "which tiles can this player draw" for the bento builder. It imports nothing; it communicates over the bus.
 
+### 5.5b Department Doctrines — The Mayor's Cabinet Skill Tree
+
+*(New in 1.0. Combines Frostpunk 2's competing-law structure with Disco Elysium's thought-as-worldview-shift. The core idea: departments don't just have levels — they have philosophies. Choosing a philosophy changes what you perceive, what you can build, who trusts you, and where your blind spots are when the blizzard hits.)*
+
+**The design problem this solves.** Currently, department leveling is purely transactional — spend money, get better. There's no strategic depth, no political cost, no "this choice will haunt me." The department system is the game's spine (§5.5a), but the spine has no vertebrae.
+
+**The references:**
+
+- **Frostpunk 2:** Laws come in opposing pairs. You pass Tradition or Progress, never both. The faction you sided against radicalizes. Over time, your accumulated choices define an ideology with escalating consequences.
+- **Disco Elysium:** Internalizing a thought doesn't just give +1 to a stat — it changes *what you notice*. "Cop of the Apocalypse" makes you see law enforcement everywhere. The thought IS a worldview. You can forget it, but it costs a skill point and leaves a scar.
+
+**How Doctrines work:**
+
+Each of the 6 departments has **two competing doctrines** — mutually exclusive philosophies of how that arm of government should operate. The player chooses when funding a department to level 2. The choice is permanent within a playthrough unless deliberately reversed (costly).
+
+| Dept | Doctrine A | Doctrine B | The Real NYC Tension |
+|---|---|---|---|
+| **Health** | **Clinical** — hospitals, professional staff, epidemiological triage | **Community** — promotoras, block-level care, local health workers | Scale vs. trust. Clinical deploys faster in crisis but misses who won't go to a hospital. Community knows every patient by name but can't handle mass casualty. |
+| **Housing** | **Enforcement** — code violations, landlord penalties, DOB action | **Advocacy** — tenant support, relocation assistance, mediation | Justice vs. safety. Enforcement fixes buildings but tenants fear retaliation for reporting. Advocacy builds trust but landlords face no consequences. |
+| **Infra** | **Centralized** — grid hardening, utility coordination, top-down capital | **Distributed** — microgrids, community generators, local resilience | Efficiency vs. fragility. Centralized is cheaper per-unit but creates single points of failure. Distributed is expensive but survives cascading outages. |
+| **Safety** | **Enforcement** — NYPD, surveillance, rapid crisis response | **Prevention** — community patrols, social workers, de-escalation | Speed vs. trust. Enforcement responds in minutes but alienates institution-distrustful populations. Prevention builds the relationships that make people call for help — but takes months to establish. |
+| **Services** | **Universal** — citywide standardized programs, fair and equal | **Targeted** — hyperlocal, culturally specific, language-matched | Equity vs. efficiency. Universal treats everyone the same but wastes resources on areas that don't need it and misses communities with specific barriers. Targeted serves real need but is politically toxic ("why do THEY get special treatment?"). |
+| **Community** | **Formalize** — integrate mutual aid into city protocols, data-sharing agreements, official coordination | **Empower** — fund independently, let communities self-organize, hands off | Coordination vs. autonomy. Formalize makes mutual aid visible to emergency management but communities lose independence and may stop trusting the city with their data. Empower preserves grassroots trust but when the blizzard hits, the city doesn't know what resources exist or where. |
+
+**Mechanical effects of choosing a doctrine:**
+
+1. **Perception (interjections).** Same conversation, different department voice. A Clinical Health lens in South Bronx says: *"Asthma corridor. 3x city average. Hospital capacity: 40 surge beds."* A Community Health lens says: *"One health worker covers 37 homebound residents. She knows every medication schedule."* Both are true. Neither sees the whole picture.
+
+2. **Card legibility (deal system).** Doctrine A and B reveal different aspects of face-down cards. Centralized Infra reveals infrastructure vulnerability ("power substation rated for 2ft surge, built in 1967"). Distributed Infra reveals community capacity ("VFW hall has a generator and 15 vets with training").
+
+3. **Policy tiles (bento).** Each doctrine unlocks its own set of mutated tiles. Enforcement Housing unlocks "Code Strike Force" (expensive, fast results, disorder +3). Advocacy Housing unlocks "Tenant Liaison Network" (cheap, slow results, disorder -2). You can't build both — the tiles are gated by your doctrine choice.
+
+4. **Bloc trust shifts.** Each doctrine is preferred by specific political blocs:
+
+| Bloc | Prefers Doctrine A (Institutional) | Prefers Doctrine B (Community) |
+|---|---|---|
+| Working Families | — | Health-Community, Services-Targeted, Community-Empower |
+| Progressives | — | Safety-Prevention, Housing-Advocacy, Community-Empower |
+| Business Coalition | Infra-Centralized, Services-Universal | — |
+| Real Estate | Housing-Enforcement, Safety-Enforcement | — |
+| Labor | Infra-Centralized (union jobs) | Health-Community (worker solidarity) |
+
+Choosing a doctrine gives **+3 trust with aligned blocs** and **-2 trust with opposed blocs** per district in those blocs. Over a 48-week game, a player who consistently sides with institutional approaches will have high Business/Real Estate trust but low Working Families/Progressive trust — which affects which districts are cooperative vs hostile.
+
+5. **Blizzard outcomes.** When the blizzard hits, each doctrine has a specific **strength** and **blind spot**:
+
+| Doctrine | Strength in crisis | Blind spot |
+|---|---|---|
+| Clinical Health | Fast hospital surge deployment | Homebound patients who won't/can't reach hospitals |
+| Community Health | Block-level check-ins on vulnerable residents | No mass casualty triage capacity |
+| Enforcement Housing | Buildings code-compliant, heat violations fixed | Tenants who never reported (fear of retaliation) |
+| Advocacy Housing | High trust, residents call for help | Buildings still have code violations — heat still fails |
+| Centralized Infra | Grid restored faster citywide | When the grid fails, everything fails at once |
+| Distributed Infra | Pockets of power survive grid failure | Slower restoration, gaps between microgrids |
+| Enforcement Safety | Faster emergency vehicle dispatch | 30+ residents per district who won't call 911 |
+| Prevention Safety | Community self-rescue activates | Slower professional response time |
+| Universal Services | Every district gets baseline resources | Resources wasted on areas that don't need them |
+| Targeted Services | Perfect fit for communities served | Gaps in communities not profiled |
+| Formalize Community | City knows where mutual aid networks are | Networks may have stopped sharing honestly |
+| Empower Community | Networks operate at full trust and capacity | City can't coordinate with what it can't see |
+
+**Choosing and switching:**
+
+- **Level 1:** No doctrine. Both branches visible as "potential." Department interjections are generic.
+- **Level 2:** Player must choose A or B. Choice is highlighted in the department row on the Draft view sidebar. The chosen doctrine "cooks" for 1 week (Disco's internalization delay) — during this week the department operates at effective level 1 (temporary penalty, like Disco's research debuff).
+- **Level 3-5:** Deepens the chosen doctrine. Interjections become more specific, tiles become more powerful, bloc effects compound.
+- **Switching:** Costs $0.3B + resets department to level 2 + 3-week cooldown before the new doctrine activates (during which the department operates at level 1). This mirrors Disco's "forgetting a thought" — painful, deliberate, and it leaves a gap. A player who switches doctrine mid-game pays a real price in perception and budget.
+
+**Interaction with patterns (§5.3b):**
+
+Crystallized patterns still give +1 effective level. But the bonus now also respects doctrine: a crystallized HOUSING pattern under Enforcement doctrine strengthens enforcement-specific interjections; under Advocacy, it strengthens advocacy-specific ones. The pattern is the same systemic insight — "Systemic Housing Neglect" — but what you *do* with that understanding depends on your doctrine. Same data, different worldview.
+
+**Why this matters for the game's thesis:**
+
+The doctrines embody the central tension of real civic governance: institutional competence vs. community trust. Neither side is wrong. Clinical health saves more lives per dollar in a mass casualty event. Community health saves the lives that clinical health can't see. The player who tries to have both is spread too thin. The player who picks one and commits discovers both its power and its blind spots — and the blizzard reveals what they chose not to see.
+
+This is Frostpunk's moral weight married to Disco's perceptual consequence. Your cabinet isn't just funded — it has a philosophy. And that philosophy has a cost.
+
 ### 5.6 Social media (the communication system)
 *(Unchanged from 0.7.)* Outbound posts scored by the LLM against discovered insights (RESONATING / NOTICED / HOLLOW); inbound feed graded vague→specific by district knowledge; DMs for relationship maintenance. The player who listened has grounded material; the player who didn't gets ratio'd. *(One small future hook: a crystallized pattern could let you post at the **systemic** level — "this is a citywide pattern, not one building" — and resonate across every affected district at once. Flagged, not yet built.)*
 
@@ -324,17 +431,18 @@ Inspired by *Blue Prince*: the rooms rearrange, but the rules don't. The 0.8 con
 | Content type | Built | First-release target | Notes |
 |---|---|---|---|
 | Districts | 19 | 19 | Complete |
-| Characters w/ scripted conversations | 11 | 19 (1+ per district) | LLM generates dialogue from profiles |
-| Character profiles | 3 | 3–5 per district (~60–95) | Lightweight; LLM does dialogue |
-| **Department definitions** | **0** | **6** | **New: topic-tag interjection rules, tile-gating, funding effects (§5.5a)** |
-| **Interjection topic-tag map** | **0** | **~40–60 tag→department rules** | **New: which lenses fire on which line topics; engine-side, deterministic** |
-| Insight templates / district | ~6–9 | 8–12 (~150–230) | **Now tiered surface/lens/check (§5.3)** |
-| **Check definitions (difficulty, white/red)** | **0** | **~30–50** | **New: gating community assets + named vulnerable residents** |
-| Concern weights / district | 19 | 19 | Drives scoring + reshuffle |
-| **Bento tiles (generic + dept-gated + pattern-mutated)** | 6 generic | 15–20 generic + 30–40 dept-gated | **Card tiers cut; all routed through departments (§5.7)** |
-| Cross-district patterns | 0 | 10–15 | **Now with cook-time + citywide effect + de-commit (§5.3b)** |
+| V2 conversation scripts (Disco-style) | **11** | 19 (1+ per district) | **93 interjections, 14 dice checks across 31 exchanges** |
+| Characters w/ conversations | **11** | 19 | 8 districts have no conversation (direct stat bump on visit) |
+| Department definitions | **6** | 6 | Funding 0–4, interjection rules, tile-gating, effective level with pattern bonus |
+| Dice checks (difficulty, white/red) | **14** | ~30–50 | Gating community assets + named vulnerable residents |
+| Insight templates / district | ~6–9 | 8–12 (~150–230) | Tiered surface/lens/check (§5.3) |
+| Concern weights / district | 19 | 19 | Drives scoring + deal weights |
+| Bento tiles (generic + dept-gated) | **27** | 30–40 | **7 tiles dept-gated (level 2–3 required), card tiers cut (§5.7)** |
+| Synergy rules | **7** | 10–15 | Adjacency-based, amplify resilience |
+| Conflict rules | **4** | 8–12 | Adjacency-based, spike disorder |
+| Cross-district patterns | 0 (auto-detected) | 10–15 | Cook-time + crystallization + de-commit wired (§5.3b) |
 | Scenario events (blizzard) | 10 | 15–20 | Full arc built |
-| LLM system prompts | 2 | 3–4 | Conversation prompt now *prose-only* (rules are engine-side) |
+| LLM system prompts | 2 | 3–4 | Conversation prompt *prose-only* (rules are engine-side) |
 | Feed chatter templates | ~10 | 80–120 | Knowledge-graded |
 | DM templates / character | 1 | 3–5 | |
 
@@ -349,17 +457,21 @@ Inspired by *Blue Prince*: the rooms rearrange, but the rules don't. The 0.8 con
 
 *(0.7 §8 remains current for persistent elements, visual treatment, and quality floor. 0.8 adds two interface pieces.)*
 
-### 8.2 Conversation UI (updated for interjections & checks)
+### 8.2 Conversation UI — right-aligned Disco panel
 
-The glassmorphic conversation panel overlays the Map. NPC text in Space Grotesk; key statements with the red left-border accent. **New:**
+The conversation panel is a **right-aligned, full-height side panel** — Disco Elysium–style. It slides in from the right edge with 16px margin and rounded corners; the map stays visible on the left through a semi-transparent overlay. 420px wide (capped at 40vw). NPC text in Space Grotesk; key statements with the red left-border accent. **Interjections and checks:**
 - **Interjection options** render distinctly from free-text: Doto monospace, a bracketed department source tag (`[PUBLIC HEALTH]`), and the department's color as a left border. They sit *above* the always-present free-text input — visible as offered threads, not forced choices.
 - **Checks** show a brief, legible roll moment: the department's funding contribution + the die, against the difficulty. Pass and fail both animate; **fail visibly opens the "why they're guarded" line** rather than greying out — reinforcing that failure is content.
 - **A misleading interjection** (underfunded lens, §5.5.4) looks identical to a real one *in the moment* — the cost is paid when it dead-ends. (Legible in retrospect via the notebook, which tags the dead-end to the underfunded department, teaching "fund to competence.")
 - **The no-solution soft-fail** surfaces as the character's deflation line and a small depth-drop indicator — never a modal scold.
 
-### 8.4 Department funding panel (new)
+### 8.4 Calendar as draft board (replaces the monthly grid)
 
-Lives on the Calendar/planning surface (not a new view — keeps the three-view shell intact). Six departments as vertical meters (0–4), each in its agency color, showing current level, the reserve cost to raise it, and a one-line "what this lets you hear/build." Raising a level animates the lens "coming online." Crystallized patterns show as a glow on their category's department (the earned lens sharpening the active one). The panel makes the three-way economy (perceive / bank / act) a single readable screen.
+Two-zone layout. **Left zone (draft):** slim week clock (WK 01/48 + progress track + season label), 3 draft slots across the top (filled slots show district/character/trust, empty show dashed outline), the dealt hand below as a card grid (3 columns). Face-up cards: white background, trust number, character avatar, italicized rumor quote. Face-down cards: dark hatched background, ⌖ marker, vague rumor, lens indicator (dim if unfunded, lit + outlined if funded to competence with a fragility reveal line). Wanted cards carry a red ★ ribbon. Re-deal button above the hand. **Right zone (money):** three-way budget bar (perceive / reserve / spent), six department rows (horizontal, compact: name + agency tag, 4-pip meter with competence notch after pip 2, funding value, stepper with inline cost), then GO / Policy Builder / End Week stacked.
+
+### 8.5 Map — two-altitude transition
+
+Overview: flat top-down SVG node-graph, knowledge-brightness encoding (near-black→white), borough labels, edge diffusion animations, lens switcher (Knowledge primary, Resilience/Escalation/Coalition as summoned overlays), knowledge legend. Detail: on node select, camera pitches to ~55° and zooms into scoped 3D building extrusions for that district, hex radial menu appears, back button returns to overview. Right panel shows district detail (trust, knowledge bar, rumor/hint, wanted status). The transition is pitch+zoom on a single MapLibre map, not two renderers.
 
 ---
 
@@ -416,7 +528,15 @@ The insight-gated *card* tiers from 0.7 §10.5 are cut. Tile availability now co
 | `ui.bentoPlaced {tile, cell}` | `bento.synergy {type}` / `bento.conflict {type}` |
 | `ui.bentoEnacted` | `policy.resolved {trustDeltas, budgetDelta, casualtyMods}` |
 
-*(EngagementSystem, KnowledgeSystem, SocialSystem, OnboardingSystem, ScenarioSystem carry forward from 0.7 with no structural change. ConversationSystem's revision is the largest; DepartmentSystem is the only genuinely new file.)*
+**DealSystem** (`systems/deal.js`) — **new in 0.9**
+Deals 5 district cards per week from a weighted pool. Weights: wanted markers (+), feed heat (+), neglect drift (+), recency (−). Determines face-up/down state from district visit history. Queries DepartmentSystem for lens legibility on face-down cards.
+
+| Listens to | Emits |
+|---|---|
+| `clock.weekEnd` (triggers next deal) | `deal.dealt {hand[]}` |
+| (queries DepartmentSystem for legibility) | |
+
+*(EngagementSystem, KnowledgeSystem, SocialSystem, OnboardingSystem, ScenarioSystem carry forward from 0.7 with no structural change. ConversationSystem's revision is the largest; DepartmentSystem and DealSystem are the genuinely new files.)*
 
 ### 10.4 State model (additions for 0.8)
 
@@ -454,6 +574,13 @@ The insight-gated *card* tiers from 0.7 §10.5 are cut. Tile availability now co
   ],
 
   // bento: tile availability is DERIVED from departments + patterns (not stored as unlock flags)
+
+  // NEW in 0.9: draft board state
+  hand: [
+    // { districtId, name, boro, bloc, trust, faceUp, wanted,
+    //   lensId, legible, rumor, lensReveal, lastVisited, know }
+  ],
+  wanted: [],   // district IDs marked on the map — raises deal weight
 }
 ```
 
@@ -544,16 +671,28 @@ engagement.started {district, action}
 
 ### Phase 1 — The listening loop · **~80% → revised target**
 
-**The remaining Phase-1 work is now organized around the spine.** Build order:
+**Phase 1 status as of 0.9 — the spine is wired.** What's done and what remains:
 
-1. **DepartmentSystem (`systems/department.js`)** — funding state 0–4, reserve integration, the two query interfaces (interjections, tiles). *This is the new keystone — everything else in Phase 1 hangs off it.*
-2. **Conversation rework** — interjection offering (engine-side topic-tag → lens matching), deterministic checks (white/red, content-opening failure), the no-solution rule, insight tiering. LLM reduced to prose.
-3. **Department funding panel UI (§8.4)** — the perceive/bank/act screen on the Calendar surface.
-4. **Patterns-as-Thought-Cabinet** — cook-time, citywide crystallization effect, costly de-commit (revise InsightSystem).
-5. **Bento gating** — cut policy cards; route tile availability through DepartmentSystem; pattern tile-mutation.
-6. *(Carried from 0.7:)* LLM-powered conversation prose for all 19 districts; remaining character profiles; onboarding Week 0 (now also introduces one funded department); notebook drawer (now shows insight tiers + cooking patterns); insight freshness decay; feed intelligence; extract systems from shell; reconcile data sources.
+**Done:**
+1. ✅ **DepartmentSystem** — funding 0–4, effective level with pattern bonus, tile gating, conversation interjections
+2. ✅ **V2 conversation system** — 11 districts with Disco-style interjections, dice checks, solution-jump traps
+3. ✅ **Department funding UI** — integrated into Calendar draft board (Zone ②)
+4. ✅ **Pattern crystallization** — cook-time (3 weeks), crystallization (+1 dept effective level), costly de-commit
+5. ✅ **Bento gating** — 7 tiles require dept level 2–3; insight + dept requirements checked together
+6. ✅ **Calendar draft board** — DealSystem, face-up/face-down cards, lens legibility, re-deal mechanic
+7. ✅ **Conversation panel** — right-aligned, full-height Disco-style side panel
 
-**Revised exit:** a tester plays Week 0 → blizzard; funds departments and *feels* the perceive/bank/act tension; sees different interjections based on funding; passes/fails checks where failure still teaches; commits a pattern and feels the citywide lens sharpen; builds a department-gated bento policy; reaches all five end-states. Onboarding teaches the spine by example.
+**Remaining:**
+- **Two-altitude map** — knowledge-as-default encoding, select-to-descend transition, edge diffusion (designed, not built)
+- **Onboarding Week 0** — 6-beat tutorial (designed in §4.0, `onboardingComplete` hardcoded true)
+- **8 remaining district conversations** — UES, LIC, Lower Manhattan, Downtown Brooklyn, Bushwick, Jamaica, Mid-Island, Riverdale have no conversation scripts
+- **Misleading interjections** (§5.5.4) — below-competence departments giving plausible-but-wrong reads
+- **Pattern/Notebook UI** — players can't yet view forming/crystallized patterns or abandon them
+- **Listening sessions** (§5.5.8) — multi-character variant
+- **Feed intelligence** — graded vague→specific by district knowledge
+- **LLM conversation mode** — Ollama integration for free-form dialogue (scripted fallback works)
+
+**Revised exit:** a tester plays Week 0 → blizzard; deals and drafts each week on the draft board; funds departments and *feels* the perceive/bank/act tension; sees face-down cards become legible as lenses are funded; sees different interjections based on funding; passes/fails checks where failure still teaches; commits a pattern and feels the citywide lens sharpen; builds a department-gated bento policy; reaches all five end-states.
 
 ### Phase 5 — Roguelike, candidates & bento · **revised**
 The bento box is **no longer introduced here** — it moves into Phase 1 as the (now department-gated) policy interface. Phase 5 keeps: roguelike run variation (now explicitly the **two-axis** reshuffle — fragility + rewarded lens, §5.13), legacy/persistence (meta-knowledge only), candidates (with the optional department-funding-attack hook), and the cross-disaster-type balance pass (now including per-disaster lens-reward tuning).
@@ -580,26 +719,38 @@ Districts 19 · Term ~48 wks · Slots 3–4/wk · Start reserve $5.0B · Start r
 Operating deficit ~$1.5B/mo · Evac failure <20% · Insolvency <−$3.0B · Held Together ≥50% · Resilient City ≥75%
 ```
 
-## Appendix B — Files (0.8 changes)
+## Appendix B — Files (0.9 current)
 
 ```
-NEW:
-  systems/department.js        ← DepartmentSystem: funding state, interjection & tile queries (the hub)
+SYSTEMS (13):
+  systems/bus.js               ← EventBus: pub/sub for inter-system communication
+  systems/state.js             ← StateStore: dot-path get/set, emits state.changed
+  systems/clock.js             ← ClockSystem: weekly cadence, dual-metre win/lose checks
+  systems/metre.js             ← MetreSystem: dual Resilience + Disorder, modifier stacks
+  systems/trust.js             ← TrustSystem: legacy per-district stacks (superseded by MetreSystem)
+  systems/scenario.js          ← ScenarioSystem: Paradox-style condition/effect DSL
+  systems/insight.js           ← InsightSystem: freshness decay, pattern detection, cook-time crystallization, de-commit
+  systems/intervention.js      ← InterventionSystem: 3-tier policy execution
+  systems/bento.js             ← BentoSystem: 5×5 spatial policy builder, dept-gated tiles, synergies/conflicts
+  systems/department.js        ← DepartmentSystem: funding 0–4, effective level with pattern bonus, tile gating
+  systems/deal.js              ← DealSystem: weighted weekly card draft, face-up/down, lens legibility (NEW 0.9)
+  systems/dice.js              ← Dice checks: dept_level × 3 + 2d6 vs difficulty
+  systems/schema.js            ← SchemaValidator: JSON Schema for content types (dev tool)
+  systems/policy.js            ← PolicySystem: insight-gated tiers (exists, not wired to engine)
 
-SUBSTANTIALLY REVISED:
-  systems/conversation.js      ← interjection/check loop, no-solution rule, insight tiering; LLM = prose only
-  systems/insight.js           ← tiered insights; patterns now cook / crystallize citywide / de-commit
-  systems/policy.js            ← card tiers removed; bento tiles gated by departments, mutated by patterns
+COMPONENTS (17 Svelte 5):
+  StatusBar, BlocBar, LeftPanel, RightPanel
+  MapView, CalendarView (draft board, 0.9), SocialView
+  ConversationOverlay (right-aligned Disco panel, 0.9), CinematicOverlay, GameEndOverlay
+  HexMenu, BottomNav, Toast, OnboardingOverlay
+  BentoBox, GraphView, DepartmentPanel
 
-REMOVED:
-  (0.7 §10.5 insight-gated policy-card schema — folded into department-gated bento tiles)
+DATA (7 modules, 117 entries, 332 links):
+  districts.js, entries.js, links.js, scenarios.js, interventions.js, tiles.js
+  conversations.js (V1 legacy) + conversations_v2.js (11 Disco-style scripts, 93 interjections, 14 checks)
 
-UI ADDITIONS:
-  Department funding panel (Calendar surface, §8.4)
-  Conversation UI: interjection options, check roll moment, content-opening failure (§8.2)
-
-SWIFT PORT:
-  + DepartmentSystem.swift; revise ConversationSystem + insight models; remove card-tier policy code
+DESIGN SPECS:
+  mandate-calendar-spec.md     ← Full Calendar draft board specification
+  mandate-calendar-draft.html  ← Interactive Calendar mockup
+  (two-altitude map mockup)    ← Interactive Map mockup
 ```
-
-*(All other files from the 0.7 Appendix B carry forward unchanged.)*

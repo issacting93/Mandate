@@ -2,14 +2,14 @@
   import { onMount, onDestroy } from 'svelte';
   import maplibregl from 'maplibre-gl';
   import 'maplibre-gl/dist/maplibre-gl.css';
-  import { selectedDistrict, currentMode, blizzardSeverity, currentView } from '$lib/stores/game.js';
+  import { selectedDistrict, currentMode, blizzardSeverity, currentView, conversationActive } from '$lib/stores/game.js';
   import { DISTRICTS, EDGES, BLOC_COLORS, DISTRICT_LATLNG, BORO_POS, districtMap } from '$data/districts.js';
   import { createSnowLayer } from '$lib/shaders/snow.js';
   import HexMenu from './HexMenu.svelte';
 
   let mapContainer;
   let svgEl;
-  let map3d;
+  let map3d = $state(null);
 
   // ── Pan/Zoom state ──
   const BASE_VB = { x: 60, y: 50, w: 690, h: 700 };
@@ -77,8 +77,18 @@
   }
 
   function flyToOverview() {
-    map3d?.flyTo({ center: [-73.935, 40.730], zoom: 10.8, pitch: 52, bearing: -12, duration: 1400, essential: true });
+    map3d?.flyTo({ center: [-73.935, 40.730], zoom: 10.8, pitch: 0, bearing: 0, duration: 1400, essential: true });
   }
+
+  // ── Fly to district when conversation opens ──
+  $effect(() => {
+    const convo = $conversationActive;
+    const m = map3d;
+    if (convo?.districtId && m) {
+      // Small delay to let map finish loading if just mounted
+      setTimeout(() => flyToDistrict(convo.districtId), 200);
+    }
+  });
 
   // ── Blizzard effects ──
   $effect(() => {
@@ -105,10 +115,27 @@
     } catch (err) { /* layers not ready yet */ }
   });
 
+  // Knowledge is always the base encoding. Other modes overlay on top.
   function nodeOpacity(d, mode) {
+    // Knowledge brightness is always the base: dim = unknown, bright = known
+    const knowBase = Math.max(0.12, d.know / 100);
     if (mode === 'trust') return Math.max(0.2, d.trust / 100);
-    if (mode === 'knowledge') return Math.max(0.14, d.know / 100);
-    return 1;
+    return knowBase;
+  }
+
+  // Node radius scales with knowledge: small = unknown, large = well-known
+  function nodeRadius(d) {
+    const minR = d.r * 0.35;
+    const maxR = d.r * 1.0;
+    return minR + (maxR - minR) * (d.know / 100);
+  }
+
+  // Edge color: bright if both districts have high trust, dim/red if either is low
+  function edgeColor(a, b) {
+    const avgTrust = (a.trust + b.trust) / 2;
+    if (avgTrust >= 60) return 'rgba(255,255,255,0.2)';
+    if (avgTrust >= 40) return 'rgba(255,255,255,0.1)';
+    return 'rgba(184,42,24,0.15)';
   }
 
   function hexPoints(cx, cy, r) {
@@ -146,7 +173,7 @@
           },
         ],
       },
-      center: [-73.935, 40.730], zoom: 10.8, pitch: 52, bearing: -12,
+      center: [-73.935, 40.730], zoom: 10.8, pitch: 0, bearing: 0,
       antialias: true, interactive: false, attributionControl: false,
     });
 
@@ -193,8 +220,9 @@
         {@const a = districtMap[aId]}
         {@const b = districtMap[bId]}
         {#if a && b}
-          <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="rgba(255,255,255,0.08)" stroke-width="4" stroke-linecap="round" />
-          <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round" />
+          {@const eColor = edgeColor(a, b)}
+          <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={eColor} stroke-width="4" stroke-linecap="round" />
+          <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={eColor} stroke-width="1.5" stroke-linecap="round" opacity="1.5" />
         {/if}
       {/each}
     </g>
@@ -202,12 +230,18 @@
     {#each DISTRICTS as d (d.id)}
       {@const dimmed = $selectedDistrict && $selectedDistrict !== d.id}
       {@const opacity = nodeOpacity(d, $currentMode)}
+      {@const nr = nodeRadius(d)}
+      {@const visited = d.lastVisited != null}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <g class="district-node" class:dimmed style="cursor:pointer; opacity:{dimmed ? undefined : opacity}" onclick={(e) => selectDist(e, d.id)}>
-        <circle cx={d.x} cy={d.y} r={d.r * 1.8} fill={BLOC_COLORS[d.bloc]} opacity={dimmed ? 0.1 : 0.3} pointer-events="none" />
-        <circle cx={d.x} cy={d.y} r={d.r * 0.6} fill={BLOC_COLORS[d.bloc]} stroke="rgba(0,0,0,0.5)" stroke-width="2" />
+        <!-- Outer glow: knowledge halo -->
+        <circle cx={d.x} cy={d.y} r={nr * 2.2} fill={visited ? BLOC_COLORS[d.bloc] : '#333'} opacity={dimmed ? 0.05 : (d.know / 100) * 0.25} pointer-events="none" />
+        <!-- Core node: size = knowledge, brightness = knowledge -->
+        <circle cx={d.x} cy={d.y} r={nr} fill={visited ? '#fff' : BLOC_COLORS[d.bloc]} stroke="rgba(0,0,0,0.4)" stroke-width="1.5"
+          opacity={dimmed ? 0.15 : Math.max(0.15, d.know / 100)} />
       </g>
-      <text x={d.x} y={d.y + d.r * 0.6 + 14} text-anchor="middle" class="district-label" class:dimmed>{d.name}</text>
+      <text x={d.x} y={d.y + nr + 12} text-anchor="middle" class="district-label" class:dimmed
+        opacity={Math.max(0.25, d.know / 100)}>{d.name}</text>
     {/each}
 
     {#if $selectedDistrict && districtMap[$selectedDistrict]}
@@ -231,17 +265,17 @@
   svg { width: 100%; height: 100%; display: block; position: relative; z-index: 1; cursor: grab; }
   svg:active { cursor: grabbing; }
 
-  .boro-label { font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 700; fill: #fff; opacity: 0.08; pointer-events: none; transition: opacity 0.3s ease; }
+  .boro-label { font-family: var(--font-body); font-size: 38px; font-weight: 700; fill: #fff; opacity: 0.08; pointer-events: none; transition: opacity 0.3s ease; }
   .boro-label.dimmed { opacity: 0.02; }
   .district-node { transition: opacity 0.3s ease; }
   .district-node.dimmed { opacity: 0.15; }
-  .district-label { font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600; fill: rgba(255,255,255,0.75); pointer-events: none; transition: opacity 0.2s ease; }
+  .district-label { font-family: var(--font-body); font-size: 10.5px; font-weight: 600; fill: rgba(255,255,255,0.75); pointer-events: none; transition: opacity 0.2s ease; }
   .district-label.dimmed { opacity: 0.18; }
   .edges { transition: opacity 0.3s ease; }
   .edges.dimmed { opacity: 0.08; }
 
-  .view-mode-bar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; background: rgba(10,10,16,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 3px; z-index: 10; }
-  .view-pill { font-family: var(--font-data); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 5px 14px; border-radius: 16px; border: 1px solid transparent; cursor: pointer; color: rgba(255,255,255,0.55); background: transparent; transition: all 0.15s ease; white-space: nowrap; }
+  .view-mode-bar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; background: rgba(10,10,16,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 0; padding: 3px; z-index: 10; }
+  .view-pill { font-family: var(--font-body); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 5px 14px; border-radius: 0; border: 1px solid transparent; cursor: pointer; color: rgba(255,255,255,0.55); background: transparent; transition: all 0.15s ease; white-space: nowrap; }
   .view-pill:hover { background: rgba(255,255,255,0.08); }
   .view-pill.active { background: var(--red); color: #fff; border-color: var(--red); }
 </style>

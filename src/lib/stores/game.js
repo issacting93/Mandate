@@ -5,7 +5,6 @@ export const game = writable({
   week: 1,
   reserve: 5.0,
   slotsTotal: 3,
-  labels: [],
   schedule: [null, null, null],
   weekStarted: false,
   insights: [],
@@ -25,17 +24,23 @@ export const game = writable({
   citywide: 50,
   citywideDisorder: 10,
   departments: { HEALTH: 1, HOUSING: 1, INFRA: 1, SERVICES: 1, SAFETY: 1, COMMUNITY: 1 },
+  doctrines: { HEALTH: null, HOUSING: null, INFRA: null, SERVICES: null, SAFETY: null, COMMUNITY: null },
   thoughts: [],
+  hand: [],
+  wanted: [],
+  consecutiveEmptyWeeks: 0,
+  reserveDelta: null,
+  deptHintShown: false,
 });
 
 // ── UI state (view switching, selections — not persisted) ──
 export const currentView = writable('map');
-export const currentMode = writable('coalition');
+export const currentMode = writable('knowledge');
 export const selectedDistrict = writable(null);
 export const hexMenuOpen = writable(false);
 
 // ── Onboarding state ──
-export const onboardingComplete = writable(true);
+export const onboardingComplete = writable(false);
 
 // ── Overlay state ──
 // Conversation: set to { districtId } to open, null to close
@@ -47,9 +52,16 @@ export const gameEndData = writable(null);
 // Toast: set to { text, color } to show, null to hide
 export const toastMessage = writable(null);
 
+// ── Week end debrief ──
+export const debriefActive = writable(false);
+
 // ── Bento Box state ──
 export const bentoActive = writable(false);
 export const bentoState = writable({ available: [], evaluation: null, grid: [] });
+
+// ── Comms Bento state ──
+export const commsActive = writable(false);
+export const commsState = writable({ available: [], evaluation: null, grid: [] });
 
 // ── Blizzard severity (0.0 → 1.0, derived from week) ──
 export const blizzardSeverity = derived(game, ($game) => {
