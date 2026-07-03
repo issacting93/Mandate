@@ -4,6 +4,20 @@ Session-by-session development log. Most recent first.
 
 ---
 
+## 2026-07-03 — Balance Tuning & Playwright Parallelization
+
+### Game balance tuning parameters
+* **Insight decay rate reduction:** Tuned from `0.12` to `0.09` per week in `insight.js` to allow a wider window of effectiveness for players visiting multiple districts.
+* **Capped trust diffusion:** Diffusion over transit edges is capped at `+0.5` (high-trust neighbor boost) and `-0.5` (low-trust neighbor drag) per week in `engine.js` to mitigate runaway positive/negative feedback loops.
+* **Increased pattern cook time:** Extended `COOK_TIME` from `3` to `5` weeks in `insight.js` to balance fast early-game crystallization.
+* **Diminishing doctrine returns:** Introduced dynamic scaling for the same-branch doctrine choices (+3 for first, +2 for second, +1 for third and subsequent) in `engine.js` to reward multi-dimensional strategies.
+
+### Batch simulation optimization
+* **Parallel simulation runner:** Optimized `run_simulations.js` to run up to 3 Playwright runs concurrently, drastically decreasing time required for 10-run batch iterations.
+* **Actionability safeguards:** Refined clicks and checks to verify element visibility first, avoiding standard 1.5s Playwright auto-wait timeouts on hidden selectors.
+
+---
+
 ## 2026-07-01 — Style Guide Application + Mayor's Cabinet
 
 ### Design language overhaul

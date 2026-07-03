@@ -16,7 +16,7 @@ Updated 2026-07-02.
 | **ClockSystem** | `systems/clock.js` | Done | Weekly cadence. Checks dual-metre win/lose. Emits `clock.weekStart`/`weekEnd`. |
 | **MetreSystem** | `systems/metre.js` | Wired (Sprint 1) | Dual-metre (Resilience + Disorder). Modifier stacks with decay/expiry. Listens to conversations, posts, policies, clock. Both metres visible in StatusBar. |
 | **ScenarioSystem** | `systems/scenario.js` | Done | Paradox-style condition/effect DSL. Evaluates on `clock.weekStart`. Chains, pools, priorities. |
-| **InsightSystem** | `systems/insight.js` | Done | Freshness decay (0.12/week), pattern detection (3+ districts same category). |
+| **InsightSystem** | `systems/insight.js` | Done | Freshness decay (0.09/week), pattern detection (3+ districts same category). |
 | **InterventionSystem** | `systems/intervention.js` | Done | 3-tier: generic (always), informed (2+ insights), pattern (cross-district). Budget checks. |
 | **BentoSystem** | `systems/bento.js` | Done | 5x5 spatial policy builder. WHERE/WHAT/HOW/FUNDING tiles. Adjacency synergies/conflicts. |
 | **SchemaValidator** | `systems/schema.js` | Done | JSON Schema validation for all content types. Dev tool. |
@@ -120,7 +120,7 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 | **SS4.0 Onboarding (Week 0)** | Built | 6-beat OnboardingOverlay.svelte: newspaper, desk policy, interruption, first conversation (simulated), contrast, handoff. Functional with skip button. |
 | **SS5.1 Community resilience** | Built and wired | MetreSystem tracks per-district resilience via modifier stacks. StatusBar shows dual metre. Bloc bar recomputes. Trust erosion on neglect. |
 | **SS5.2 The map** | Built and wired | MapLibre 3D + SVG overlay. 4 view modes (coalition, trust, knowledge, needs). Knowledge brightness. Hex menu. Fly-to on select. |
-| **SS5.3 Insights (freshness, patterns)** | Built and wired | InsightSystem: freshness decay 0.12/week, pattern detection 3+ districts same category. Notebook accessible via N key (NotebookOverlay). |
+| **SS5.3 Insights (freshness, patterns)** | Built and wired | InsightSystem: freshness decay 0.09/week, pattern detection 3+ districts same category. Notebook accessible via N key (NotebookOverlay). |
 | **SS5.3a Community assets** | Partially built | ASSET insight category exists. Assets activate on blizzard strike (engine.js handler). Asset tiles exist in Bento data. Missing: asset discovery via listening sessions (only scripted conversations). |
 | **SS5.4 Engagements (time system)** | Built (inline) | Label/schedule/execute chain works end-to-end via engine.js. 3 time slots. Not extracted to a standalone system. |
 | **SS5.5 Conversations (The Mayor's Cabinet)** | Built (11/19 districts) | Disco Elysium-style dialogue with department interjections, dice checks, depth meter + insight chips. 11 districts have scripts (conversations_v2.js). DepartmentSystem gates interjections and legibility. |
@@ -140,7 +140,7 @@ Sprint 1 fixed the core gameplay chain so that every step works end-to-end:
 4. **LLM conversation path** -- free-form conversation with LLM playing character. Designed but not wired. Currently scripted fallback only.
 5. **Minimap strip** -- GDD describes a persistent minimap in Draft/Intel views. Not built.
 6. **System extraction** -- Engagement, Conversation, Knowledge logic functional but inline in components/engine.js rather than extracted to standalone systems/.
-7. **Trust diffusion** -- GDD wants trust to spread across transit graph edges. Not implemented.
+7. **Trust diffusion** -- Wired. High-trust districts boost neighbors (capped at +0.5/week) and low-trust districts drag neighbors (capped at -0.5/week) across transit graph edges (defined in data/links.js).
 
 ## Playtest Verification (2026-06-30)
 

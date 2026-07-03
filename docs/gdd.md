@@ -163,7 +163,7 @@ A **pattern** is a cross-district conviction about how the city actually works �
 
 **Patterns now behave like Thoughts:**
 
-1. **Cook-time.** A newly discovered pattern is *forming*, not active. It crystallizes over **~3 weeks** of game time. During cooking it shows in the notebook as in-progress, with a faint hint of what it might unlock — but no effect yet. (This is Disco's "internalizing a thought," and the delayed, slightly-uncertain payoff is the point.)
+1. **Cook-time.** A newly discovered pattern is *forming*, not active. It crystallizes over **~5 weeks** of game time. During cooking it shows in the notebook as in-progress, with a faint hint of what it might unlock — but no effect yet. (This is Disco's "internalizing a thought," and the delayed, slightly-uncertain payoff is the point.)
 2. **Citywide perceptual effect on crystallization.** Once crystallized, the pattern's lens **interjects harder everywhere.** "Systemic Housing Neglect" makes the Housing department's interjections fire more often and at lower funding thresholds in *every* conversation citywide — you now *can't stop* seeing housing fragility, because you understand it as systemic. This is the mechanical heart of the Thought-Cabinet borrow: a conviction changes perception, permanently, until you let it go.
 3. **It unlocks/mutates building capacity** — see §5.7. (Replaces the old "pattern unlocks a policy card.")
 4. **Costly de-commit.** You can **abandon** a crystallized pattern. This is the one genuinely good Thought-Cabinet idea our old pattern system lacked: commitment is reversible but *costs* something (a chunk of reserve and a few weeks of a "re-cooking" penalty where neither the old nor a new pattern of that category is active). Why you'd do it: a run's real story turns out to be a flood, not housing — you committed your perception to the wrong systemic read, and now you pay to re-aim. This makes the roguelike reshuffle (§5.13) bite: the pattern you'd internalize on instinct from last run may be the wrong lens this run.
@@ -257,7 +257,7 @@ After the conversation, the engine assembles the structured result (the LLM cont
 
 The Disco mechanics are **fully present in fallback mode**, because the load-bearing parts are deterministic. With Ollama unavailable, the character speaks from **scripted dialogue trees**; interjections, checks, and the no-solution rule operate identically (they were always engine-side). The only thing lost is generative prose variety — the *mechanics* are unchanged. This is a meaningful robustness win over 0.7, where fallback was a visibly poorer experience.
 
-**Default tunables (all flagged for the balance harness):** competence threshold for reliable lenses = funding level 2 of 4; below-competence misleading-interjection chance = 15%; white-check retry allowed after +1 funding or next visit; red checks = 1/term, reserved for top-severity assets; pattern cook-time = 3 weeks; pattern de-commit cost = reserve hit + 3-week re-cook.
+**Default tunables (all flagged for the balance harness):** competence threshold for reliable lenses = funding level 2 of 4; below-competence misleading-interjection chance = 15%; white-check retry allowed after +1 funding or next visit; red checks = 1/term, reserved for top-severity assets; pattern cook-time = 5 weeks; pattern de-commit cost = reserve hit + 3-week re-cook.
 
 #### 5.5.8 Listening sessions
 
@@ -567,7 +567,7 @@ Deals 5 district cards per week from a weighted pool. Weights: wanted markers (+
   patterns: [
     // { id, category, requiredInsights, contributingInsights[],
     //   state: "cooking" | "crystallized",
-    //   cookProgress: 0..1,           // advances ~1/3 per week
+    //   cookProgress: 0..1,           // advances ~1/5 per week
     //   crystallizedAt: null | week,
     //   citywideLensBonus: 0 | n,     // applied to source dept's interjection freq + check bonus
     //   recookUntil: null | week }    // set on abandon
@@ -609,7 +609,7 @@ engagement.started {district, action}
   └─ conversation.ended {insights[tiered], trustDelta, depth, soloViolation, followUpHook}
        └─ knowledge.updated; dm.available
        └─ InsightSystem checks: did this complete a pattern's requiredInsights?
-            └─ if yes → pattern.cooking {progress:0} (crystallizes ~3 weeks later)
+            └─ if yes → pattern.cooking {progress:0} (crystallizes ~5 weeks later)
 ```
 
 ### 10.8 Swift/macOS port
@@ -632,7 +632,7 @@ engagement.started {district, action}
 - **Department count & granularity.** Six feels right for legibility, but does it cover the disaster types? A pandemic run leans heavily on Public Health + Social Services — are two lenses enough to make that run feel distinct, or does it need a 7th (e.g., a "Communications/Trust" lens)? Playtest per disaster type.
 - **Can-a-lens-be-wrong (§5.5.4) — keep or cut?** The underfunded-lens misleading interjection is pedagogically honest (thin-staffed agencies give bad reads) but risks frustration. Default 15% below competence; **must playtest whether it teaches "fund to competence" or just feels unfair.** Cut-bar: if testers distrust *funded* lenses, remove entirely.
 - **Red checks — how many, how punishing?** One-shot locked-until-next-run assets create real stakes but also real feel-bad on a failed roll. What share of community assets should be red vs. retryable white? Probably very few (the most decisive 2–3 per run).
-- **Pattern cook-time & de-commit cost.** 3 weeks / reserve-hit-plus-3-week-recook are guesses. Cook-time too long and patterns never pay off in a 48-week term; de-commit too cheap and the roguelike lens-reshuffle loses its bite.
+- **Pattern cook-time & de-commit cost.** 5 weeks / reserve-hit-plus-3-week-recook are guesses. Cook-time too long and patterns never pay off in a 48-week term; de-commit too cheap and the roguelike lens-reshuffle loses its bite.
 - **Three-way economy balance.** Perceive / bank / act is the central new tension. Where are the failure cliffs? (Over-funding → Fiscal Crisis; under-funding → deaf at the disaster.) The balance harness must model all three explicitly.
 - **Interjection volume.** 1–3 lenses per line — does a fully-funded player drown in bracketed options? Cap per line? Prioritize by severity/relevance? Risk: the safe lens-options crowd out free-typing, and players stop writing.
 - **Surfacing the "why" of a misleading dead-end.** The notebook tags dead-ends to the underfunded department — is that legible enough to teach, or do players just feel cheated and not connect it to funding?
@@ -677,7 +677,7 @@ engagement.started {district, action}
 1. ✅ **DepartmentSystem** — funding 0–4, effective level with pattern bonus, tile gating, conversation interjections
 2. ✅ **V2 conversation system** — 11 districts with Disco-style interjections, dice checks, solution-jump traps
 3. ✅ **Department funding UI** — integrated into Calendar draft board (Zone ②)
-4. ✅ **Pattern crystallization** — cook-time (3 weeks), crystallization (+1 dept effective level), costly de-commit
+4. ✅ **Pattern crystallization** — cook-time (5 weeks), crystallization (+1 dept effective level), costly de-commit
 5. ✅ **Bento gating** — 7 tiles require dept level 2–3; insight + dept requirements checked together
 6. ✅ **Calendar draft board** — DealSystem, face-up/face-down cards, lens legibility, re-deal mechanic
 7. ✅ **Conversation panel** — right-aligned, full-height Disco-style side panel
@@ -711,7 +711,7 @@ Misleading-interjection   15% chance below competence (level < 2); 0% at/above  
 Check formula             dept_level (+ pattern bonus) + die(1..6) >= difficulty
 Check types               white (retryable after +1 funding or next visit) / red (1 per term)
 Insight tiers             surface (free) / lens (dept-gated) / check (dept-gated + roll)
-Pattern cook-time         ~3 weeks to crystallize                               [TUNABLE]
+Pattern cook-time         ~5 weeks to crystallize                               [TUNABLE]
 Pattern de-commit cost    reserve hit + 3-week re-cook penalty                  [TUNABLE]
 Three-way economy         reserve funds: department levels | banked reserve | enacted policies
 --- (0.7 constants below, unchanged) ---

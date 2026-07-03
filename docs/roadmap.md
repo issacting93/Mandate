@@ -131,7 +131,7 @@ Remaining districts (no conversation yet):
 
 ### 1D. Insight System -- Freshness & Patterns
 
-- [x] `systems/insight.js`: freshness decay (0.12/week), pattern detection (3+ districts same category)
+- [x] `systems/insight.js`: freshness decay (0.09/week), pattern detection (3+ districts same category)
 - [x] `systems/intervention.js`: 3-tier insight-gated policies (generic/informed/pattern)
 - [x] Notebook in SocialView sidebar: insights grouped by district with freshness bars, patterns section
 - [ ] Notebook drawer accessible from ANY view (hotkey N) -- currently only in SocialView
@@ -196,7 +196,7 @@ Pick a subset -- do not build all at once.
   - [x] WHERE/WHAT/HOW tiles and FUNDING blocks.
   - [x] Adjacency synergies and conflicts.
 - [x] **Community asset activation**: ASSET-type insights unlock free 1x1 tiles in the Bento Box (e.g., a local generator), rewarding listening with high-efficiency puzzle pieces.
-- [ ] **Trust diffusion**: neglected districts drag neighbors. Trust is contagious across the transit graph in both directions. Walking edges from `data/links.js`.
+- [x] **Trust diffusion**: neglected districts drag neighbors (capped at -0.5/week), and high-trust districts boost neighbors (capped at +0.5/week) across the transit graph (data/links.js).
 - [ ] **Full grounding scoring**: nuanced resonance -- tone matching (urgent tone on urgent concern = bonus), multi-insight posts, ratio mechanics for hollow/contradictory posts.
 - [ ] **Notebook as intelligence brief**: insights cross-reference with community assets. Patterns visualized as connecting lines. "What I know" becomes a strategic planning surface.
 
